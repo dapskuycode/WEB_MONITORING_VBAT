@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PushNotification extends Model
 {
@@ -27,7 +28,10 @@ class PushNotification extends Model
         'failure_count' => 'integer',
     ];
 
-    public function sponsor()
+    /**
+     * @return BelongsTo<Sponsor, $this>
+     */
+    public function sponsor(): BelongsTo
     {
         return $this->belongsTo(Sponsor::class);
     }

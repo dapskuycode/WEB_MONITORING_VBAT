@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Lesson extends Model
 {
@@ -12,12 +14,18 @@ class Lesson extends Model
         'sort_order',
     ];
 
-    public function course()
+    /**
+     * @return BelongsTo<Course, $this>
+     */
+    public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
     }
 
-    public function videos()
+    /**
+     * @return HasMany<Video, $this>
+     */
+    public function videos(): HasMany
     {
         return $this->hasMany(Video::class)->orderBy('sort_order');
     }

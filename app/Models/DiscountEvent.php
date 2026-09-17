@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class DiscountEvent extends Model
 {
@@ -23,14 +25,21 @@ class DiscountEvent extends Model
         'is_active' => 'boolean',
     ];
 
-    public function products()
+    /**
+     * @return BelongsToMany<SponsorProduct, $this>
+     */
+    public function products(): BelongsToMany
     {
         return $this->belongsToMany(SponsorProduct::class, 'discount_event_products')
             ->withPivot(['custom_discount_type', 'custom_discount_value'])
             ->withTimestamps();
     }
 
-    public function scopeActive($query)
+    /**
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeActive(Builder $query): Builder
     {
         $now = now();
 

@@ -2,7 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Campaign extends Model
 {
@@ -30,22 +33,36 @@ class Campaign extends Model
         'end_date' => 'date',
     ];
 
-    public function sponsor()
+    /**
+     * @return BelongsTo<Sponsor, $this>
+     */
+    public function sponsor(): BelongsTo
     {
         return $this->belongsTo(Sponsor::class);
     }
 
-    public function logs()
+    /**
+     * @return HasMany<CampaignLog, $this>
+     */
+    public function logs(): HasMany
     {
         return $this->hasMany(CampaignLog::class);
     }
 
-    public function scopeApproved($query)
+    /**
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeApproved(Builder $query): Builder
     {
         return $query->where('status', 'approved');
     }
 
-    public function scopeActive($query)
+    /**
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeActive(Builder $query): Builder
     {
         $today = now()->toDateString();
 

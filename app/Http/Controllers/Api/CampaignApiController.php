@@ -271,8 +271,8 @@ class CampaignApiController extends Controller
                 'sold' => '250+',
                 'sponsor' => [
                     'id' => $p->sponsor?->id,
-                    'name' => $p->sponsor?->name ?? 'Sponsor',
-                    'tier' => $p->sponsor?->tier ?? 'PARTNER',
+                    'name' => $p->sponsor ? $p->sponsor->name : 'Sponsor',
+                    'tier' => $p->sponsor ? $p->sponsor->tier : 'PARTNER',
                 ],
             ];
         });
@@ -287,6 +287,9 @@ class CampaignApiController extends Controller
         ]);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     private function formatCampaignPayload(Campaign $c): array
     {
         $mediaPath = $c->media_path;

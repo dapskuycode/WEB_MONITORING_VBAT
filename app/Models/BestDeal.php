@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BestDeal extends Model
 {
@@ -21,7 +23,10 @@ class BestDeal extends Model
         'is_active' => 'boolean',
     ];
 
-    public function products()
+    /**
+     * @return BelongsToMany<SponsorProduct, $this>
+     */
+    public function products(): BelongsToMany
     {
         return $this->belongsToMany(SponsorProduct::class, 'best_deal_products')
             ->withPivot(['badge_text', 'order'])
@@ -29,7 +34,11 @@ class BestDeal extends Model
             ->orderBy('best_deal_products.order');
     }
 
-    public function scopeActive($query)
+    /**
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeActive(Builder $query): Builder
     {
         $now = now();
 

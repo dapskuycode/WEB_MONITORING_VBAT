@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CampaignLog extends Model
 {
@@ -22,17 +23,26 @@ class CampaignLog extends Model
         'created_at' => 'datetime',
     ];
 
-    public function campaign()
+    /**
+     * @return BelongsTo<Campaign, $this>
+     */
+    public function campaign(): BelongsTo
     {
         return $this->belongsTo(Campaign::class);
     }
 
-    public function product()
+    /**
+     * @return BelongsTo<SponsorProduct, $this>
+     */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(SponsorProduct::class, 'sponsor_product_id');
     }
 
-    public function user()
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }

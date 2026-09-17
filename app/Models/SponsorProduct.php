@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SponsorProduct extends Model
@@ -35,17 +38,26 @@ class SponsorProduct extends Model
         'click_count' => 'integer',
     ];
 
-    public function sponsor()
+    /**
+     * @return BelongsTo<Sponsor, $this>
+     */
+    public function sponsor(): BelongsTo
     {
         return $this->belongsTo(Sponsor::class);
     }
 
-    public function wishlists()
+    /**
+     * @return HasMany<UserWishlist, $this>
+     */
+    public function wishlists(): HasMany
     {
         return $this->hasMany(UserWishlist::class);
     }
 
-    public function logs()
+    /**
+     * @return HasMany<CampaignLog, $this>
+     */
+    public function logs(): HasMany
     {
         return $this->hasMany(CampaignLog::class);
     }
@@ -61,14 +73,20 @@ class SponsorProduct extends Model
         return round(($this->click_count * 0.5) + ($this->view_count * 0.2) + ($wishlistCount * 0.3), 2);
     }
 
-    public function discountEvents()
+    /**
+     * @return BelongsToMany<DiscountEvent, $this>
+     */
+    public function discountEvents(): BelongsToMany
     {
         return $this->belongsToMany(DiscountEvent::class, 'discount_event_products')
             ->withPivot(['custom_discount_type', 'custom_discount_value'])
             ->withTimestamps();
     }
 
-    public function bestDeals()
+    /**
+     * @return BelongsToMany<BestDeal, $this>
+     */
+    public function bestDeals(): BelongsToMany
     {
         return $this->belongsToMany(BestDeal::class, 'best_deal_products')
             ->withPivot(['badge_text', 'order'])

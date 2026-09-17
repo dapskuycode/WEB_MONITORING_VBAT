@@ -197,6 +197,9 @@ class LegacyDataSeeder extends Seeder
         Schema::enableForeignKeyConstraints();
     }
 
+    /**
+     * @param  array<string, User>  $sponsorUsers
+     */
     private function seedSponsorsAndProducts(string $sqlPath, array $sponsorUsers): void
     {
         $defaultSponsors = [

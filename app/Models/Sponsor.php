@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Sponsor extends Model
@@ -36,27 +38,42 @@ class Sponsor extends Model
         'weight' => 'integer',
     ];
 
-    public function user()
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function products()
+    /**
+     * @return HasMany<SponsorProduct, $this>
+     */
+    public function products(): HasMany
     {
         return $this->hasMany(SponsorProduct::class);
     }
 
-    public function campaigns()
+    /**
+     * @return HasMany<Campaign, $this>
+     */
+    public function campaigns(): HasMany
     {
         return $this->hasMany(Campaign::class);
     }
 
-    public function province()
+    /**
+     * @return BelongsTo<Province, $this>
+     */
+    public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
     }
 
-    public function city()
+    /**
+     * @return BelongsTo<City, $this>
+     */
+    public function city(): BelongsTo
     {
         return $this->belongsTo(City::class);
     }

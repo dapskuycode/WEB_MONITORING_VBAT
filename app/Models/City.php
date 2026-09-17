@@ -3,12 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class City extends Model
 {
     protected $fillable = ['province_id', 'name', 'type', 'postal_code'];
 
-    public function province()
+    /**
+     * @return BelongsTo<Province, $this>
+     */
+    public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
     }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class UserWishlist extends Model
 {
@@ -11,12 +12,18 @@ class UserWishlist extends Model
         'sponsor_product_id',
     ];
 
-    public function user()
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function product()
+    /**
+     * @return BelongsTo<SponsorProduct, $this>
+     */
+    public function product(): BelongsTo
     {
         return $this->belongsTo(SponsorProduct::class, 'sponsor_product_id');
     }

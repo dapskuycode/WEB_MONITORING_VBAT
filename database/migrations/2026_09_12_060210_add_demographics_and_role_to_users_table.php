@@ -12,8 +12,8 @@ return new class extends Migration
             $table->string('role')->default('student')->after('email'); // super_admin, owner, sponsor, student
             $table->date('birth_date')->nullable()->after('role');
             $table->string('gender')->nullable()->after('birth_date'); // male, female, other
-            $table->foreignId('province_id')->nullable()->constrained('provinces')->nullOnDelete()->after('gender');
-            $table->foreignId('city_id')->nullable()->constrained('cities')->nullOnDelete()->after('province_id');
+            $table->foreignId('province_id')->nullable()->after('gender')->constrained('provinces')->nullOnDelete();
+            $table->foreignId('city_id')->nullable()->after('province_id')->constrained('cities')->nullOnDelete();
             $table->string('phone')->nullable()->after('city_id');
             $table->string('whatsapp')->nullable()->after('phone');
             $table->text('address')->nullable()->after('whatsapp');

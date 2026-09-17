@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -73,22 +76,34 @@ class User extends Authenticatable implements PasskeyUser
         return $this->role === 'sponsor';
     }
 
-    public function sponsor()
+    /**
+     * @return HasOne<Sponsor, $this>
+     */
+    public function sponsor(): HasOne
     {
         return $this->hasOne(Sponsor::class);
     }
 
-    public function province()
+    /**
+     * @return BelongsTo<Province, $this>
+     */
+    public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
     }
 
-    public function city()
+    /**
+     * @return BelongsTo<City, $this>
+     */
+    public function city(): BelongsTo
     {
         return $this->belongsTo(City::class);
     }
 
-    public function wishlists()
+    /**
+     * @return HasMany<UserWishlist, $this>
+     */
+    public function wishlists(): HasMany
     {
         return $this->hasMany(UserWishlist::class);
     }

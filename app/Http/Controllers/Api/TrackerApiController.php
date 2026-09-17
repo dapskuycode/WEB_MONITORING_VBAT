@@ -41,7 +41,7 @@ class TrackerApiController extends Controller
 
         // 2. Increment Counter langsung pada Model terkait
         if (! empty($validated['product_id'])) {
-            $product = SponsorProduct::find($validated['product_id']);
+            $product = SponsorProduct::where('id', $validated['product_id'])->first();
             if ($product) {
                 if ($validated['event_type'] === 'view') {
                     $product->increment('view_count');

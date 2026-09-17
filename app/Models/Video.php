@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Video extends Model
 {
@@ -22,12 +23,18 @@ class Video extends Model
         'sort_order' => 'integer',
     ];
 
-    public function course()
+    /**
+     * @return BelongsTo<Course, $this>
+     */
+    public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
     }
 
-    public function lesson()
+    /**
+     * @return BelongsTo<Lesson, $this>
+     */
+    public function lesson(): BelongsTo
     {
         return $this->belongsTo(Lesson::class);
     }

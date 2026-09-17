@@ -50,7 +50,7 @@ class DemographicApiController extends Controller
         ]);
 
         $userId = $validated['user_id'] ?? User::where('role', 'student')->first()?->id ?? 4;
-        $user = User::findOrFail($userId);
+        $user = User::where('id', $userId)->firstOrFail();
 
         $updateData = ['profile_completed' => true];
         if (! empty($validated['name'])) {
