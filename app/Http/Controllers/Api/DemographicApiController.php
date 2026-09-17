@@ -49,7 +49,8 @@ class DemographicApiController extends Controller
             'address' => 'nullable|string',
         ]);
 
-        $userId = $validated['user_id'] ?? User::where('role', 'student')->first()?->id ?? 4;
+        $defaultStudent = User::where('role', 'student')->first();
+        $userId = $validated['user_id'] ?? ($defaultStudent ? $defaultStudent->id : 4);
         $user = User::where('id', $userId)->firstOrFail();
 
         $updateData = ['profile_completed' => true];

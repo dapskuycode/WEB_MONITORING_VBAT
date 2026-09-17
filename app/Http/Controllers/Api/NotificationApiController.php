@@ -27,7 +27,7 @@ class NotificationApiController extends Controller
                 'body' => $notif->message,
                 'target_url' => $notif->deep_link ?: 'https://shopee.co.id',
                 'target_audience' => $notif->target_audience,
-                'sent_at' => $notif->sent_at ? $notif->sent_at->toIso8601String() : $notif->created_at?->toIso8601String(),
+                'sent_at' => $notif->sent_at ? $notif->sent_at->toIso8601String() : $notif->created_at->toIso8601String(),
                 'status' => $notif->status,
                 'sponsor_name' => 'Sponsor Resmi VbatPonsel',
             ];
