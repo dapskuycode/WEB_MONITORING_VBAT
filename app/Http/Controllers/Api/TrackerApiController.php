@@ -3,13 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Campaign;
 use App\Models\CampaignLog;
 use App\Models\SponsorProduct;
 use App\Models\UserWishlist;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class TrackerApiController extends Controller
 {
@@ -42,14 +40,14 @@ class TrackerApiController extends Controller
         ]);
 
         // 2. Increment Counter langsung pada Model terkait
-        if (!empty($validated['product_id'])) {
+        if (! empty($validated['product_id'])) {
             $product = SponsorProduct::find($validated['product_id']);
             if ($product) {
                 if ($validated['event_type'] === 'view') {
                     $product->increment('view_count');
                 } elseif ($validated['event_type'] === 'click') {
                     $product->increment('click_count');
-                } elseif ($validated['event_type'] === 'wishlist' && !empty($validated['user_id'])) {
+                } elseif ($validated['event_type'] === 'wishlist' && ! empty($validated['user_id'])) {
                     UserWishlist::firstOrCreate([
                         'user_id' => $validated['user_id'],
                         'sponsor_product_id' => $product->id,

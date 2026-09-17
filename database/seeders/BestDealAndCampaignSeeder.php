@@ -2,12 +2,12 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use App\Models\BestDeal;
+use App\Models\Campaign;
 use App\Models\DiscountEvent;
 use App\Models\SponsorProduct;
-use App\Models\Campaign;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class BestDealAndCampaignSeeder extends Seeder
 {

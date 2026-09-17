@@ -2,11 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Models\Campaign;
-use App\Models\DiscountEvent;
 use App\Models\Sponsor;
 use App\Models\SponsorProduct;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

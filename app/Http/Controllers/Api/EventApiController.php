@@ -16,7 +16,7 @@ class EventApiController extends Controller
     {
         $event = DiscountEvent::active()->with('products.sponsor')->latest()->first();
 
-        if (!$event) {
+        if (! $event) {
             return response()->json([
                 'status' => 'success',
                 'has_active_event' => false,
@@ -36,8 +36,8 @@ class EventApiController extends Controller
             }
 
             $image = $p->image_path;
-            if ($image && !str_starts_with($image, 'http') && !str_starts_with($image, 'assets/')) {
-                $image = url('api/v1/storage/' . $image);
+            if ($image && ! str_starts_with($image, 'http') && ! str_starts_with($image, 'assets/')) {
+                $image = url('api/v1/storage/'.$image);
             }
 
             return [

@@ -2,23 +2,24 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
-use App\Models\User;
 
 class LegacyDataSeeder extends Seeder
 {
     public function run(): void
     {
         $sqlPath = base_path('../hasil_backup.sql');
-        if (!file_exists($sqlPath)) {
+        if (! file_exists($sqlPath)) {
             $this->command->warn("Backup file not found at: {$sqlPath}");
+
             return;
         }
 
-        $this->command->info("Parsing and importing data from backup SQL...");
+        $this->command->info('Parsing and importing data from backup SQL...');
 
         // 1. Seed Provinces & Cities
         $this->seedProvincesAndCities($sqlPath);
@@ -120,13 +121,15 @@ class LegacyDataSeeder extends Seeder
             ]
         );
 
-        $this->command->info("Seeding completed successfully!");
+        $this->command->info('Seeding completed successfully!');
     }
 
     private function seedProvincesAndCities(string $sqlPath): void
     {
         $file = fopen($sqlPath, 'r');
-        if (!$file) return;
+        if (! $file) {
+            return;
+        }
 
         $inProvinces = false;
         $inCities = false;
@@ -134,8 +137,9 @@ class LegacyDataSeeder extends Seeder
         Schema::disableForeignKeyConstraints();
 
         while (($line = fgets($file)) !== false) {
-            if (str_contains($line, "INSERT INTO `provinces` VALUES")) {
+            if (str_contains($line, 'INSERT INTO `provinces` VALUES')) {
                 $inProvinces = true;
+
                 continue;
             }
             if ($inProvinces) {
@@ -152,11 +156,14 @@ class LegacyDataSeeder extends Seeder
                         );
                     }
                 });
-                if (str_contains($line, ";")) $inProvinces = false;
+                if (str_contains($line, ';')) {
+                    $inProvinces = false;
+                }
             }
 
-            if (str_contains($line, "INSERT INTO `cities` VALUES")) {
+            if (str_contains($line, 'INSERT INTO `cities` VALUES')) {
                 $inCities = true;
+
                 continue;
             }
             if ($inCities) {
@@ -181,7 +188,9 @@ class LegacyDataSeeder extends Seeder
                         );
                     }
                 });
-                if (str_contains($line, ";")) $inCities = false;
+                if (str_contains($line, ';')) {
+                    $inCities = false;
+                }
             }
         }
         fclose($file);
@@ -298,7 +307,6 @@ class LegacyDataSeeder extends Seeder
         foreach ($defaultSponsors as $sponsor) {
             DB::table('sponsors')->updateOrInsert(['id' => $sponsor['id']], $sponsor);
         }
-
 
         $defaultProducts = [
             [
@@ -648,7 +656,7 @@ class LegacyDataSeeder extends Seeder
     private function parseInsertLine(string $line, callable $callback): void
     {
         preg_match_all('/\(([^()]+)\)/', $line, $matches);
-        if (!empty($matches[1])) {
+        if (! empty($matches[1])) {
             foreach ($matches[1] as $tuple) {
                 $fields = str_getcsv($tuple, ',', "'");
                 $callback($fields);

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -15,14 +16,16 @@ Route::get('quick-login/{role}', function (string $role) {
         'pragmafix' => 'sponsor@pragmafix.com',
         default => 'admin@vbatponsel.com',
     };
-    $user = \App\Models\User::where('email', $email)->first();
+    $user = User::where('email', $email)->first();
     if ($user) {
         auth()->login($user);
         if ($user->isSponsor()) {
             return redirect()->route('sponsor.dashboard');
         }
+
         return redirect()->route('dashboard');
     }
+
     return redirect()->route('login');
 })->name('quick.login');
 

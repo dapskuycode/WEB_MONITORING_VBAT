@@ -48,6 +48,7 @@ class Campaign extends Model
     public function scopeActive($query)
     {
         $today = now()->toDateString();
+
         return $query->approved()
             ->where(function ($q) use ($today) {
                 $q->whereNull('start_date')->orWhereDate('start_date', '<=', $today);
@@ -70,13 +71,16 @@ class Campaign extends Model
     public function getCtrAttribute(): float
     {
         $views = $this->views_count;
-        if ($views === 0) return 0.0;
+        if ($views === 0) {
+            return 0.0;
+        }
+
         return round(($this->clicks_count / $views) * 100, 2);
     }
 
     public function getMediaUrlAttribute(): string
     {
-        if (!$this->media_path) {
+        if (! $this->media_path) {
             return asset('assets/images/banner_braderparts.png');
         }
         if (str_starts_with($this->media_path, 'http')) {
@@ -85,7 +89,8 @@ class Campaign extends Model
         if (str_starts_with($this->media_path, 'assets/')) {
             return asset($this->media_path);
         }
-        return asset('storage/' . $this->media_path);
+
+        return asset('storage/'.$this->media_path);
     }
 
     public function getThumbnailUrlAttribute(): string
@@ -97,7 +102,8 @@ class Campaign extends Model
             if (str_starts_with($this->thumbnail_path, 'assets/')) {
                 return asset($this->thumbnail_path);
             }
-            return asset('storage/' . $this->thumbnail_path);
+
+            return asset('storage/'.$this->thumbnail_path);
         }
 
         if ($this->media_type === 'image') {
@@ -107,9 +113,9 @@ class Campaign extends Model
         if ($this->media_path) {
             $base = pathinfo($this->media_path, PATHINFO_FILENAME);
             $dir = pathinfo($this->media_path, PATHINFO_DIRNAME);
-            $thumb = ($dir === '.' ? '' : $dir . '/') . $base . '_thumb.jpg';
-            if (file_exists(public_path('storage/' . $thumb))) {
-                return asset('storage/' . $thumb);
+            $thumb = ($dir === '.' ? '' : $dir.'/').$base.'_thumb.jpg';
+            if (file_exists(public_path('storage/'.$thumb))) {
+                return asset('storage/'.$thumb);
             }
         }
 

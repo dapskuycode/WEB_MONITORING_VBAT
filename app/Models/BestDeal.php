@@ -32,6 +32,7 @@ class BestDeal extends Model
     public function scopeActive($query)
     {
         $now = now();
+
         return $query->where('is_active', true)
             ->where(function ($q) use ($now) {
                 $q->whereNull('start_at')->orWhere('start_at', '<=', $now);

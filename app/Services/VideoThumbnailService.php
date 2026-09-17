@@ -6,25 +6,25 @@ class VideoThumbnailService
 {
     /**
      * Generate a thumbnail for a video stored in storage/app/public/.
-     * 
-     * @param string $relativeMediaPath e.g. 'campaigns/hero/abc.mp4'
+     *
+     * @param  string  $relativeMediaPath  e.g. 'campaigns/hero/abc.mp4'
      * @return string|null Relative thumbnail path e.g. 'campaigns/hero/abc_thumb.jpg'
      */
     public static function generateThumbnail(string $relativeMediaPath): ?string
     {
-        $fullPath = storage_path('app/public/' . $relativeMediaPath);
-        if (!file_exists($fullPath)) {
+        $fullPath = storage_path('app/public/'.$relativeMediaPath);
+        if (! file_exists($fullPath)) {
             $fullPath = public_path($relativeMediaPath);
         }
 
-        if (!file_exists($fullPath)) {
+        if (! file_exists($fullPath)) {
             return null;
         }
 
         $base = pathinfo($relativeMediaPath, PATHINFO_FILENAME);
         $dir = pathinfo($relativeMediaPath, PATHINFO_DIRNAME);
-        $thumbRelative = ($dir === '.' ? '' : $dir . '/') . $base . '_thumb.jpg';
-        $thumbFullPath = storage_path('app/public/' . $thumbRelative);
+        $thumbRelative = ($dir === '.' ? '' : $dir.'/').$base.'_thumb.jpg';
+        $thumbFullPath = storage_path('app/public/'.$thumbRelative);
 
         // Run python cv2 frame extractor
         $script = <<<PYTHON
@@ -44,7 +44,7 @@ if ret:
 cap.release()
 PYTHON;
 
-        $output = @shell_exec("python3 -c " . escapeshellarg($script));
+        $output = @shell_exec('python3 -c '.escapeshellarg($script));
 
         if ($output && str_contains($output, 'SUCCESS') && file_exists($thumbFullPath)) {
             return $thumbRelative;

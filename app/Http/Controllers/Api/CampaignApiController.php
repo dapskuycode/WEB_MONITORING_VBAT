@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\BestDeal;
 use App\Models\Campaign;
 use App\Models\DiscountEvent;
+use App\Models\Sponsor;
 use App\Models\SponsorProduct;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class CampaignApiController extends Controller
 {
@@ -44,9 +44,9 @@ class CampaignApiController extends Controller
      */
     public function getBrandPartners(): JsonResponse
     {
-        $sponsors = \App\Models\Sponsor::with(['products' => function ($q) {
-                $q->where('is_active', true);
-            }])
+        $sponsors = Sponsor::with(['products' => function ($q) {
+            $q->where('is_active', true);
+        }])
             ->where('is_active', true)
             ->get()
             ->sortBy(function ($s) {
@@ -56,14 +56,15 @@ class CampaignApiController extends Controller
                     'silver' => 3,
                     'partner' => 4,
                 ];
+
                 return $tierRanks[strtolower($s->tier ?? 'partner')] ?? 5;
             })
             ->values()
             ->map(function ($s) {
                 $tierUpper = strtoupper($s->tier ?? 'PARTNER');
                 $logo = $s->logo_path;
-                if ($logo && !str_starts_with($logo, 'http') && !str_starts_with($logo, 'assets/')) {
-                    $logo = url('api/v1/storage/' . $logo);
+                if ($logo && ! str_starts_with($logo, 'http') && ! str_starts_with($logo, 'assets/')) {
+                    $logo = url('api/v1/storage/'.$logo);
                 }
 
                 return [
@@ -71,7 +72,7 @@ class CampaignApiController extends Controller
                     'name' => $s->name,
                     'slug' => $s->slug,
                     'tier' => $tierUpper,
-                    'tier_label' => match($tierUpper) {
+                    'tier_label' => match ($tierUpper) {
                         'PLATINUM' => 'PLATINUM SPONSOR',
                         'GOLD' => 'GOLD SPONSOR',
                         'SILVER' => 'SILVER SPONSOR',
@@ -84,9 +85,10 @@ class CampaignApiController extends Controller
                     'verified' => true,
                     'products' => $s->products->map(function ($p) use ($s) {
                         $image = $p->image_path;
-                        if ($image && !str_starts_with($image, 'http') && !str_starts_with($image, 'assets/')) {
-                            $image = url('api/v1/storage/' . $image);
+                        if ($image && ! str_starts_with($image, 'http') && ! str_starts_with($image, 'assets/')) {
+                            $image = url('api/v1/storage/'.$image);
                         }
+
                         return [
                             'id' => $p->id,
                             'name' => $p->name,
@@ -243,8 +245,8 @@ class CampaignApiController extends Controller
             }
 
             $image = $p->image_path;
-            if ($image && !str_starts_with($image, 'http') && !str_starts_with($image, 'assets/')) {
-                $image = url('api/v1/storage/' . $image);
+            if ($image && ! str_starts_with($image, 'http') && ! str_starts_with($image, 'assets/')) {
+                $image = url('api/v1/storage/'.$image);
             }
 
             $badgeText = isset($p->pivot) && isset($p->pivot->badge_text) ? $p->pivot->badge_text : 'BEST DEAL';
@@ -288,8 +290,8 @@ class CampaignApiController extends Controller
     private function formatCampaignPayload(Campaign $c): array
     {
         $mediaPath = $c->media_path;
-        if ($mediaPath && !str_starts_with($mediaPath, 'http') && !str_starts_with($mediaPath, 'assets/')) {
-            $mediaPath = url('api/v1/storage/' . $mediaPath);
+        if ($mediaPath && ! str_starts_with($mediaPath, 'http') && ! str_starts_with($mediaPath, 'assets/')) {
+            $mediaPath = url('api/v1/storage/'.$mediaPath);
         }
 
         $sponsorName = $c->sponsor ? $c->sponsor->name : 'Sponsor';

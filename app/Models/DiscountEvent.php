@@ -33,9 +33,9 @@ class DiscountEvent extends Model
     public function scopeActive($query)
     {
         $now = now();
+
         return $query->where('is_active', true)
             ->where('start_at', '<=', $now)
             ->where('end_at', '>=', $now);
     }
 }
-

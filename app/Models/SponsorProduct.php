@@ -57,6 +57,7 @@ class SponsorProduct extends Model
     public function getHeatIndexAttribute(): float
     {
         $wishlistCount = $this->wishlists()->count();
+
         return round(($this->click_count * 0.5) + ($this->view_count * 0.2) + ($wishlistCount * 0.3), 2);
     }
 
@@ -74,5 +75,3 @@ class SponsorProduct extends Model
             ->withTimestamps();
     }
 }
-
-
