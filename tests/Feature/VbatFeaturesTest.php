@@ -98,7 +98,9 @@ class VbatFeaturesTest extends TestCase
 
         $sponsor->update(['user_id' => $sponsorUser->id]);
 
-        $this->actingAs($sponsorUser)->get('/sponsor/campaigns')->assertOk();
+        $this->actingAs($sponsorUser)->get('/sponsor/dashboard')->assertOk();
+        $this->actingAs($sponsorUser)->get('/sponsor/campaigns/hero')->assertOk();
+        $this->actingAs($sponsorUser)->get('/sponsor/campaigns')->assertRedirect(route('sponsor.campaigns.hero'));
     }
 
     public function test_sponsor_cannot_access_admin_panels(): void
