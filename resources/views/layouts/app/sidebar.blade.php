@@ -6,7 +6,7 @@
     <body class="min-h-screen bg-white dark:bg-zinc-800">
         <flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
             <flux:sidebar.header>
-                <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
+                <x-app-logo :sidebar="true" href="{{ auth()->user()->isSponsor() ? route('sponsor.dashboard') : route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
@@ -43,10 +43,13 @@
                 </flux:sidebar.group>
                 @endif
 
-                @if(auth()->user()->isSponsor() || auth()->user()->isSuperAdmin())
+                @if(auth()->user()->isSponsor())
                 <flux:sidebar.group :heading="__('Portal Mitra Sponsor')" class="grid">
                     <flux:sidebar.item icon="presentation-chart-line" :href="route('sponsor.dashboard')" :current="request()->routeIs('sponsor.dashboard')" wire:navigate>
                         {{ __('Dashboard Sponsor') }}
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="shopping-bag" :href="route('sponsor.products')" :current="request()->routeIs('sponsor.products')" wire:navigate>
+                        {{ __('Katalog Produk Saya') }}
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="photo" :href="route('sponsor.campaigns.hero')" :current="request()->routeIs('sponsor.campaigns.hero')" wire:navigate>
                         {{ __('Ajukan Hero Slide') }}

@@ -41,7 +41,9 @@ new class extends Component
 
     public function loadData()
     {
-        $this->sponsors = Sponsor::orderBy('name')->get();
+        $this->sponsors = Sponsor::orderByRaw("CASE WHEN LOWER(slug) = 'quantum' OR LOWER(name) = 'quantum' THEN 0 ELSE 1 END")
+            ->orderBy('name')
+            ->get();
 
         $query = SponsorProduct::with('sponsor')->latest();
 
@@ -72,7 +74,8 @@ new class extends Component
     public function openCreateModal()
     {
         $this->reset(['editingId', 'name', 'description', 'price', 'discount_price', 'imageFile', 'image_url', 'existing_image', 'shopee_url', 'tokopedia_url']);
-        $this->sponsor_id = $this->sponsors->first()?->id ?? '';
+        $quantum = Sponsor::where('slug', 'quantum')->orWhere('name', 'Quantum')->first();
+        $this->sponsor_id = $quantum ? $quantum->id : ($this->sponsors->first()?->id ?? '');
         $this->is_featured = false;
         $this->is_active = true;
         $this->order = 0;
@@ -349,9 +352,11 @@ new class extends Component
                     <div>
                         <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Mitra Sponsor *</label>
                         <select wire:model="sponsor_id" class="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white">
-                            <option value="">-- Pilih Mitra Sponsor --</option>
+                            <option value="">-- Pilih Mitra Sponsor / Toko --</option>
                             @foreach($sponsors as $sp)
-                                <option value="{{ $sp->id }}">{{ $sp->name }} ({{ strtoupper($sp->tier) }})</option>
+                                <option value="{{ $sp->id }}">
+                                    {{ $sp->name }} @if(strtolower($sp->slug) === 'quantum' || strtolower($sp->name) === 'quantum') ★ (Toko Resmi Admin - Quantum) @else ({{ strtoupper($sp->tier) }}) @endif
+                                </option>
                             @endforeach
                         </select>
                         @error('sponsor_id') <span class="text-xs text-red-500">{{ $message }}</span> @enderror

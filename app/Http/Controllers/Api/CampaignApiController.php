@@ -187,6 +187,87 @@ class CampaignApiController extends Controller
     }
 
     /**
+     * Mengambil seluruh katalog produk part & suku cadang dari semua mitra sponsor.
+     * Digunakan untuk pencarian live dan katalog toko utama.
+     */
+    public function getAllProducts(): JsonResponse
+    {
+        $activeEvent = DiscountEvent::active()->with('products')->latest()->first();
+        $hasActiveEvent = $activeEvent !== null;
+        $eventProductIds = $hasActiveEvent ? $activeEvent->products->pluck('id')->toArray() : [];
+
+        $rawProducts = SponsorProduct::with('sponsor')
+            ->where('is_active', true)
+            ->latest()
+            ->get();
+
+        $products = $rawProducts->map(function ($p) use ($hasActiveEvent, $activeEvent, $eventProductIds) {
+            $basePrice = (float) $p->price;
+            $isDiscountedByEvent = $hasActiveEvent && in_array($p->id, $eventProductIds);
+
+            if ($isDiscountedByEvent) {
+                if ($activeEvent->discount_type === 'percentage') {
+                    $discountRate = (float) $activeEvent->discount_value;
+                    $discountPrice = round($basePrice * (1 - ($discountRate / 100)));
+                    $discountPercent = (int) round($discountRate);
+                } else {
+                    $discountPrice = max(0, $basePrice - (float) $activeEvent->discount_value);
+                    $discountPercent = $basePrice > 0 ? (int) round((($basePrice - $discountPrice) / $basePrice) * 100) : 0;
+                }
+            } else {
+                $discountPrice = (float) ($p->discount_price ?: $basePrice);
+                $discountPercent = ($basePrice > 0 && $discountPrice < $basePrice)
+                    ? (int) round((($basePrice - $discountPrice) / $basePrice) * 100)
+                    : 0;
+            }
+
+            $category = 'Tools';
+            if (str_contains($p->name, 'LCD')) {
+                $category = 'LCD';
+            } elseif (str_contains($p->name, 'Baterai')) {
+                $category = 'Baterai';
+            } elseif (str_contains($p->name, 'Konektor')) {
+                $category = 'Konektor Charging';
+            } elseif (str_contains($p->name, 'Lem') || str_contains($p->name, 'Kawat')) {
+                $category = 'Aksesoris';
+            }
+
+            $image = $p->image_path;
+            if ($image && ! str_starts_with($image, 'http') && ! str_starts_with($image, 'assets/')) {
+                $image = url('api/v1/storage/'.$image);
+            }
+
+            return [
+                'id' => $p->id,
+                'name' => $p->name,
+                'category' => $category,
+                'description' => $p->description,
+                'price' => $basePrice,
+                'discount_price' => $discountPrice,
+                'discount_percentage' => $discountPercent,
+                'is_event_discount' => $isDiscountedByEvent,
+                'badge' => $discountPercent > 0 ? "DISKON {$discountPercent}%" : ($p->is_featured ? 'UNGGULAN' : null),
+                'image' => $image,
+                'shopee_url' => $p->shopee_url,
+                'tokopedia_url' => $p->tokopedia_url,
+                'rating' => '4.9',
+                'sold' => '250+',
+                'sponsor' => [
+                    'id' => $p->sponsor?->id,
+                    'name' => $p->sponsor ? $p->sponsor->name : 'Mitra Resmi',
+                    'tier' => $p->sponsor ? $p->sponsor->tier : 'PARTNER',
+                ],
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'total_items' => $products->count(),
+            'data' => $products,
+        ]);
+    }
+
+    /**
      * Best Deal Catalog & Refaktorisasi Event Diskon Terpilih:
      * Mengambil produk dari program Best Deal aktif.
      * Hanya produk yang terpilih di Event Diskon aktif yang akan mendapatkan harga diskon!
@@ -208,9 +289,8 @@ class CampaignApiController extends Controller
             // Fallback jika belum ada program Best Deal spesifik
             $rawProducts = SponsorProduct::with('sponsor')
                 ->where('is_active', true)
-                ->where('is_featured', true)
                 ->orderBy('order')
-                ->take(50)
+                ->take(10)
                 ->get();
             $programTitle = 'BEST DEALS VBAT';
         }

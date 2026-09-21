@@ -42,9 +42,10 @@ Route::middleware(['auth'])->group(function () {
         Route::view('admin/notifications', 'pages.admin.notifications')->name('admin.notifications');
     });
 
-    // 2. Modul Sponsor (Hanya Mitra Sponsor & Super Admin)
-    Route::middleware(['role:sponsor,super_admin'])->group(function () {
+    // 2. Modul Sponsor (Mitra Sponsor, Super Admin, & Owner)
+    Route::middleware(['role:sponsor,super_admin,owner'])->group(function () {
         Route::view('sponsor/dashboard', 'pages.sponsor.dashboard')->name('sponsor.dashboard');
+        Route::view('sponsor/products', 'pages.sponsor.products')->name('sponsor.products');
         Route::view('sponsor/campaigns/hero', 'pages.sponsor.hero-slider')->name('sponsor.campaigns.hero');
         Route::view('sponsor/campaigns/horizontal', 'pages.sponsor.horizontal-slider')->name('sponsor.campaigns.horizontal');
         Route::view('sponsor/campaigns/card', 'pages.sponsor.card-slider')->name('sponsor.campaigns.card');

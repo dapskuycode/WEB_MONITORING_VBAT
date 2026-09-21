@@ -305,6 +305,23 @@ class LegacyDataSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'id' => 7,
+                'user_id' => 1,
+                'name' => 'Quantum',
+                'slug' => 'quantum',
+                'description' => 'Toko Resmi Quantum Tele - Penyedia resmi perlengkapan, modul pelatihan, dan suku cadang teknisi ponsel VBAT.',
+                'tier' => 'platinum',
+                'weight' => 10,
+                'logo_path' => 'assets/images/vbat_logo.png',
+                'website_url' => 'https://shopee.co.id',
+                'is_active' => true,
+                'contact_email' => 'admin@vbatponsel.com',
+                'phone' => '081234567899',
+                'whatsapp' => '6281234567899',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ];
 
         foreach ($defaultSponsors as $sponsor) {

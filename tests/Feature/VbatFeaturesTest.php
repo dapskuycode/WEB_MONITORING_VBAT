@@ -99,6 +99,7 @@ class VbatFeaturesTest extends TestCase
         $sponsor->update(['user_id' => $sponsorUser->id]);
 
         $this->actingAs($sponsorUser)->get('/sponsor/dashboard')->assertOk();
+        $this->actingAs($sponsorUser)->get('/sponsor/products')->assertOk();
         $this->actingAs($sponsorUser)->get('/sponsor/campaigns/hero')->assertOk();
         $this->actingAs($sponsorUser)->get('/sponsor/campaigns')->assertRedirect(route('sponsor.campaigns.hero'));
     }
@@ -131,5 +132,20 @@ class VbatFeaturesTest extends TestCase
         $this->actingAs($student)->get('/admin/products')->assertStatus(403);
         $this->actingAs($student)->get('/sponsor/campaigns')->assertStatus(403);
         $this->actingAs($student)->get('/dashboard')->assertStatus(403);
+    }
+
+    public function test_owner_can_access_admin_and_sponsor_panels(): void
+    {
+        $owner = User::create([
+            'name' => 'Owner VBAT',
+            'email' => 'owner_test@vbat.id',
+            'password' => 'password',
+            'role' => 'owner',
+        ]);
+
+        $this->actingAs($owner)->get('/dashboard')->assertOk();
+        $this->actingAs($owner)->get('/admin/sponsors')->assertOk();
+        $this->actingAs($owner)->get('/admin/products')->assertOk();
+        $this->actingAs($owner)->get('/sponsor/dashboard')->assertOk();
     }
 }

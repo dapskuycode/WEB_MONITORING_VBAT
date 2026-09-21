@@ -12,8 +12,10 @@ Route::prefix('v1')->group(function () {
     Route::get('/banners/hero', [CampaignApiController::class, 'getHeroSliders']);
     Route::get('/banners/shop-horizontal', [CampaignApiController::class, 'getShopHorizontalBanners']);
     Route::get('/banners/cards', [CampaignApiController::class, 'getCardSliders']);
+    Route::get('/banners/card', [CampaignApiController::class, 'getCardSliders']);
     Route::get('/banners/popup', [CampaignApiController::class, 'getPopupBanners']);
     Route::get('/sponsors/partners', [CampaignApiController::class, 'getBrandPartners']);
+    Route::get('/shop/products', [CampaignApiController::class, 'getAllProducts']);
     Route::get('/shop/best-deals', [CampaignApiController::class, 'getBestDeals']);
 
     // 2. Harga Dinamis & Event Diskon Global
