@@ -13,6 +13,7 @@ new class extends Component
     public $campaigns;
     public $sponsor;
     public $showModal = false;
+    public $showPreviewModal = false;
 
     public $title = '';
     public $media_type = 'image';
@@ -144,14 +145,22 @@ new class extends Component
 
     <!-- Panduan Spesifikasi Card Slider (Dark Styled) -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-xs">
-        <div class="flex items-start gap-3">
-            <div class="p-2 rounded-lg bg-teal-950/60 text-teal-400 border border-teal-900/50 shrink-0">
-                <flux:icon name="squares-2x2" class="w-4 h-4" />
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-start gap-3 min-w-0">
+                <div class="p-2 rounded-lg bg-teal-950/60 text-teal-400 border border-teal-900/50 shrink-0">
+                    <flux:icon name="squares-2x2" class="w-4 h-4" />
+                </div>
+                <div>
+                    <span class="font-bold text-white block">Ukuran Card Portrait (4:5 / 1:1)</span>
+                    <span class="text-zinc-400 text-[11px] leading-tight block mt-0.5">Rekomendasi 800 × 1000 px atau 800 × 800 px (JPG, PNG, WEBP).</span>
+                </div>
             </div>
-            <div>
-                <span class="font-bold text-white block">Ukuran Card Portrait (4:5 atau 1:1)</span>
-                <span class="text-zinc-400">Rekomendasi 800 × 1000 px atau 800 × 800 px (format JPG, PNG, WEBP).</span>
-            </div>
+            <button type="button" 
+                wire:click="$set('showPreviewModal', true)" 
+                class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-600/20 hover:bg-teal-600/30 text-teal-400 hover:text-teal-300 border border-teal-500/30 font-semibold text-xs transition duration-150 shadow-sm cursor-pointer active:scale-95">
+                <flux:icon name="eye" class="w-3.5 h-3.5" />
+                <span>Preview</span>
+            </button>
         </div>
         <div class="flex items-start gap-3">
             <div class="p-2 rounded-lg bg-emerald-950/60 text-emerald-400 border border-emerald-900/50 shrink-0">
@@ -280,7 +289,13 @@ new class extends Component
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-zinc-300 mb-1">Upload File Visual Card (Maks 20 MB)</label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-semibold text-zinc-300">Upload File Visual Card (Maks 20 MB)</label>
+                        <button type="button" wire:click="$set('showPreviewModal', true)" class="text-[11px] text-teal-400 hover:text-teal-300 flex items-center gap-1 font-medium transition cursor-pointer">
+                            <flux:icon name="eye" class="w-3.5 h-3.5" />
+                            <span>Preview Contoh</span>
+                        </button>
+                    </div>
                     <input type="file" wire:model="mediaFile" class="w-full text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-zinc-200 hover:file:bg-zinc-700" />
                     @error('mediaFile') <span class="text-xs text-rose-400">{{ $message }}</span> @enderror
 
@@ -314,6 +329,52 @@ new class extends Component
                     <button type="submit" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition" wire:loading.attr="disabled">Kirim Pengajuan</button>
                 </div>
             </form>
+        </div>
+    </div>
+    @endif
+
+    <!-- Modal Preview Mockup Tampilan Card Slider / Mosaic -->
+    @if($showPreviewModal)
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+         wire:keydown.escape="$set('showPreviewModal', false)">
+        <div class="bg-zinc-900 rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-zinc-800 space-y-4 max-h-[92vh] flex flex-col text-zinc-200">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="p-2 rounded-xl bg-teal-950/80 text-teal-400 border border-teal-900/60">
+                        <flux:icon name="device-phone-mobile" class="w-4 h-4" />
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-white">Contoh Tampilan Card Slider / Mosaic</h3>
+                        <p class="text-[11px] text-zinc-400">Posisi: Grid Rekomendasi Beranda (4:5 / 1:1)</p>
+                    </div>
+                </div>
+                <button type="button" wire:click="$set('showPreviewModal', false)" class="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-zinc-800 transition">
+                    <flux:icon name="x-mark" class="w-5 h-5" />
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto pr-1 space-y-3 text-center">
+                <div class="rounded-xl overflow-hidden border border-zinc-800 shadow-2xl bg-zinc-950 inline-block max-w-full">
+                    <img src="{{ asset('assets/images/previews/preview-card-slider.jpg') }}" 
+                         alt="Preview Card Slider di Aplikasi" 
+                         class="max-h-[60vh] w-auto mx-auto object-contain">
+                </div>
+                <div class="p-3 rounded-xl bg-teal-950/30 border border-teal-900/40 text-left text-xs text-teal-300 space-y-1">
+                    <div class="font-bold flex items-center gap-1.5 text-teal-400">
+                        <flux:icon name="information-circle" class="w-4 h-4 shrink-0" />
+                        <span>Panduan Rasio Portrait (4:5 / 1:1 / 800 × 1000 px)</span>
+                    </div>
+                    <p class="text-[11px] text-zinc-400 leading-relaxed">
+                        Area yang dikelilingi <strong class="text-rose-400 font-semibold">kotak merah</strong> di atas menunjukkan letak card promosi Anda pada kolom grid 'Rekomendasi Untukmu'.
+                    </p>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-zinc-800 flex justify-end shrink-0">
+                <button type="button" wire:click="$set('showPreviewModal', false)" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition">
+                    Tutup Preview
+                </button>
+            </div>
         </div>
     </div>
     @endif
