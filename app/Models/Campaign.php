@@ -53,12 +53,15 @@ class Campaign extends Model
      * @param  Builder<$this>  $query
      * @return Builder<$this>
      */
-    public function scopeApproved(Builder $query): Builder
+    public function scopePublished(Builder $query): Builder
     {
-        return $query->where('status', 'approved');
+        return $query->where('status', 'active');
     }
 
     /**
+     * Scope: campaign yang aktif saat ini (status=active DAN dalam rentang tanggal).
+     * Digunakan oleh endpoint publik Flutter.
+     *
      * @param  Builder<$this>  $query
      * @return Builder<$this>
      */
@@ -66,13 +69,24 @@ class Campaign extends Model
     {
         $today = now()->toDateString();
 
-        return $query->approved()
+        return $query->published()
             ->where(function ($q) use ($today) {
                 $q->whereNull('start_date')->orWhereDate('start_date', '<=', $today);
             })
             ->where(function ($q) use ($today) {
                 $q->whereNull('end_date')->orWhereDate('end_date', '>=', $today);
             });
+    }
+
+    /**
+     * Scope: campaign dalam status draft/paused (untuk admin review).
+     *
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
+     */
+    public function scopeInDraft(Builder $query): Builder
+    {
+        return $query->whereIn('status', ['draft', 'paused']);
     }
 
     public function getViewsCountAttribute(): int
