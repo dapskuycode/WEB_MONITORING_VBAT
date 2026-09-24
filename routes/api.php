@@ -3,15 +3,25 @@
 use App\Http\Controllers\Api\CampaignApiController;
 use App\Http\Controllers\Api\DemographicApiController;
 use App\Http\Controllers\Api\EventApiController;
-use App\Http\Controllers\Api\NotificationApiController;
-use App\Http\Controllers\Api\TrackerApiController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\NotificationApiController;
+use App\Http\Controllers\Api\SponsorProductApiController;
+use App\Http\Controllers\Api\SponsorApiController;
+use App\Http\Controllers\Api\TrackerApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // 0. Health Check Endpoint
     Route::get('/health', [HealthController::class, 'index']);
-    // 1. Banners & Promosi Sponsor
+
+    // 1. Sponsor & Product CRUD (Phase 1 — REQ-SF-01, REQ-SF-02)
+    Route::get('/sponsors/tiers', [SponsorApiController::class, 'listTiers']);
+    Route::apiResource('sponsors', SponsorApiController::class);
+    Route::post('/sponsors/{id}/logo', [SponsorApiController::class, 'uploadLogo']);
+    Route::apiResource('products', SponsorProductApiController::class);
+    Route::post('/products/{id}/image', [SponsorProductApiController::class, 'uploadImage']);
+
+    // 2. Banners & Promosi Sponsor (Existing — REQ-SF-03)
     Route::get('/banners/hero', [CampaignApiController::class, 'getHeroSliders']);
     Route::get('/banners/shop-horizontal', [CampaignApiController::class, 'getShopHorizontalBanners']);
     Route::get('/banners/cards', [CampaignApiController::class, 'getCardSliders']);
