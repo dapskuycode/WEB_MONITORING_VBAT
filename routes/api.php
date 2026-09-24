@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\CampaignApiController;
 use App\Http\Controllers\Api\DemographicApiController;
 use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\LearningMaterialApiController;
 use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\SponsorProductApiController;
 use App\Http\Controllers\Api\SponsorApiController;
@@ -20,6 +21,14 @@ Route::prefix('v1')->group(function () {
     Route::post('/sponsors/{id}/logo', [SponsorApiController::class, 'uploadLogo']);
     Route::apiResource('products', SponsorProductApiController::class);
     Route::post('/products/{id}/image', [SponsorProductApiController::class, 'uploadImage']);
+
+    // 3. Learning Material CRUD (Phase 2 — REQ-LM-01, REQ-LM-02, REQ-LM-03)
+    Route::apiResource('learning-materials', LearningMaterialApiController::class);
+    Route::post('/learning-materials/{id}/thumbnail', [LearningMaterialApiController::class, 'uploadThumbnail']);
+    Route::post('/learning-materials/{id}/pdf', [LearningMaterialApiController::class, 'uploadPdf']);
+    Route::post('/learning-materials/validate-youtube', [LearningMaterialApiController::class, 'validateYouTube']);
+    Route::post('/learning-materials/{id}/progress', [LearningMaterialApiController::class, 'recordProgress']);
+    Route::get('/learning-materials/{id}/analytics', [LearningMaterialApiController::class, 'analytics']);
 
     // 2. Banners & Promosi Sponsor (Existing — REQ-SF-03)
     Route::get('/banners/hero', [CampaignApiController::class, 'getHeroSliders']);
