@@ -5,9 +5,12 @@ use App\Http\Controllers\Api\DemographicApiController;
 use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\TrackerApiController;
+use App\Http\Controllers\Api\HealthController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    // 0. Health Check Endpoint
+    Route::get('/health', [HealthController::class, 'index']);
     // 1. Banners & Promosi Sponsor
     Route::get('/banners/hero', [CampaignApiController::class, 'getHeroSliders']);
     Route::get('/banners/shop-horizontal', [CampaignApiController::class, 'getShopHorizontalBanners']);
