@@ -20,38 +20,24 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 - **Handoff Date:** 2026-09-24
 - **From:** Solkhan (Backend)
 - **To:** Daffa (Mobile) / QA / Stakeholder
-- **Scope:** Phase 5 (Analytics & Audit): analytics_events, notifications (user-facing), audit_logs, batch event ingestion, admin analytics dashboard, CSV export, user notification API, sponsor/campaign event triggers
-- **Commit Range:** `24a666f..57919ef` (3 commits on `dev/solkhan-room`)
-- **API Contract Version:** v1.6
+- **Scope:** Phase 6 (Auth Hardening & Deployment Prep): token issuance endpoint (`/auth/login`, `/auth/logout`, `/auth/me`), role & ownership enforcement tests, cross-user isolation tests, deployment guide
+- **Commit Range:** `6987bf9..4f00a50` (1 commit on `dev/solkhan-room`)
+- **API Contract Version:** v1.7
 
 ### Changes Summary
 
 | # | File / Endpoint | Change Type | Description |
 |---|-----------------|-------------|-------------|
-|| 1 | `app/Services/AnalyticsEventService.php` | NEW | Event logging, batch ingestion, dashboard aggregation, CSV export |
-|| 2 | `app/Services/NotificationService.php` | NEW | User notification CRUD (create, idempotent, list, mark read) |
-|| 3 | `app/Services/AuditLogService.php` | NEW | General audit log service (log model changes with old/new values) |
-|| 4 | `app/Models/AnalyticsEvent.php` | NEW | Analytics event model with scopes |
-|| 5 | `app/Models/Notification.php` | NEW | User-facing notification model (polymorphic recipient) |
-|| 6 | `app/Models/AuditLog.php` | NEW | General audit log model |
-|| 7 | `app/Http/Controllers/Api/EventApiController.php` | MODIFY | Added `ingestBatch()` for POST /api/v1/events |
-|| 8 | `app/Http/Controllers/Api/NotificationApiController.php` | MODIFY | Added user notification endpoints (list, mark read, mark all read) |
-|| 9 | `app/Http/Controllers/Api/AdminApiController.php` | MODIFY | Added analyticsDashboard() and analyticsExport() |
-|| 10 | `app/Models/SponsorProduct.php` | MODIFY | Added model event hooks (created/updated/deleted → admin notification) |
-|| 11 | `app/Models/Campaign.php` | MODIFY | Added model event hooks (created/updated → admin notification) |
-|| 12 | `database/migrations/2026_09_24_190000_create_analytics_events_table.php` | NEW | analytics_events table |
-|| 13 | `database/migrations/2026_09_24_191000_create_notifications_table.php` | NEW | notifications table (polymorphic recipient) |
-|| 14 | `database/migrations/2026_09_24_192000_create_audit_logs_table.php` | NEW | audit_logs table |
-|| 15 | `tests/Feature/Api/AnalyticsApiTest.php` | NEW | 9 analytics tests (ingestion, dashboard, export, auth) |
-|| 16 | `tests/Feature/Api/NotificationApiTest.php` | NEW | 7 notification tests (list, mark read, idempotent, auth) |
+| 1 | `app/Http/Controllers/Api/AuthApiController.php` | NEW | Login (token issuance), logout (revoke), me (profile) |
+| 2 | `tests/Feature/Api/AuthApiTest.php` | NEW | 10 auth tests (login, logout, me, role matrix, cross-user) |
+| 3 | `DEPLOYMENT_GUIDE.md` | NEW | Staging/production deployment, rollback, smoke tests |
+| 4 | `routes/api.php` | MODIFY | Added `/auth/login`, `/auth/logout`, `/auth/me` routes |
 
 ### Database Changes
 
 | # | Migration | Table | Change |
 |---|-----------|-------|--------|
-| 1 | `2026_09_24_190000_create_analytics_events` | `analytics_events` | NEW — event_type, actor_id, session_id, target_type, target_id, context, ip, user_agent |
-| 2 | `2026_09_24_191000_create_notifications` | `notifications` | NEW — polymorphic recipient (recipient_type/recipient_id), type, title, body, deep_link, data, is_read, read_at |
-| 3 | `2026_09_24_192000_create_audit_logs` | `audit_logs` | NEW — actor_type, actor_id, action, auditable_type, auditable_id, old_values, new_values, ip, user_agent |
+| — | — | — | No new migrations in Phase 6 (uses existing `personal_access_tokens` from Phase 4) |
 
 ### Environment Variables Added
 
@@ -74,37 +60,38 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 
 ### Tests
 
-- [x] `php artisan test` — all 112 passing (364 assertions, 9413ms)
-- [x] Feature tests for new endpoints (9 analytics + 7 notification + 11 admin + 10 placement + 11 learning material tests)
+- [x] `php artisan test` — all 122 passing (394 assertions, 10287ms)
+- [x] Feature tests for new endpoints (10 auth + 9 analytics + 7 notification + 11 admin + 10 placement + 11 learning material tests)
 - [ ] Migration rollback tested (or limitation noted)
 - [x] Sanctum auth integration verified (`auth:sanctum` + `role:super_admin` middleware)
 - [x] Event triggers verified (SponsorProduct & Campaign model hooks fire admin notifications)
+- [x] Role matrix tested: student blocked from admin, sponsor blocked from analytics
+- [x] Cross-user access tested: User A cannot access User B notifications
 
 ### Evidence
 
 | # | Evidence | Format | Status |
 |---|----------|--------|--------|
-| 1 | Event ingestion | `POST /api/v1/events` | ✅ Batch ingestion (up to 100 events) |
-| 2 | Analytics dashboard | `GET /api/v1/admin/analytics/dashboard` | ✅ Admin-only with date filters |
-| 3 | Analytics export | `GET /api/v1/admin/analytics/export` | ✅ CSV export |
-| 4 | User notifications | `GET /api/v1/user/notifications` | ✅ User-only, paginated |
-| 5 | Mark notification read | `POST /api/v1/user/notifications/{id}/read` | ✅ Ownership enforced |
-| 6 | Mark all read | `POST /api/v1/user/notifications/read-all` | ✅ User-scoped |
-| 7 | Sponsor product triggers | `SponsorProduct` model events | ✅ Fires admin notifications |
-| 8 | Campaign triggers | `Campaign` model events | ✅ Fires admin notifications |
-| 9 | `php artisan test` output | Terminal | ✅ 112/112 Passed |
+| 1 | Auth login | `POST /api/v1/auth/login` | ✅ Returns Bearer token |
+| 2 | Auth logout | `POST /api/v1/auth/logout` | ✅ Revokes token |
+| 3 | Auth profile | `GET /api/v1/auth/me` | ✅ Returns authenticated user |
+| 4 | Role matrix | `role:super_admin` middleware | ✅ Student/sponsor blocked |
+| 5 | Cross-user isolation | `Notification` scoping | ✅ User A cannot read User B |
+| 6 | Deployment guide | `DEPLOYMENT_GUIDE.md` | ✅ Staging/prod/rollback procedures |
+| 7 | `php artisan test` output | Terminal | ✅ 122/122 Passed |
 
 ### Known Blockers / Limitations
 
-1. Admin endpoints require authentication via Sanctum token — token issuance endpoint not yet built (mobile team must integrate directly or use Tinker for testing).
-2. Analytics dashboard uses computed aggregation (not materialized views) — may need optimization for high-volume data.
-3. No retention/cleanup policy yet for `analytics_events` — consider scheduled pruning job.
+1. Analytics dashboard uses computed aggregation (not materialized views) — may need optimization for high-volume data.
+2. No retention/cleanup policy yet for `analytics_events` — consider scheduled pruning job.
+3. Push notification FCM integration not yet built (requires Firebase project setup).
+4. Registration endpoint not yet built — users must be created via seeder or admin panel.
 
 ### Next Actions
 
-1. Phase 6: Mobile integration & final polish (token issuance endpoint, push notification FCM)
-2. Mobile team (Daffa) to verify analytics event ingestion and user notification endpoints
-3. QA to test event trigger workflows on staging
+1. Deploy to staging and run smoke tests
+2. Mobile team (Daffa) to integrate with `/api/v1/auth/login` for token issuance
+3. Set up FCM for push notifications
 4. Consider analytics retention policy (auto-cleanup old events)
 
 ### Sign-off
@@ -124,7 +111,8 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 | 3 | 2026-09-24 | Phase 2 (Learning Material API) | `1921482..c144a35` | ✅ Signed off |
 | 4 | 2026-09-24 | Phase 3 (Placement & Probabilistic Selection) | `494faae..ad9a254` | ✅ Signed off |
 | 5 | 2026-09-24 | Phase 4 (Admin Override & Notification System) | `50ce409..24a666f` | ✅ Signed off |
-| 6 | 2026-09-24 | Phase 5 (Analytics & Audit) | `76fdf7d..57919ef` | ⏳ Pending sign-off |
+| 6 | 2026-09-24 | Phase 5 (Analytics & Audit) | `76fdf7d..57919ef` | ✅ Signed off |
+| 7 | 2026-09-24 | Phase 6 (Auth Hardening & Deployment Prep) | `6987bf9..4f00a50` | ⏳ Pending sign-off |
 
 ---
 

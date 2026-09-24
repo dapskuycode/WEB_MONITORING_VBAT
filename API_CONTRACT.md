@@ -1,4 +1,4 @@
-# 📡 VBAT-WEBSITE API Contract v1.6
+# 📡 VBAT-WEBSITE API Contract v1.7
 
 > **Project:** VBAT-PONSEL Backend
 > **Maintainer:** Solkhan (mohamadsolkhannawawi)
@@ -157,6 +157,33 @@ Serves file from storage with explicit CORS headers.
 ---
 
 ## 3. Auth-Required Endpoints
+
+### 3.0 Authentication (Phase 6 / TASK-BE-06)
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST   | `/api/v1/auth/login` | Issue Bearer token (email + password) | public |
+| POST   | `/api/v1/auth/logout` | Revoke current token | `auth:sanctum` |
+| GET    | `/api/v1/auth/me` | Get authenticated user profile | `auth:sanctum` |
+
+**Login request body:**
+```json
+{ "email": "user@example.com", "password": "secret" }
+```
+
+**Login response:**
+```json
+{
+  "success": true,
+  "data": {
+    "user": { "id": 1, "name": "User", "email": "user@example.com", "role": "student" },
+    "token": "1|plainTextSanctumToken...",
+    "type": "Bearer"
+  }
+}
+```
+
+> Invalid credentials → `422` with `errors.email`. Missing/expired token → `401`.
 
 ### 3.1 Demographics
 
@@ -340,6 +367,7 @@ Response: `{ "success": true, "data": { "ingested": 1 } }`
 | v1.4    | 2026-09-24 | `/api/v1/placements/{type}`, `/api/v1/placements/best-deal` | Probabilistic placement selection + best_deal override (REQ-SF-03) |
 | v1.5    | 2026-09-24 | `/api/v1/admin/notifications`, `/api/v1/admin/sponsors/{id}/benefit-overrides`, `/api/v1/admin/sponsors/{id}/tier`, `/api/v1/admin/campaigns/{id}`, `/api/v1/admin/products/{id}`, `/api/v1/admin/best-deals`, `/api/v1/admin/audit-logs` | Admin Override & Notification System (REQ-ADM-02) |
 | v1.6    | 2026-09-24 | `/api/v1/events`, `/api/v1/user/notifications`, `/api/v1/admin/analytics/dashboard`, `/api/v1/admin/analytics/export` | Analytics event ingestion, user notifications, admin dashboard, CSV export (REQ-ANA-01/02) |
+| v1.7    | 2026-09-24 | `/api/v1/auth/login`, `/api/v1/auth/logout`, `/api/v1/auth/me` | Auth token issuance, logout, profile — Sanctum Bearer tokens (TASK-BE-06) |
 
 ---
 
