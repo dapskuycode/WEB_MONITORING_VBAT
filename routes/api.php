@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AdminApiController;
 use App\Http\Controllers\Api\CampaignApiController;
 use App\Http\Controllers\Api\DemographicApiController;
 use App\Http\Controllers\Api\EventApiController;
@@ -38,9 +39,27 @@ Route::prefix('v1')->group(function () {
     Route::post('/placements/click', [PlacementApiController::class, 'logClick']);
 
     // Admin placement endpoints
-    Route::post('/admin/best-deals/select', [PlacementApiController::class, 'selectBestDeal']);
-    Route::delete('/admin/best-deals/{id}', [PlacementApiController::class, 'removeBestDeal']);
     Route::get('/admin/placement-configs', [PlacementApiController::class, 'listConfigs']);
+
+    // 7. Admin Override & Notification System (Phase 4 — REQ-ADM-02)
+    Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('admin')->group(function () {
+        Route::get('/notifications', [AdminApiController::class, 'notifications']);
+        Route::get('/notifications/unread-count', [AdminApiController::class, 'notifications']);
+        Route::post('/notifications/{id}/read', [AdminApiController::class, 'markNotificationRead']);
+        Route::post('/notifications/{id}/read-all', [AdminApiController::class, 'markAllNotificationsRead']);
+
+        Route::post('/sponsors/{sponsor}/benefit-overrides', [AdminApiController::class, 'overrideBenefit']);
+        Route::put('/sponsors/{sponsor}/tier', [AdminApiController::class, 'changeSponsorTier']);
+
+        Route::put('/campaigns/{campaign}', [AdminApiController::class, 'overrideCampaign']);
+        Route::delete('/products/{product}', [AdminApiController::class, 'deleteProduct']);
+
+        Route::get('/best-deals', [AdminApiController::class, 'listBestDeals']);
+        Route::post('/best-deals', [AdminApiController::class, 'createBestDeal']);
+        Route::delete('/best-deals/{bestDeal}', [AdminApiController::class, 'deleteBestDeal']);
+
+        Route::get('/audit-logs', [AdminApiController::class, 'auditLogs']);
+    });
 
     // 2. Banners & Promosi Sponsor (Existing — REQ-SF-03)
     Route::get('/banners/hero', [CampaignApiController::class, 'getHeroSliders']);

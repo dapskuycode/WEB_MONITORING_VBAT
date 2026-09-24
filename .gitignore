@@ -22,3 +22,7 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Internal planning and prompts
+/DEVELOPMENT_PLANNING.md
+/HERMES_PROMPT_SOLKHAN.md
