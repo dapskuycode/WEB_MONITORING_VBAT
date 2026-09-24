@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CampaignLog extends Model
 {
+    use HasFactory;
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -14,6 +17,8 @@ class CampaignLog extends Model
         'sponsor_product_id',
         'user_id',
         'event_type',
+        'placement_context',
+        'session_id',
         'ip_address',
         'user_agent',
         'created_at',

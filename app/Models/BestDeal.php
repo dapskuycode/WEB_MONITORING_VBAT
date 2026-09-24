@@ -3,11 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BestDeal extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'title',
         'description',
@@ -15,6 +19,9 @@ class BestDeal extends Model
         'start_at',
         'end_at',
         'is_active',
+        'selected_by',
+        'selection_type',
+        'sponsor_product_id',
     ];
 
     protected $casts = [
@@ -22,6 +29,22 @@ class BestDeal extends Model
         'end_at' => 'datetime',
         'is_active' => 'boolean',
     ];
+
+    /**
+     * @return BelongsTo<SponsorProduct, $this>
+     */
+    public function sponsorProduct(): BelongsTo
+    {
+        return $this->belongsTo(SponsorProduct::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function selector(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'selected_by');
+    }
 
     /**
      * @return BelongsToMany<SponsorProduct, $this>

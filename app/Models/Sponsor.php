@@ -89,6 +89,16 @@ class Sponsor extends Model
     }
 
     /**
+     * Alias for sponsorTier — used by eager loading (sponsor.tier).
+     *
+     * @return BelongsTo<SponsorTier, $this>
+     */
+    public function tier(): BelongsTo
+    {
+        return $this->sponsorTier();
+    }
+
+    /**
      * @return HasMany<SponsorBenefitOverride, $this>
      */
     public function benefitOverrides(): HasMany
