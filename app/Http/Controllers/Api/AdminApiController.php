@@ -112,6 +112,28 @@ class AdminApiController extends Controller
     // ─── Sponsor Override ────────────────────────────────────────
 
     /**
+     * Get unread notification count for badge/poll.
+     */
+    public function unreadCount(Request $request): JsonResponse
+    {
+        $adminId = $request->user()?->id;
+
+        $count = \App\Models\AdminNotification::query()
+            ->when($adminId, fn ($q) => $q->where(function ($sub) use ($adminId) {
+                $sub->whereNull('recipient_admin_id')
+                    ->orWhere('recipient_admin_id', $adminId);
+            }))
+            ->where('is_read', false)
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'data' => ['unread_count' => $count],
+            'message' => null,
+        ]);
+    }
+
+    /**
      * Override a benefit value for a specific sponsor.
      */
     public function overrideBenefit(Request $request, Sponsor $sponsor): JsonResponse

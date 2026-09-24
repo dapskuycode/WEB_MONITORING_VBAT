@@ -44,7 +44,7 @@ Route::prefix('v1')->group(function () {
     // 7. Admin Override & Notification System (Phase 4 — REQ-ADM-02)
     Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('admin')->group(function () {
         Route::get('/notifications', [AdminApiController::class, 'notifications']);
-        Route::get('/notifications/unread-count', [AdminApiController::class, 'notifications']);
+        Route::get('/notifications/unread-count', [AdminApiController::class, 'unreadCount']);
         Route::post('/notifications/{id}/read', [AdminApiController::class, 'markNotificationRead']);
         Route::post('/notifications/{id}/read-all', [AdminApiController::class, 'markAllNotificationsRead']);
 
