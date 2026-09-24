@@ -20,33 +20,34 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 - **Handoff Date:** 2026-09-24
 - **From:** Solkhan (Backend)
 - **To:** Daffa (Mobile) / QA / Stakeholder
-- **Scope:** Phase 3 (Placement & Probabilistic Selection): placement_configs, weighted random selection, daily limits, best_deal overrides, campaign log analytics
-- **Commit Range:** `1921482..ad9a254` (6 commits on `dev/solkhan-room`)
-- **API Contract Version:** v1.3
+- **Scope:** Phase 4 (Admin Override & Notification System): admin_notifications, admin_audit_logs, Sanctum auth, benefit overrides, tier changes, campaign overrides, product deletion, best-deal admin CRUD
+- **Commit Range:** `ad9a254..ccc4561` (2 commits on `dev/solkhan-room`)
+- **API Contract Version:** v1.5
 
 ### Changes Summary
 
 | # | File / Endpoint | Change Type | Description |
 |---|-----------------|-------------|-------------|
-| 1 | `app/Services/PlacementSelectionService.php` | NEW | Weighted random selection with tier probability blending + daily limit enforcement |
-| 2 | `app/Http/Controllers/Api/PlacementApiController.php` | NEW | Placement show/best-deal/click-track endpoints (7 routes) |
-| 3 | `app/Models/PlacementConfig.php` | NEW | Placement slot configuration model with active scope |
-| 4 | `database/migrations/2026_09_24_170000_create_placement_configs_and_update_best_deals.php` | NEW | placement_configs table + best_deals tier_id/weight/is_manual columns |
-| 5 | `app/Models/Sponsor.php` | MODIFY | Added `tier()` alias for `sponsorTier()` eager loading |
-| 6 | `app/Models/Campaign.php` | MODIFY | Added `HasFactory` trait |
-| 7 | `app/Models/CampaignLog.php` | MODIFY | Added `HasFactory` + `placement_context` fillable |
-| 8 | `app/Models/BestDeal.php` | MODIFY | Added `HasFactory` + `tier_id`, `weight`, `is_manual` fillable |
-| 9 | `database/factories/PlacementConfigFactory.php` | NEW | Placement config factory |
-| 10 | `database/factories/CampaignFactory.php` | NEW | Campaign factory |
-| 11 | `database/factories/CampaignLogFactory.php` | NEW | Campaign log factory |
-| 12 | `tests/Feature/Api/PlacementApiTest.php` | NEW | 10 placement tests (selection, limits, best_deal, analytics) |
+| 1 | `app/Http/Controllers/Api/AdminApiController.php` | NEW | Admin notifications, benefit overrides, tier changes, campaign overrides, product deletion, best-deal CRUD (12 routes) |
+| 2 | `app/Services/AdminNotificationService.php` | NEW | Notification create/list/mark-read/audit logging |
+| 3 | `app/Models/AdminNotification.php` | NEW | Admin notification model with scopes |
+| 4 | `app/Models/AdminAuditLog.php` | NEW | Audit log model for compliance |
+| 5 | `database/migrations/2026_09_24_180000_create_admin_notifications_and_audit_logs_tables.php` | NEW | admin_notifications + admin_audit_logs tables |
+| 6 | `database/migrations/2026_09_24_085227_create_personal_access_tokens_table.php` | NEW | Sanctum personal_access_tokens table |
+| 7 | `app/Models/User.php` | MODIFY | Added `HasApiTokens` trait (Sanctum) |
+| 8 | `database/factories/AdminNotificationFactory.php` | NEW | Admin notification factory |
+| 9 | `database/factories/AdminAuditLogFactory.php` | NEW | Admin audit log factory |
+| 10 | `database/factories/SponsorTierFactory.php` | NEW | Sponsor tier factory (for tests) |
+| 11 | `database/factories/UserFactory.php` | MODIFY | Added `role` field (default: student) |
+| 12 | `tests/Feature/Api/AdminApiTest.php` | NEW | 11 admin tests (notifications, overrides, tier, campaign, product, best-deal, audit) |
 
 ### Database Changes
 
 | # | Migration | Table | Change |
 |---|-----------|-------|--------|
-| 1 | `2026_09_24_170000_create_placement_configs_and_update_best_deals` | `placement_configs` | NEW — placement_type, slot_count, target_probability, max_daily_impressions |
-| 2 | `2026_09_24_170000_create_placement_configs_and_update_best_deals` | `best_deals` | MODIFY — added tier_id, weight, is_manual columns |
+| 1 | `2026_09_24_180000_create_admin_notifications_and_audit_logs` | `admin_notifications` | NEW — type, title, body, actor, target, metadata, deep_link, is_read, recipient_admin_id |
+| 2 | `2026_09_24_180000_create_admin_notifications_and_audit_logs` | `admin_audit_logs` | NEW — action, actor, target, before_state, after_state, reason, ip, user_agent |
+| 3 | `2026_09_24_085227_create_personal_access_tokens_table` | `personal_access_tokens` | NEW — Sanctum token storage |
 
 ### Environment Variables Added
 
@@ -69,36 +70,36 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 
 ### Tests
 
-- [x] `php artisan test` — all 84 passing (269 assertions, 8450ms)
-- [x] Feature tests for new endpoints (10 placement + 11 learning material tests)
+- [x] `php artisan test` — all 95 passing (315 assertions, 9018ms)
+- [x] Feature tests for new endpoints (11 admin + 10 placement + 11 learning material tests)
 - [ ] Migration rollback tested (or limitation noted)
-- [x] Seeder idempotency verified (SponsorTierSeeder re-runnable)
+- [x] Sanctum auth integration verified (`auth:sanctum` + `role:super_admin` middleware)
 
 ### Evidence
 
 | # | Evidence | Format | Status |
 |---|----------|--------|--------|
-| 1 | Placement routes | `route:list --path=api/v1/placements` | ✅ 7 routes |
-| 2 | Best deal endpoint | `GET /api/v1/placements/best-deal` | ✅ Implemented |
-| 3 | Probabilistic selection | `GET /api/v1/placements/{type}` | ✅ Weighted random + tier blending |
-| 4 | Daily limit enforcement | Service layer | ✅ Max daily impressions per sponsor |
-| 5 | Click tracking | `POST /api/v1/placements/track-click` | ✅ Campaign log created |
-| 6 | Analytics endpoint | `GET /api/v1/admin/placement-analytics` | ✅ Selection/click/impression stats |
-| 7 | `php artisan migrate:status` output | Terminal | ✅ 25/25 Ran |
-| 8 | `php artisan test` output | Terminal | ✅ 84/84 Passed |
+| 1 | Admin notification routes | `route:list --path=api/v1/admin/notifications` | ✅ 4 routes |
+| 2 | Admin override routes | `route:list --path=api/v1/admin/sponsors` | ✅ Benefit override + tier change |
+| 3 | Admin campaign override | `PUT /api/v1/admin/campaigns/{campaign}` | ✅ Status override |
+| 4 | Admin product deletion | `DELETE /api/v1/admin/products/{product}` | ✅ Soft delete |
+| 5 | Admin best-deal CRUD | `route:list --path=api/v1/admin/best-deals` | ✅ List + create + delete |
+| 6 | Audit log endpoint | `GET /api/v1/admin/audit-logs` | ✅ Paginated with filters |
+| 7 | Sanctum auth middleware | `auth:sanctum` + `role:super_admin` | ✅ All admin routes protected |
+| 8 | `php artisan test` output | Terminal | ✅ 95/95 Passed |
 
 ### Known Blockers / Limitations
 
-1. `.gitignore` and `package-lock.json` have incidental changes (prompt docs exclusion, name fix) — not committed yet.
+1. `.gitignore` has duplicate entries for `DEVELOPMENT_PLANNING.md` and `HERMES_PROMPT_SOLKHAN.md` (cleanup pending).
 2. Composer install timed out (exit 124) but vendor is intact and all tests pass.
-3. No Sanctum/auth integration yet — health & placement endpoints are intentionally public.
+3. Admin endpoints require authentication via Sanctum token — token issuance endpoint not yet built (mobile team must integrate directly or use Tinker for testing).
 
 ### Next Actions
 
-1. Phase 4: Admin Override & Notification System (REQ-ADM-02)
-2. Phase 5: Full Analytics Dashboard (REQ-ANA-01, REQ-ANA-02)
-3. Mobile team (Daffa) to verify placement endpoints from Flutter app
-4. QA to test probabilistic selection on staging with real data
+1. Phase 5: Full Analytics Dashboard (REQ-ANA-01, REQ-ANA-02)
+2. Mobile team (Daffa) to verify admin endpoints with Sanctum auth token
+3. QA to test admin override workflows on staging
+4. Build token issuance endpoint if needed for mobile admin login
 
 ### Sign-off
 
@@ -116,6 +117,7 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 | 2 | 2026-09-24 | Phase 1 (Sponsor CRUD) | `010daf5..8c9b15c` | ✅ Signed off |
 | 3 | 2026-09-24 | Phase 2 (Learning Material API) | `1921482..c144a35` | ✅ Signed off |
 | 4 | 2026-09-24 | Phase 3 (Placement & Probabilistic Selection) | `494faae..ad9a254` | ✅ Signed off |
+| 5 | 2026-09-24 | Phase 4 (Admin Override & Notification System) | `50ce409..ccc4561` | ⏳ Pending sign-off |
 
 ---
 

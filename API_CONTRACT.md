@@ -1,4 +1,4 @@
-# 📡 VBAT-WEBSITE API Contract v1.0
+# 📡 VBAT-WEBSITE API Contract v1.5
 
 > **Project:** VBAT-PONSEL Backend
 > **Maintainer:** Solkhan (mohamadsolkhannawawi)
@@ -57,7 +57,8 @@ HTTP status codes:
 
 - Public endpoints: no token required
 - Auth endpoints: `Authorization: Bearer <token>`
-- Token mechanism: Laravel Sanctum (to be fully configured in Phase 1 / TASK-BE-06)
+- Token mechanism: Laravel Sanctum (configured in Phase 4)
+- Admin endpoints: require `role:super_admin` (via `EnsureUserHasRole` middleware)
 - Ownership: server-side from `auth()->id()` — never from client body
 
 ### 1.4 Pagination
@@ -213,50 +214,68 @@ Serves file from storage with explicit CORS headers.
 
 ## 4. Admin Endpoints
 
-All admin endpoints are `role:admin` protected.
+All admin endpoints require `Authorization: Bearer <token>` + `role:super_admin`.
 
-### 4.1 Sponsor Management (Phase 4 / REQ-ADM-02)
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET    | `/api/v1/admin/sponsors` | List all sponsors |
-| POST   | `/api/v1/admin/sponsors` | Create sponsor account |
-| GET    | `/api/v1/admin/sponsors/{id}` | Sponsor detail |
-| PUT    | `/api/v1/admin/sponsors/{id}` | Edit sponsor / tier |
-| DELETE | `/api/v1/admin/sponsors/{id}` | Deactivate / delete sponsor |
-
-### 4.2 Tier & Benefit Management (Phase 2–4)
+### 4.1 Notifications (Phase 4 / REQ-ADM-02)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET    | `/api/v1/admin/tiers` | List sponsor tiers |
-| POST   | `/api/v1/admin/tiers` | Create tier |
-| PUT    | `/api/v1/admin/tiers/{id}` | Edit tier |
-| GET    | `/api/v1/admin/benefit-categories` | List benefit categories |
-| POST   | `/api/v1/admin/benefit-categories` | Create category |
-| PUT    | `/api/v1/admin/benefit-categories/{id}` | Edit category |
-| GET    | `/api/v1/admin/tier-benefits` | List default tier benefits |
-| PUT    | `/api/v1/admin/tier-benefits/{id}` | Update default value |
+| GET    | `/api/v1/admin/notifications` | List notifications (filter: `?unread_only=1`, `?type=`, `?per_page=`) |
+| GET    | `/api/v1/admin/notifications/unread-count` | Get unread count for badge |
+| POST   | `/api/v1/admin/notifications/{id}/read` | Mark single notification as read |
+| POST   | `/api/v1/admin/notifications/{id}/read-all` | Mark all unread as read |
 
-### 4.3 Product & Campaign Override (Phase 4)
+Response envelope includes `meta.unread_count`.
+
+### 4.2 Sponsor Override (Phase 4 / REQ-ADM-02)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET    | `/api/v1/admin/products` | List all products |
-| DELETE | `/api/v1/admin/products/{id}` | Admin delete product |
-| GET    | `/api/v1/admin/campaigns` | List all campaigns |
-| PUT    | `/api/v1/admin/campaigns/{id}` | Edit / pause / delete campaign |
-| POST   | `/api/v1/admin/sponsors/{id}/benefit-overrides` | Override sponsor benefit |
+| POST   | `/api/v1/admin/sponsors/{sponsor}/benefit-overrides` | Override sponsor benefit value |
+| PUT    | `/api/v1/admin/sponsors/{sponsor}/tier` | Change sponsor tier |
 
-### 4.4 Best Deal Management (Phase 3 / REQ-SF-03)
+**Benefit override request body:**
+```json
+{
+  "benefit_category_id": 1,
+  "value": "custom_value",
+  "label": "Custom Label",
+  "reason": "Override reason"
+}
+```
+
+**Tier change request body:**
+```json
+{
+  "tier_id": 2,
+  "reason": "Upgrade to gold"
+}
+```
+
+### 4.3 Campaign & Product Override (Phase 4 / REQ-ADM-02)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET    | `/api/v1/admin/best-deals` | List best deals |
-| POST   | `/api/v1/admin/best-deals` | Manual select products |
-| DELETE | `/api/v1/admin/best-deals/{id}` | Remove from best deal |
+| PUT    | `/api/v1/admin/campaigns/{campaign}` | Override campaign status (active/paused/deleted) |
+| DELETE | `/api/v1/admin/products/{product}` | Admin soft-delete any product |
 
-### 4.5 Analytics (Phase 5 / REQ-ANA-01)
+### 4.4 Best Deal Management (Phase 4 / REQ-ADM-02)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET    | `/api/v1/admin/best-deals` | List best deals (with sponsor, products) |
+| POST   | `/api/v1/admin/best-deals` | Manually select products for best deal |
+| DELETE | `/api/v1/admin/best-deals/{bestDeal}` | Remove from best deal |
+
+### 4.5 Audit Log (Phase 4 / REQ-ADM-02)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET    | `/api/v1/admin/audit-logs` | List audit logs (filter: `?action=`, `?target_type=`, `?target_id=`, `?per_page=`) |
+
+Every admin override action is automatically logged to `admin_audit_logs`.
+
+### 4.6 Analytics (Phase 5 / REQ-ANA-01)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -276,7 +295,7 @@ All admin endpoints are `role:admin` protected.
 | v1.2    | 2026-09-24 | `/api/v1/sponsors`, `/api/v1/products` | Sponsor & Product CRUD + tier system |
 | v1.3    | 2026-09-24 | `/api/v1/learning-materials` | Learning Material CRUD + YouTube validation + progress + analytics |
 | v1.4    | 2026-09-24 | `/api/v1/placements/{type}`, `/api/v1/placements/best-deal` | Probabilistic placement selection + best_deal override (REQ-SF-03) |
-| v1.5    | TBD | Admin sponsor/tier/benefit endpoints | Admin control plane (REQ-ADM-02) |
+| v1.5    | 2026-09-24 | `/api/v1/admin/notifications`, `/api/v1/admin/sponsors/{id}/benefit-overrides`, `/api/v1/admin/sponsors/{id}/tier`, `/api/v1/admin/campaigns/{id}`, `/api/v1/admin/products/{id}`, `/api/v1/admin/best-deals`, `/api/v1/admin/audit-logs` | Admin Override & Notification System (REQ-ADM-02) |
 | v1.6    | TBD | Analytics & notifications | Event ingestion & user notifications (REQ-ANA-01/02) |
 
 ---
