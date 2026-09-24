@@ -10,12 +10,20 @@ use App\Http\Controllers\Api\NotificationApiController;
 use App\Http\Controllers\Api\PlacementApiController;
 use App\Http\Controllers\Api\SponsorProductApiController;
 use App\Http\Controllers\Api\SponsorApiController;
+use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\TrackerApiController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // 0. Health Check Endpoint
     Route::get('/health', [HealthController::class, 'index']);
+
+    // Auth (Phase 6 — TASK-BE-06)
+    Route::post('/auth/login', [AuthApiController::class, 'login']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/auth/logout', [AuthApiController::class, 'logout']);
+        Route::get('/auth/me', [AuthApiController::class, 'me']);
+    });
 
     // 1. Sponsor & Product CRUD (Phase 1 — REQ-SF-01, REQ-SF-02)
     Route::get('/sponsors/tiers', [SponsorApiController::class, 'listTiers']);
