@@ -185,7 +185,23 @@ Serves file from storage with explicit CORS headers.
 
 > Sponsor endpoints are scoped to `auth()->user()->sponsor`.
 
-### 3.4 Wishlist
+### 3.4 Learning Materials (Phase 2)
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET    | `/api/v1/learning-materials` | List materials (published default) | optional |
+| POST   | `/api/v1/learning-materials` | Create material | auth |
+| GET    | `/api/v1/learning-materials/{id}` | Show material detail | optional |
+| PUT    | `/api/v1/learning-materials/{id}` | Update material | auth |
+| DELETE | `/api/v1/learning-materials/{id}` | Delete (soft) material | auth |
+| POST   | `/api/v1/learning-materials/{id}/thumbnail` | Upload thumbnail | auth |
+| POST   | `/api/v1/learning-materials/validate-youtube` | Validate YouTube URL + unlisted check | auth |
+| POST   | `/api/v1/learning-materials/{id}/progress` | Submit view progress | auth |
+| GET    | `/api/v1/learning-materials/{id}/analytics` | Get views & completion rate | admin |
+
+**Filters**: `lesson_id`, `material_type`, `status`, `is_required`, `search`, `sort_by`, `sort_direction`.
+
+### 3.5 Wishlist
 
 | Method | Endpoint | Description | Role |
 |--------|----------|-------------|------|
@@ -254,11 +270,12 @@ All admin endpoints are `role:admin` protected.
 | Version | Date | Endpoint / Change | Description |
 |---------|------|-------------------|-------------|
 | v1.0    | 2026-09-24 | Baseline | Existing endpoints documented |
-| v1.1    | TBD | `GET /api/v1/health` | Added health check endpoint |
-| v1.2    | TBD | `GET /feed/shop`, `GET /feed/home` | Cursor-based feed |
-| v1.3    | TBD | `GET /placements/{type}` | Placement selection |
-| v1.4    | TBD | Admin sponsor/tier/benefit endpoints | Admin control plane |
-| v1.5    | TBD | Analytics & notifications | Event ingestion & user notifications |
+| v1.1    | 2026-09-24 | `GET /api/v1/health` | Added health check endpoint |
+| v1.2    | 2026-09-24 | `/api/v1/sponsors`, `/api/v1/products` | Sponsor & Product CRUD + tier system |
+| v1.3    | 2026-09-24 | `/api/v1/learning-materials` | Learning Material CRUD + YouTube validation + progress + analytics |
+| v1.4    | TBD | `GET /placements/{type}` | Placement selection (REQ-SF-03) |
+| v1.5    | TBD | Admin sponsor/tier/benefit endpoints | Admin control plane (REQ-ADM-02) |
+| v1.6    | TBD | Analytics & notifications | Event ingestion & user notifications (REQ-ANA-01/02) |
 
 ---
 
