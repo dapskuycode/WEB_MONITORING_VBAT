@@ -131,9 +131,11 @@ Response:
 
 ### 2.4 Placement Endpoints (Phase 3 / REQ-SF-03)
 
-| Method | Endpoint | Description | Status |
-|--------|----------|-------------|--------|
-| GET    | `/api/v1/placements/{type}` | Probabilistic campaign selection for placement type | Planned |
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET    | `/api/v1/placements/{type}` | Probabilistic campaign selection for placement type (`hero_slider`, `card`, `popup`, `horizontal`) | public |
+| GET    | `/api/v1/placements/best-deal` | Best deal products (manual override + weighted selection) | public |
+| POST   | `/api/v1/placements/track-click` | Track click on placement (creates campaign log) | public |
 
 ### 2.5 Tracking
 
@@ -201,11 +203,11 @@ Serves file from storage with explicit CORS headers.
 
 **Filters**: `lesson_id`, `material_type`, `status`, `is_required`, `search`, `sort_by`, `sort_direction`.
 
-### 3.5 Wishlist
+### 3.5 Placements (Phase 3)
 
-| Method | Endpoint | Description | Role |
+| Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST   | `/api/v1/wishlist/toggle` | Toggle wishlist item | student |
+| GET    | `/api/v1/placements/{type}` | Probabilistic selection for placement slot (`hero_slider`, `card`, `popup`, `ho...[truncated]
 
 ---
 
@@ -273,7 +275,7 @@ All admin endpoints are `role:admin` protected.
 | v1.1    | 2026-09-24 | `GET /api/v1/health` | Added health check endpoint |
 | v1.2    | 2026-09-24 | `/api/v1/sponsors`, `/api/v1/products` | Sponsor & Product CRUD + tier system |
 | v1.3    | 2026-09-24 | `/api/v1/learning-materials` | Learning Material CRUD + YouTube validation + progress + analytics |
-| v1.4    | TBD | `GET /placements/{type}` | Placement selection (REQ-SF-03) |
+| v1.4    | 2026-09-24 | `/api/v1/placements/{type}`, `/api/v1/placements/best-deal` | Probabilistic placement selection + best_deal override (REQ-SF-03) |
 | v1.5    | TBD | Admin sponsor/tier/benefit endpoints | Admin control plane (REQ-ADM-02) |
 | v1.6    | TBD | Analytics & notifications | Event ingestion & user notifications (REQ-ANA-01/02) |
 
