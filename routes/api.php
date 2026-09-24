@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\PlacementApiController;
 use App\Http\Controllers\Api\SponsorProductApiController;
 use App\Http\Controllers\Api\SponsorApiController;
 use App\Http\Controllers\Api\AuthApiController;
+use App\Http\Controllers\Api\FeedApiController;
 use App\Http\Controllers\Api\TrackerApiController;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthApiController::class, 'logout']);
         Route::get('/auth/me', [AuthApiController::class, 'me']);
     });
+
+    // 1. Feed Dinamis & Infinite Scroll (Phase 7 — REQ-SF-01)
+    Route::get('/feed/shop', [FeedApiController::class, 'shop']);
+    Route::get('/feed/home', [FeedApiController::class, 'home']);
 
     // 1. Sponsor & Product CRUD (Phase 1 — REQ-SF-01, REQ-SF-02)
     Route::get('/sponsors/tiers', [SponsorApiController::class, 'listTiers']);

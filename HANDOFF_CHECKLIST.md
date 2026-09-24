@@ -20,65 +20,57 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 - **Handoff Date:** 2026-09-24
 - **From:** Solkhan (Backend)
 - **To:** Daffa (Mobile) / QA / Stakeholder
-- **Scope:** Phase 6 (Auth Hardening & Deployment Prep): token issuance endpoint (`/auth/login`, `/auth/logout`, `/auth/me`), role & ownership enforcement tests, cross-user isolation tests, deployment guide
-- **Commit Range:** `6987bf9..4f00a50` (1 commit on `dev/solkhan-room`)
-- **API Contract Version:** v1.7
+- **Scope:** Phase 7 (REQ-SF-01 Feed Dinamis & Infinite Scroll): `/feed/shop` (product-only feed), `/feed/home` (mixed product + learning material + banner), cursor pagination, in-memory content merge, banner insertion at configurable intervals via `feed_configs`
+- **Commit Range:** (see git log — current branch `feature/req-sf-01-feed` ahead of `dev/solkhan-room` by 1+ commits)
+- **API Contract Version:** v1.8
 
 ### Changes Summary
 
 | # | File / Endpoint | Change Type | Description |
 |---|-----------------|-------------|-------------|
-| 1 | `app/Http/Controllers/Api/AuthApiController.php` | NEW | Login (token issuance), logout (revoke), me (profile) |
-| 2 | `tests/Feature/Api/AuthApiTest.php` | NEW | 10 auth tests (login, logout, me, role matrix, cross-user) |
-| 3 | `DEPLOYMENT_GUIDE.md` | NEW | Staging/production deployment, rollback, smoke tests |
-| 4 | `routes/api.php` | MODIFY | Added `/auth/login`, `/auth/logout`, `/auth/me` routes |
+| 1 | `app/Services/FeedService.php` | NEW | Cursor pagination, in-memory merge (SQLite-safe), banner insertion |
+| 2 | `app/Http/Controllers/Api/FeedApiController.php` | NEW | `/feed/shop` (product-only), `/feed/home` (mixed) endpoints |
+| 3 | `app/Models/FeedConfig.php` | NEW | Eloquent model for `feed_configs` table |
+| 4 | `database/migrations/2026_09_24_194000_create_feed_configs_table.php` | NEW | `feed_configs` table (insertion_interval, banner_type, is_active) |
+| 5 | `database/seeders/FeedConfigSeeder.php` | NEW | Default configs (shop every 12, home every 12) |
+| 6 | `tests/Feature/Api/FeedApiTest.php` | NEW | 11 feature tests (shop, home, cursor, banners, filtering) |
+| 7 | `routes/api.php` | MODIFY | Added `/feed/shop`, `/feed/home` (public, no auth) |
 
 ### Database Changes
 
 | # | Migration | Table | Change |
 |---|-----------|-------|--------|
-| — | — | — | No new migrations in Phase 6 (uses existing `personal_access_tokens` from Phase 4) |
-
-### Environment Variables Added
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CORS_ALLOWED_ORIGINS` | `*` | Comma-separated allowed origins for CORS |
-| `API_VERSION` | `v1` | API version prefix |
-| `API_BASE_URL` | `http://localhost:8000/api/v1` | Base URL for mobile clients |
-| `MOBILE_MIN_VERSION` | `1.0.0` | Minimum mobile app version |
-| `FEATURE_BULK_UPLOAD_XLSX` | `true` | Feature flag for XLSX bulk upload |
-| `FEATURE_YOUTUBE_UNLISTED_ONLY` | `true` | Feature flag for YouTube unlisted restriction |
+| 1 | `2026_09_24_194000_create_feed_configs_table` | `feed_configs` | NEW table: `feed_type`, `insertion_interval`, `banner_type`, `is_active` |
 
 ### API Contract Changes
 
-- [ ] New endpoint(s) documented in `API_CONTRACT.md`
-- [ ] Modified endpoint(s) documented with version bump
-- [ ] Deprecated endpoint(s) marked with removal date
-- [ ] Response format unchanged (backward-compatible)
-- [ ] Breaking change ↔ mobile team notified
+- [x] New endpoint(s) documented in `API_CONTRACT.md` (v1.8)
+- [x] Modified endpoint(s) documented with version bump
+- [ ] Deprecated endpoint(s) marked with removal date (N/A)
+- [x] Response format follows existing envelope
+- [x] Cursor pagination consistent with `meta.next_cursor` convention
 
 ### Tests
 
-- [x] `php artisan test` — all 122 passing (394 assertions, 10287ms)
-- [x] Feature tests for new endpoints (10 auth + 9 analytics + 7 notification + 11 admin + 10 placement + 11 learning material tests)
-- [ ] Migration rollback tested (or limitation noted)
-- [x] Sanctum auth integration verified (`auth:sanctum` + `role:super_admin` middleware)
-- [x] Event triggers verified (SponsorProduct & Campaign model hooks fire admin notifications)
-- [x] Role matrix tested: student blocked from admin, sponsor blocked from analytics
-- [x] Cross-user access tested: User A cannot access User B notifications
+- [x] `php artisan test` — all 133 passing (480 assertions, 10862ms)
+- [x] Feature tests for new endpoints: 11 FeedApiTest tests
+- [x] Feed cursor pagination tested (next_cursor, has_more)
+- [x] Banner insertion at interval tested
+- [x] Filtering: inactive products / draft materials / inactive sponsors excluded
+- [x] Mixed content merge (products + materials) tested
+- [x] Per-page validation (1..50) tested
 
 ### Evidence
 
 | # | Evidence | Format | Status |
 |---|----------|--------|--------|
-| 1 | Auth login | `POST /api/v1/auth/login` | ✅ Returns Bearer token |
-| 2 | Auth logout | `POST /api/v1/auth/logout` | ✅ Revokes token |
-| 3 | Auth profile | `GET /api/v1/auth/me` | ✅ Returns authenticated user |
-| 4 | Role matrix | `role:super_admin` middleware | ✅ Student/sponsor blocked |
-| 5 | Cross-user isolation | `Notification` scoping | ✅ User A cannot read User B |
-| 6 | Deployment guide | `DEPLOYMENT_GUIDE.md` | ✅ Staging/prod/rollback procedures |
-| 7 | `php artisan test` output | Terminal | ✅ 122/122 Passed |
+| 1 | Shop feed | `GET /api/v1/feed/shop` | ✅ Returns active products + banners |
+| 2 | Home feed | `GET /api/v1/feed/home` | ✅ Returns mixed products + materials + banners |
+| 3 | Cursor pagination | `?cursor=...&per_page=N` | ✅ next_cursor, has_more correct |
+| 4 | Banner insertion | `feed_configs.insertion_interval` | ✅ Inserted every N items |
+| 5 | Filtering | inactive products/materials/sponsors | ✅ Excluded from feed |
+| 6 | Per-page validation | `?per_page=0` or `?per_page=999` | ✅ Rejected (400) |
+| 7 | `php artisan test` output | Terminal | ✅ 133/133 Passed |
 
 ### Known Blockers / Limitations
 
@@ -86,13 +78,15 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 2. No retention/cleanup policy yet for `analytics_events` — consider scheduled pruning job.
 3. Push notification FCM integration not yet built (requires Firebase project setup).
 4. Registration endpoint not yet built — users must be created via seeder or admin panel.
+5. Feed uses in-memory merge (not SQL UNION) to support SQLite — for very large datasets, consider switching to PostgreSQL with materialized views or denormalized `feed_items` table.
 
 ### Next Actions
 
 1. Deploy to staging and run smoke tests
-2. Mobile team (Daffa) to integrate with `/api/v1/auth/login` for token issuance
+2. Mobile team (Daffa) to integrate `/feed/shop` and `/feed/home` with cursor pagination
 3. Set up FCM for push notifications
 4. Consider analytics retention policy (auto-cleanup old events)
+5. Consider migrating feed to PostgreSQL if dataset grows > 100K items
 
 ### Sign-off
 
@@ -113,6 +107,7 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 | 5 | 2026-09-24 | Phase 4 (Admin Override & Notification System) | `50ce409..24a666f` | ✅ Signed off |
 | 6 | 2026-09-24 | Phase 5 (Analytics & Audit) | `76fdf7d..57919ef` | ✅ Signed off |
 | 7 | 2026-09-24 | Phase 6 (Auth Hardening & Deployment Prep) | `6987bf9..4f00a50` | ⏳ Pending sign-off |
+| 8 | 2026-09-24 | Phase 7 (REQ-SF-01 Feed Dinamis & Infinite Scroll) | (see `feature/req-sf-01-feed` branch) | ⏳ Pending sign-off |
 
 ---
 

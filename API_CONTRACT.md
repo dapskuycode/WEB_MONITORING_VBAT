@@ -1,4 +1,4 @@
-# 📡 VBAT-WEBSITE API Contract v1.7
+# 📡 VBAT-WEBSITE API Contract v1.8
 
 > **Project:** VBAT-PONSEL Backend
 > **Maintainer:** Solkhan (mohamadsolkhannawawi)
@@ -123,12 +123,86 @@ Response:
 | GET    | `/api/v1/shop/best-deals` | Best deal products | Existing |
 | GET    | `/api/v1/shop/events/active` | Active global discount event | Existing |
 
-### 2.3 Feed Endpoints (Phase 3 / REQ-SF-01)
+### 2.3 Feed Endpoints (Phase 7 / REQ-SF-01)
 
 | Method | Endpoint | Description | Status |
 |--------|----------|-------------|--------|
-| GET    | `/api/v1/feed/shop` | Product-only feed with cursor pagination | Planned |
-| GET    | `/api/v1/feed/home` | Mixed feed (product + material + sponsor_card) | Planned |
+| GET    | `/api/v1/feed/shop` | Product-only feed with cursor pagination + banner insertion | Implemented |
+| GET    | `/api/v1/feed/home` | Mixed feed (product + material + banner) with cursor pagination | Implemented |
+
+**Query params:** `?cursor=<base64>&per_page=<1..50>` (default 20)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "items": [
+      {
+        "content_type": "product",
+        "id": 42,
+        "name": "Product Name",
+        "description": "...",
+        "price": 99000.0,
+        "discount_price": 79000.0,
+        "image": "https://.../product.png",
+        "shopee_url": "https://shopee.co.id/...",
+        "tokopedia_url": "https://tokopedia.com/...",
+        "rating": "4.9",
+        "sold": "250+",
+        "sponsor": { "id": 3, "name": "Sponsor", "tier": "GOLD" },
+        "created_at": "2026-09-24T10:00:00+07:00"
+      },
+      {
+        "content_type": "material",
+        "id": 7,
+        "title": "Learning Material Title",
+        "description": "...",
+        "material_type": "video",
+        "thumbnail": "https://.../thumb.png",
+        "youtube_url": "https://youtube.com/watch?v=...",
+        "duration_seconds": 600,
+        "created_at": "2026-09-24T09:00:00+07:00"
+      },
+      {
+        "content_type": "banner",
+        "id": 5,
+        "title": "Promo Banner",
+        "description": "...",
+        "media_path": "https://.../banner.png",
+        "media_type": "image",
+        "target_url": "https://...",
+        "placement_type": "hero_slider",
+        "sponsor_name": "Sponsor",
+        "tier": "GOLD"
+      }
+    ]
+  },
+  "meta": {
+    "next_cursor": "eyJjcmVhdGVkX2F0IjoiMjAyNi0wOS0yNCAxMDowMDowMCIsImlkIjo0Mn0=",
+    "has_more": true,
+    "per_page": 20
+  },
+  "message": null
+}
+```
+
+> **Behavior:**
+> - Home feed merges active products + published learning materials, sorted by `created_at DESC, id DESC` (in-memory merge — no SQL UNION, SQLite-safe).
+> - Banners from `campaigns` (placement_type matching feed) are inserted every N items (configurable via `feed_configs.insertion_interval`, default 12).
+> - Inactive products, draft materials, and inactive sponsors are filtered out.
+> - `next_cursor` is `null` on the last page.
+
+### 2.3.1 Feed Config (admin-tunable)
+
+`feed_configs` table controls banner insertion per feed type:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `feed_type` | string | `shop` or `home` |
+| `insertion_interval` | int | Insert a banner after every N items (default 12) |
+| `banner_type` | string | Placement type to pull banners from (`shop_horizontal`, `hero_slider`, ...) |
+| `is_active` | bool | Only one active config per feed type |
 
 ### 2.4 Placement Endpoints (Phase 3 / REQ-SF-03)
 
@@ -368,6 +442,7 @@ Response: `{ "success": true, "data": { "ingested": 1 } }`
 | v1.5    | 2026-09-24 | `/api/v1/admin/notifications`, `/api/v1/admin/sponsors/{id}/benefit-overrides`, `/api/v1/admin/sponsors/{id}/tier`, `/api/v1/admin/campaigns/{id}`, `/api/v1/admin/products/{id}`, `/api/v1/admin/best-deals`, `/api/v1/admin/audit-logs` | Admin Override & Notification System (REQ-ADM-02) |
 | v1.6    | 2026-09-24 | `/api/v1/events`, `/api/v1/user/notifications`, `/api/v1/admin/analytics/dashboard`, `/api/v1/admin/analytics/export` | Analytics event ingestion, user notifications, admin dashboard, CSV export (REQ-ANA-01/02) |
 | v1.7    | 2026-09-24 | `/api/v1/auth/login`, `/api/v1/auth/logout`, `/api/v1/auth/me` | Auth token issuance, logout, profile — Sanctum Bearer tokens (TASK-BE-06) |
+| v1.8    | 2026-09-24 | `/api/v1/feed/shop`, `/api/v1/feed/home` | Dynamic feed with cursor pagination, mixed content merge, banner insertion (REQ-SF-01) |
 
 ---
 
