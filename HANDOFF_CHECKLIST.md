@@ -20,34 +20,38 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 - **Handoff Date:** 2026-09-24
 - **From:** Solkhan (Backend)
 - **To:** Daffa (Mobile) / QA / Stakeholder
-- **Scope:** Phase 4 (Admin Override & Notification System): admin_notifications, admin_audit_logs, Sanctum auth, benefit overrides, tier changes, campaign overrides, product deletion, best-deal admin CRUD
-- **Commit Range:** `ad9a254..ccc4561` (2 commits on `dev/solkhan-room`)
-- **API Contract Version:** v1.5
+- **Scope:** Phase 5 (Analytics & Audit): analytics_events, notifications (user-facing), audit_logs, batch event ingestion, admin analytics dashboard, CSV export, user notification API, sponsor/campaign event triggers
+- **Commit Range:** `24a666f..57919ef` (3 commits on `dev/solkhan-room`)
+- **API Contract Version:** v1.6
 
 ### Changes Summary
 
 | # | File / Endpoint | Change Type | Description |
 |---|-----------------|-------------|-------------|
-| 1 | `app/Http/Controllers/Api/AdminApiController.php` | NEW | Admin notifications, benefit overrides, tier changes, campaign overrides, product deletion, best-deal CRUD (12 routes) |
-| 2 | `app/Services/AdminNotificationService.php` | NEW | Notification create/list/mark-read/audit logging |
-| 3 | `app/Models/AdminNotification.php` | NEW | Admin notification model with scopes |
-| 4 | `app/Models/AdminAuditLog.php` | NEW | Audit log model for compliance |
-| 5 | `database/migrations/2026_09_24_180000_create_admin_notifications_and_audit_logs_tables.php` | NEW | admin_notifications + admin_audit_logs tables |
-| 6 | `database/migrations/2026_09_24_085227_create_personal_access_tokens_table.php` | NEW | Sanctum personal_access_tokens table |
-| 7 | `app/Models/User.php` | MODIFY | Added `HasApiTokens` trait (Sanctum) |
-| 8 | `database/factories/AdminNotificationFactory.php` | NEW | Admin notification factory |
-| 9 | `database/factories/AdminAuditLogFactory.php` | NEW | Admin audit log factory |
-| 10 | `database/factories/SponsorTierFactory.php` | NEW | Sponsor tier factory (for tests) |
-| 11 | `database/factories/UserFactory.php` | MODIFY | Added `role` field (default: student) |
-| 12 | `tests/Feature/Api/AdminApiTest.php` | NEW | 11 admin tests (notifications, overrides, tier, campaign, product, best-deal, audit) |
+|| 1 | `app/Services/AnalyticsEventService.php` | NEW | Event logging, batch ingestion, dashboard aggregation, CSV export |
+|| 2 | `app/Services/NotificationService.php` | NEW | User notification CRUD (create, idempotent, list, mark read) |
+|| 3 | `app/Services/AuditLogService.php` | NEW | General audit log service (log model changes with old/new values) |
+|| 4 | `app/Models/AnalyticsEvent.php` | NEW | Analytics event model with scopes |
+|| 5 | `app/Models/Notification.php` | NEW | User-facing notification model (polymorphic recipient) |
+|| 6 | `app/Models/AuditLog.php` | NEW | General audit log model |
+|| 7 | `app/Http/Controllers/Api/EventApiController.php` | MODIFY | Added `ingestBatch()` for POST /api/v1/events |
+|| 8 | `app/Http/Controllers/Api/NotificationApiController.php` | MODIFY | Added user notification endpoints (list, mark read, mark all read) |
+|| 9 | `app/Http/Controllers/Api/AdminApiController.php` | MODIFY | Added analyticsDashboard() and analyticsExport() |
+|| 10 | `app/Models/SponsorProduct.php` | MODIFY | Added model event hooks (created/updated/deleted → admin notification) |
+|| 11 | `app/Models/Campaign.php` | MODIFY | Added model event hooks (created/updated → admin notification) |
+|| 12 | `database/migrations/2026_09_24_190000_create_analytics_events_table.php` | NEW | analytics_events table |
+|| 13 | `database/migrations/2026_09_24_191000_create_notifications_table.php` | NEW | notifications table (polymorphic recipient) |
+|| 14 | `database/migrations/2026_09_24_192000_create_audit_logs_table.php` | NEW | audit_logs table |
+|| 15 | `tests/Feature/Api/AnalyticsApiTest.php` | NEW | 9 analytics tests (ingestion, dashboard, export, auth) |
+|| 16 | `tests/Feature/Api/NotificationApiTest.php` | NEW | 7 notification tests (list, mark read, idempotent, auth) |
 
 ### Database Changes
 
 | # | Migration | Table | Change |
 |---|-----------|-------|--------|
-| 1 | `2026_09_24_180000_create_admin_notifications_and_audit_logs` | `admin_notifications` | NEW — type, title, body, actor, target, metadata, deep_link, is_read, recipient_admin_id |
-| 2 | `2026_09_24_180000_create_admin_notifications_and_audit_logs` | `admin_audit_logs` | NEW — action, actor, target, before_state, after_state, reason, ip, user_agent |
-| 3 | `2026_09_24_085227_create_personal_access_tokens_table` | `personal_access_tokens` | NEW — Sanctum token storage |
+| 1 | `2026_09_24_190000_create_analytics_events` | `analytics_events` | NEW — event_type, actor_id, session_id, target_type, target_id, context, ip, user_agent |
+| 2 | `2026_09_24_191000_create_notifications` | `notifications` | NEW — polymorphic recipient (recipient_type/recipient_id), type, title, body, deep_link, data, is_read, read_at |
+| 3 | `2026_09_24_192000_create_audit_logs` | `audit_logs` | NEW — actor_type, actor_id, action, auditable_type, auditable_id, old_values, new_values, ip, user_agent |
 
 ### Environment Variables Added
 
@@ -70,36 +74,38 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 
 ### Tests
 
-- [x] `php artisan test` — all 95 passing (315 assertions, 9018ms)
-- [x] Feature tests for new endpoints (11 admin + 10 placement + 11 learning material tests)
+- [x] `php artisan test` — all 112 passing (364 assertions, 9413ms)
+- [x] Feature tests for new endpoints (9 analytics + 7 notification + 11 admin + 10 placement + 11 learning material tests)
 - [ ] Migration rollback tested (or limitation noted)
 - [x] Sanctum auth integration verified (`auth:sanctum` + `role:super_admin` middleware)
+- [x] Event triggers verified (SponsorProduct & Campaign model hooks fire admin notifications)
 
 ### Evidence
 
 | # | Evidence | Format | Status |
 |---|----------|--------|--------|
-| 1 | Admin notification routes | `route:list --path=api/v1/admin/notifications` | ✅ 4 routes |
-| 2 | Admin override routes | `route:list --path=api/v1/admin/sponsors` | ✅ Benefit override + tier change |
-| 3 | Admin campaign override | `PUT /api/v1/admin/campaigns/{campaign}` | ✅ Status override |
-| 4 | Admin product deletion | `DELETE /api/v1/admin/products/{product}` | ✅ Soft delete |
-| 5 | Admin best-deal CRUD | `route:list --path=api/v1/admin/best-deals` | ✅ List + create + delete |
-| 6 | Audit log endpoint | `GET /api/v1/admin/audit-logs` | ✅ Paginated with filters |
-| 7 | Sanctum auth middleware | `auth:sanctum` + `role:super_admin` | ✅ All admin routes protected |
-| 8 | `php artisan test` output | Terminal | ✅ 95/95 Passed |
+| 1 | Event ingestion | `POST /api/v1/events` | ✅ Batch ingestion (up to 100 events) |
+| 2 | Analytics dashboard | `GET /api/v1/admin/analytics/dashboard` | ✅ Admin-only with date filters |
+| 3 | Analytics export | `GET /api/v1/admin/analytics/export` | ✅ CSV export |
+| 4 | User notifications | `GET /api/v1/user/notifications` | ✅ User-only, paginated |
+| 5 | Mark notification read | `POST /api/v1/user/notifications/{id}/read` | ✅ Ownership enforced |
+| 6 | Mark all read | `POST /api/v1/user/notifications/read-all` | ✅ User-scoped |
+| 7 | Sponsor product triggers | `SponsorProduct` model events | ✅ Fires admin notifications |
+| 8 | Campaign triggers | `Campaign` model events | ✅ Fires admin notifications |
+| 9 | `php artisan test` output | Terminal | ✅ 112/112 Passed |
 
 ### Known Blockers / Limitations
 
-1. `.gitignore` has duplicate entries for `DEVELOPMENT_PLANNING.md` and `HERMES_PROMPT_SOLKHAN.md` (cleanup pending).
-2. Composer install timed out (exit 124) but vendor is intact and all tests pass.
-3. Admin endpoints require authentication via Sanctum token — token issuance endpoint not yet built (mobile team must integrate directly or use Tinker for testing).
+1. Admin endpoints require authentication via Sanctum token — token issuance endpoint not yet built (mobile team must integrate directly or use Tinker for testing).
+2. Analytics dashboard uses computed aggregation (not materialized views) — may need optimization for high-volume data.
+3. No retention/cleanup policy yet for `analytics_events` — consider scheduled pruning job.
 
 ### Next Actions
 
-1. Phase 5: Full Analytics Dashboard (REQ-ANA-01, REQ-ANA-02)
-2. Mobile team (Daffa) to verify admin endpoints with Sanctum auth token
-3. QA to test admin override workflows on staging
-4. Build token issuance endpoint if needed for mobile admin login
+1. Phase 6: Mobile integration & final polish (token issuance endpoint, push notification FCM)
+2. Mobile team (Daffa) to verify analytics event ingestion and user notification endpoints
+3. QA to test event trigger workflows on staging
+4. Consider analytics retention policy (auto-cleanup old events)
 
 ### Sign-off
 
@@ -117,7 +123,8 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 | 2 | 2026-09-24 | Phase 1 (Sponsor CRUD) | `010daf5..8c9b15c` | ✅ Signed off |
 | 3 | 2026-09-24 | Phase 2 (Learning Material API) | `1921482..c144a35` | ✅ Signed off |
 | 4 | 2026-09-24 | Phase 3 (Placement & Probabilistic Selection) | `494faae..ad9a254` | ✅ Signed off |
-| 5 | 2026-09-24 | Phase 4 (Admin Override & Notification System) | `50ce409..ccc4561` | ⏳ Pending sign-off |
+| 5 | 2026-09-24 | Phase 4 (Admin Override & Notification System) | `50ce409..24a666f` | ✅ Signed off |
+| 6 | 2026-09-24 | Phase 5 (Analytics & Audit) | `76fdf7d..57919ef` | ⏳ Pending sign-off |
 
 ---
 

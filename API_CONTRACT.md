@@ -1,4 +1,4 @@
-# 📡 VBAT-WEBSITE API Contract v1.5
+# 📡 VBAT-WEBSITE API Contract v1.6
 
 > **Project:** VBAT-PONSEL Backend
 > **Maintainer:** Solkhan (mohamadsolkhannawawi)
@@ -142,9 +142,9 @@ Response:
 
 | Method | Endpoint | Description | Status |
 |--------|----------|-------------|--------|
-| POST   | `/api/v1/track` | Log impression/click/wishlist event | Existing |
-| POST   | `/api/v1/track/outbound` | Log outbound marketplace click | Phase 2 |
-| POST   | `/api/v1/events` | Batch analytics event ingestion | Phase 5 |
+|| POST   | `/api/v1/track` | Log impression/click/wishlist event | Existing |
+|| POST   | `/api/v1/track/outbound` | Log outbound marketplace click | Phase 2 |
+|| POST   | `/api/v1/events` | Batch analytics event ingestion (max 100 per request, `auth:sanctum`) | Phase 5 |
 
 ### 2.6 Storage Proxy
 
@@ -166,12 +166,13 @@ Serves file from storage with explicit CORS headers.
 | GET    | `/api/v1/regions/provinces` | List provinces | Existing |
 | GET    | `/api/v1/regions/cities/{provinceId}` | Cities by province | Existing |
 
-### 3.2 Notifications (Phase 5 / REQ-ANA-02)
+### 3.2 User Notifications (Phase 5 / REQ-ANA-02)
 
 | Method | Endpoint | Description | Status |
 |--------|----------|-------------|--------|
-| GET    | `/api/v1/notifications` | List own notifications | Planned |
-| POST   | `/api/v1/notifications/{id}/read` | Mark notification read | Planned |
+| GET    | `/api/v1/user/notifications` | List own notifications (paginated, filter: `?unread_only=1`) | Phase 5 |
+| POST   | `/api/v1/user/notifications/{id}/read` | Mark notification read (ownership enforced) | Phase 5 |
+| POST   | `/api/v1/user/notifications/read-all` | Mark all own notifications as read | Phase 5 |
 
 ### 3.3 Sponsor Portal (Phase 2–4)
 
@@ -279,10 +280,52 @@ Every admin override action is automatically logged to `admin_audit_logs`.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET    | `/api/v1/admin/analytics/dashboard` | Aggregated dashboard metrics |
-| GET    | `/api/v1/admin/analytics/export` | CSV/XLSX export |
+| GET    | `/api/v1/admin/analytics/dashboard` | Aggregated dashboard metrics (filter: `?start_date=`, `?end_date=`, `?event_type=`) |
+| GET    | `/api/v1/admin/analytics/export` | CSV export of events (filter: `?start_date=`, `?end_date=`, `?event_type=`) |
 
 > Sponsor role is **blocked** from all analytics endpoints (D-004).
+
+**Dashboard response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totals": {
+      "events": 1234,
+      "unique_actors": 87,
+      "unique_sessions": 142
+    },
+    "by_event_type": [
+      { "event_type": "impression", "count": 800 },
+      { "event_type": "click",      "count": 320 }
+    ],
+    "by_target_type": [
+      { "target_type": "product", "count": 540 },
+      { "target_type": "campaign", "count": 200 }
+    ],
+    "daily_trend": [
+      { "date": "2026-09-20", "count": 120 },
+      { "date": "2026-09-21", "count": 145 }
+    ]
+  }
+}
+```
+
+**Batch event ingestion (`POST /api/v1/events`):**
+```json
+{
+  "events": [
+    {
+      "event_type": "impression",
+      "session_id": "abc123",
+      "target_type": "product",
+      "target_id": 42,
+      "context": { "placement": "hero_slider" }
+    }
+  ]
+}
+```
+Response: `{ "success": true, "data": { "ingested": 1 } }`
 
 ---
 
@@ -296,7 +339,7 @@ Every admin override action is automatically logged to `admin_audit_logs`.
 | v1.3    | 2026-09-24 | `/api/v1/learning-materials` | Learning Material CRUD + YouTube validation + progress + analytics |
 | v1.4    | 2026-09-24 | `/api/v1/placements/{type}`, `/api/v1/placements/best-deal` | Probabilistic placement selection + best_deal override (REQ-SF-03) |
 | v1.5    | 2026-09-24 | `/api/v1/admin/notifications`, `/api/v1/admin/sponsors/{id}/benefit-overrides`, `/api/v1/admin/sponsors/{id}/tier`, `/api/v1/admin/campaigns/{id}`, `/api/v1/admin/products/{id}`, `/api/v1/admin/best-deals`, `/api/v1/admin/audit-logs` | Admin Override & Notification System (REQ-ADM-02) |
-| v1.6    | TBD | Analytics & notifications | Event ingestion & user notifications (REQ-ANA-01/02) |
+| v1.6    | 2026-09-24 | `/api/v1/events`, `/api/v1/user/notifications`, `/api/v1/admin/analytics/dashboard`, `/api/v1/admin/analytics/export` | Analytics event ingestion, user notifications, admin dashboard, CSV export (REQ-ANA-01/02) |
 
 ---
 
