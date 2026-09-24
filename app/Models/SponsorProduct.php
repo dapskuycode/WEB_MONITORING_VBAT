@@ -13,6 +13,48 @@ class SponsorProduct extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected static function booted(): void
+    {
+        // REQ-ANA-02: fire admin notification when sponsor creates/updates/deletes a product
+        static::created(function (self $product) {
+            app(\App\Services\AdminNotificationService::class)->notify(
+                type: 'product.uploaded',
+                title: 'New product uploaded',
+                body: "Sponsor product #{$product->id} ({$product->name}) was uploaded.",
+                actorType: 'sponsor',
+                actorId: $product->sponsor_id,
+                targetType: 'product',
+                targetId: $product->id,
+                deepLink: "/admin/products/{$product->id}",
+            );
+        });
+
+        static::updated(function (self $product) {
+            app(\App\Services\AdminNotificationService::class)->notify(
+                type: 'product.edited',
+                title: 'Product edited',
+                body: "Sponsor product #{$product->id} was edited.",
+                actorType: 'sponsor',
+                actorId: $product->sponsor_id,
+                targetType: 'product',
+                targetId: $product->id,
+                deepLink: "/admin/products/{$product->id}",
+            );
+        });
+
+        static::deleted(function (self $product) {
+            app(\App\Services\AdminNotificationService::class)->notify(
+                type: 'product.deleted',
+                title: 'Product deleted',
+                body: "Sponsor product #{$product->id} was deleted.",
+                actorType: 'sponsor',
+                actorId: $product->sponsor_id,
+                targetType: 'product',
+                targetId: $product->id,
+            );
+        });
+    }
+
     protected $fillable = [
         'sponsor_id',
         'name',

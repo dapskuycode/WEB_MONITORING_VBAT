@@ -11,6 +11,37 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Campaign extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        // REQ-ANA-02: fire admin notification when sponsor creates/edits a campaign
+        static::created(function (self $campaign) {
+            app(\App\Services\AdminNotificationService::class)->notify(
+                type: 'campaign.created',
+                title: 'New campaign created',
+                body: "Campaign #{$campaign->id} ({$campaign->title}) was created.",
+                actorType: 'sponsor',
+                actorId: $campaign->sponsor_id,
+                targetType: 'campaign',
+                targetId: $campaign->id,
+                deepLink: "/admin/campaigns/{$campaign->id}",
+            );
+        });
+
+        static::updated(function (self $campaign) {
+            app(\App\Services\AdminNotificationService::class)->notify(
+                type: 'campaign.edited',
+                title: 'Campaign edited',
+                body: "Campaign #{$campaign->id} ({$campaign->title}) was edited.",
+                actorType: 'sponsor',
+                actorId: $campaign->sponsor_id,
+                targetType: 'campaign',
+                targetId: $campaign->id,
+                deepLink: "/admin/campaigns/{$campaign->id}",
+            );
+        });
+    }
+
     protected $fillable = [
         'sponsor_id',
         'title',
