@@ -20,32 +20,33 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 - **Handoff Date:** 2026-09-24
 - **From:** Solkhan (Backend)
 - **To:** Daffa (Mobile) / QA / Stakeholder
-- **Scope:** Phase 2 (Learning Material API): Learning material CRUD, YouTube URL validation, progress tracking, analytics, search/filter
-- **Commit Range:** `1921482..c144a35` (2 commits on `dev/solkhan-room`)
-- **API Contract Version:** v1.2
+- **Scope:** Phase 3 (Placement & Probabilistic Selection): placement_configs, weighted random selection, daily limits, best_deal overrides, campaign log analytics
+- **Commit Range:** `1921482..ad9a254` (6 commits on `dev/solkhan-room`)
+- **API Contract Version:** v1.3
 
 ### Changes Summary
 
 | # | File / Endpoint | Change Type | Description |
 |---|-----------------|-------------|-------------|
-| 1 | `app/Http/Controllers/Api/LearningMaterialApiController.php` | NEW | Learning material CRUD + YouTube validation + progress + analytics |
-| 2 | `routes/api.php` | MODIFY | Added 10 learning-material routes (resource + extras) |
-| 3 | `app/Models/LearningMaterial.php` | NEW | Polymorphic material model with YouTube helper methods |
-| 4 | `app/Models/LearningMaterialView.php` | NEW | Per-user view & progress tracking |
-| 5 | `app/Models/Course.php` | MODIFY | Added `HasFactory` + `learningMaterials()` relation |
-| 6 | `app/Models/Lesson.php` | MODIFY | Added `HasFactory` + `learningMaterials()` relation |
-| 7 | `database/migrations/2026_09_24_160000_create_learning_materials_and_views_tables.php` | NEW | 2 new tables with full indexes |
-| 8 | `database/factories/LearningMaterialFactory.php` | NEW | Multi-type factory (youtube, pdf, text, link) |
-| 9 | `database/factories/CourseFactory.php` | NEW | Course factory |
-| 10 | `database/factories/LessonFactory.php` | NEW | Lesson factory |
-| 11 | `tests/Feature/Api/LearningMaterialApiTest.php` | NEW | 11 learning material tests |
+| 1 | `app/Services/PlacementSelectionService.php` | NEW | Weighted random selection with tier probability blending + daily limit enforcement |
+| 2 | `app/Http/Controllers/Api/PlacementApiController.php` | NEW | Placement show/best-deal/click-track endpoints (7 routes) |
+| 3 | `app/Models/PlacementConfig.php` | NEW | Placement slot configuration model with active scope |
+| 4 | `database/migrations/2026_09_24_170000_create_placement_configs_and_update_best_deals.php` | NEW | placement_configs table + best_deals tier_id/weight/is_manual columns |
+| 5 | `app/Models/Sponsor.php` | MODIFY | Added `tier()` alias for `sponsorTier()` eager loading |
+| 6 | `app/Models/Campaign.php` | MODIFY | Added `HasFactory` trait |
+| 7 | `app/Models/CampaignLog.php` | MODIFY | Added `HasFactory` + `placement_context` fillable |
+| 8 | `app/Models/BestDeal.php` | MODIFY | Added `HasFactory` + `tier_id`, `weight`, `is_manual` fillable |
+| 9 | `database/factories/PlacementConfigFactory.php` | NEW | Placement config factory |
+| 10 | `database/factories/CampaignFactory.php` | NEW | Campaign factory |
+| 11 | `database/factories/CampaignLogFactory.php` | NEW | Campaign log factory |
+| 12 | `tests/Feature/Api/PlacementApiTest.php` | NEW | 10 placement tests (selection, limits, best_deal, analytics) |
 
 ### Database Changes
 
 | # | Migration | Table | Change |
 |---|-----------|-------|--------|
-| 1 | `2026_09_24_160000_create_learning_materials_and_views_tables` | `learning_materials` | NEW — 4-type material system (youtube/pdf/text/link) with status & sort |
-| 2 | `2026_09_24_160000_create_learning_materials_and_views_tables` | `learning_material_views` | NEW — Per-user progress tracking (viewed_at, progress%, completed_at) |
+| 1 | `2026_09_24_170000_create_placement_configs_and_update_best_deals` | `placement_configs` | NEW — placement_type, slot_count, target_probability, max_daily_impressions |
+| 2 | `2026_09_24_170000_create_placement_configs_and_update_best_deals` | `best_deals` | MODIFY — added tier_id, weight, is_manual columns |
 
 ### Environment Variables Added
 
@@ -68,8 +69,8 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 
 ### Tests
 
-- [x] `php artisan test` — all 74 passing (239 assertions, 7056ms)
-- [x] Feature tests for new endpoints (11 learning material tests)
+- [x] `php artisan test` — all 84 passing (269 assertions, 8450ms)
+- [x] Feature tests for new endpoints (10 placement + 11 learning material tests)
 - [ ] Migration rollback tested (or limitation noted)
 - [x] Seeder idempotency verified (SponsorTierSeeder re-runnable)
 
@@ -77,26 +78,27 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 
 | # | Evidence | Format | Status |
 |---|----------|--------|--------|
-| 1 | Learning material routes | `route:list --path=api/v1/learning-materials` | ✅ 10 routes |
-| 2 | YouTube validation endpoint | `POST /api/v1/learning-materials/validate-youtube` | ✅ 200/422 |
-| 3 | Progress tracking endpoint | `POST /api/v1/learning-materials/{id}/progress` | ✅ Implemented |
-| 4 | Analytics endpoint | `GET /api/v1/learning-materials/{id}/analytics` | ✅ Implemented |
-| 5 | `php artisan migrate:status` output | Terminal | ✅ 24/24 Ran |
-| 6 | `php artisan test` output | Terminal | ✅ 74/74 Passed |
-| 7 | Thumbnail upload endpoint | `POST /api/v1/learning-materials/{id}/thumbnail` | ✅ Implemented |
+| 1 | Placement routes | `route:list --path=api/v1/placements` | ✅ 7 routes |
+| 2 | Best deal endpoint | `GET /api/v1/placements/best-deal` | ✅ Implemented |
+| 3 | Probabilistic selection | `GET /api/v1/placements/{type}` | ✅ Weighted random + tier blending |
+| 4 | Daily limit enforcement | Service layer | ✅ Max daily impressions per sponsor |
+| 5 | Click tracking | `POST /api/v1/placements/track-click` | ✅ Campaign log created |
+| 6 | Analytics endpoint | `GET /api/v1/admin/placement-analytics` | ✅ Selection/click/impression stats |
+| 7 | `php artisan migrate:status` output | Terminal | ✅ 25/25 Ran |
+| 8 | `php artisan test` output | Terminal | ✅ 84/84 Passed |
 
 ### Known Blockers / Limitations
 
 1. `.gitignore` and `package-lock.json` have incidental changes (prompt docs exclusion, name fix) — not committed yet.
 2. Composer install timed out (exit 124) but vendor is intact and all tests pass.
-3. No Sanctum/auth integration yet — health endpoint is intentionally public.
+3. No Sanctum/auth integration yet — health & placement endpoints are intentionally public.
 
 ### Next Actions
 
-1. Phase 1: Implement Sponsor CRUD API (REQ-SF-01, REQ-SF-02)
-2. Phase 2: Implement Learning Material API (REQ-LM-01)
-3. Phase 3: Admin Panel Integration
-4. Mobile team (Daffa) to verify health endpoint from Flutter app
+1. Phase 4: Admin Override & Notification System (REQ-ADM-02)
+2. Phase 5: Full Analytics Dashboard (REQ-ANA-01, REQ-ANA-02)
+3. Mobile team (Daffa) to verify placement endpoints from Flutter app
+4. QA to test probabilistic selection on staging with real data
 
 ### Sign-off
 
@@ -112,7 +114,8 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 |---|------|-------|--------------|--------|
 | 1 | 2026-09-24 | Phase 0 (Foundation) | `5f7810d..4878464` | ✅ Signed off |
 | 2 | 2026-09-24 | Phase 1 (Sponsor CRUD) | `010daf5..8c9b15c` | ✅ Signed off |
-| 3 | 2026-09-24 | Phase 2 (Learning Material) | `1921482..c144a35` | ✅ Signed off |
+| 3 | 2026-09-24 | Phase 2 (Learning Material API) | `1921482..c144a35` | ✅ Signed off |
+| 4 | 2026-09-24 | Phase 3 (Placement & Probabilistic Selection) | `494faae..ad9a254` | ✅ Signed off |
 
 ---
 
