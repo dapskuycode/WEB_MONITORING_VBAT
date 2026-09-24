@@ -18,6 +18,8 @@ class Sponsor extends Model
         'slug',
         'description',
         'logo_path',
+        'co_branding_header_url',
+        'co_branding_splash_url',
         'website_url',
         'tier',
         'tier_id',

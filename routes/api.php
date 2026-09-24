@@ -36,6 +36,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/sponsors/tiers', [SponsorApiController::class, 'listTiers']);
     Route::get('/sponsors', [SponsorApiController::class, 'index']);
     Route::get('/sponsors/{sponsor}', [SponsorApiController::class, 'show']);
+    Route::get('/sponsors/{sponsor}/storefront', [SponsorApiController::class, 'storefront']);
     Route::get('/products', [SponsorProductApiController::class, 'index']);
     Route::get('/products/{product}', [SponsorProductApiController::class, 'show']);
 
@@ -79,6 +80,7 @@ Route::prefix('v1')->group(function () {
         Route::put('/sponsors/{sponsor}', [SponsorApiController::class, 'update']);
         Route::delete('/sponsors/{sponsor}', [SponsorApiController::class, 'destroy']);
         Route::post('/sponsors/{sponsor}/logo', [SponsorApiController::class, 'uploadLogo']);
+        Route::post('/sponsors/{sponsor}/co-branding', [SponsorApiController::class, 'uploadCoBranding']);
 
         Route::post('/products', [SponsorProductApiController::class, 'store']);
         Route::put('/products/{product}', [SponsorProductApiController::class, 'update']);
@@ -145,6 +147,9 @@ Route::prefix('v1')->group(function () {
         // Analytics
         Route::get('/analytics/dashboard', [AdminApiController::class, 'analyticsDashboard']);
         Route::get('/analytics/export', [AdminApiController::class, 'analyticsExport']);
+
+        // Push Broadcast (M2)
+        Route::post('/push-broadcast', [AdminApiController::class, 'createPushBroadcast']);
     });
 
     // 6. Storage File Proxy with CORS (for Flutter Web CanvasKit & Mobile)

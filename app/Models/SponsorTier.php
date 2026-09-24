@@ -14,6 +14,8 @@ class SponsorTier extends Model
         'slug',
         'name',
         'badge_label',
+        'badge_color',
+        'icon_url',
         'sort_order',
         'is_active',
     ];

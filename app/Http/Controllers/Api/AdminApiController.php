@@ -261,6 +261,26 @@ class AdminApiController extends Controller
             'reason' => ['nullable', 'string', 'max:500'],
         ]);
 
+        // [m1] Hero Slider max 6 validation
+        if (
+            $validated['status'] === 'active'
+            && $campaign->placement_type === 'hero_slider'
+            && $campaign->status !== 'active'
+        ) {
+            $activeHeroCount = Campaign::where('placement_type', 'hero_slider')
+                ->where('status', 'active')
+                ->whereNull('deleted_at')
+                ->count();
+
+            if ($activeHeroCount >= 6) {
+                return response()->json([
+                    'success' => false,
+                    'data' => null,
+                    'message' => 'Cannot activate this campaign. Maximum of 6 active hero slider slides has been reached.',
+                ], 422);
+            }
+        }
+
         $before = ['status' => $campaign->status];
         $campaign->update(['status' => $validated['status']]);
         $after = ['status' => $campaign->fresh()->status];
@@ -484,5 +504,79 @@ class AdminApiController extends Controller
             ],
             'message' => 'Export ready',
         ]);
+    }
+
+    // ─── Push Broadcast (M2) ─────────────────────────────────────────
+
+    /**
+     * Admin creates a push broadcast notification.
+     *
+     * POST /api/v1/admin/push-broadcast
+     */
+    public function createPushBroadcast(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'body' => ['required', 'string', 'max:1000'],
+            'target_role' => ['nullable', 'string', 'in:all,student,sponsor'],
+            'deep_link_type' => ['nullable', 'string', 'max:64'],
+            'deep_link_id' => ['nullable', 'integer'],
+        ]);
+
+        $admin = $request->user();
+        $targetRole = $validated['target_role'] ?? 'all';
+
+        // Create the push notification record
+        $pushNotification = \App\Models\PushNotification::create([
+            'title' => $validated['title'],
+            'message' => $validated['body'],
+            'target_audience' => $targetRole,
+            'deep_link' => isset($validated['deep_link_type'])
+                ? $validated['deep_link_type'].':'.($validated['deep_link_id'] ?? '')
+                : null,
+            'status' => 'sent',
+            'sent_at' => now(),
+            'success_count' => 0,
+            'failure_count' => 0,
+        ]);
+
+        // Also create an admin notification for the audit trail
+        $this->notificationService->notify(
+            type: 'push.broadcast_created',
+            title: 'Push Broadcast: '.$validated['title'],
+            body: $validated['body'],
+            actorType: 'admin',
+            actorId: $admin->id,
+            targetType: 'push_notification',
+            targetId: $pushNotification->id,
+            metadata: [
+                'target_role' => $targetRole,
+                'deep_link_type' => $validated['deep_link_type'] ?? null,
+                'deep_link_id' => $validated['deep_link_id'] ?? null,
+            ],
+        );
+
+        // Audit log
+        AdminAuditLog::create([
+            'action' => 'push_broadcast_created',
+            'actor_type' => 'admin',
+            'actor_id' => $admin->id,
+            'target_type' => 'PushNotification',
+            'target_id' => $pushNotification->id,
+            'after_state' => $validated,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $pushNotification->id,
+                'title' => $pushNotification->title,
+                'target_role' => $targetRole,
+                'status' => $pushNotification->status,
+                'sent_at' => $pushNotification->sent_at->toIso8601String(),
+            ],
+            'meta' => null,
+            'message' => 'Push broadcast created and logged successfully.',
+        ], 201);
     }
 }
