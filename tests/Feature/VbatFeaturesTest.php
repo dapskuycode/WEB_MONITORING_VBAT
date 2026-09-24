@@ -55,7 +55,14 @@ class VbatFeaturesTest extends TestCase
             'price' => 100000,
         ]);
 
-        $response = $this->postJson('/api/v1/track', [
+        $user = User::create([
+            'name' => 'Tracker Test User',
+            'email' => 'tracker_test@vbat.id',
+            'password' => 'password',
+            'role' => 'student',
+        ]);
+
+        $response = $this->actingAs($user)->postJson('/api/v1/track', [
             'event_type' => 'click',
             'product_id' => $product->id,
         ]);

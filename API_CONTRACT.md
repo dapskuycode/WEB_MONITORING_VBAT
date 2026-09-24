@@ -1,4 +1,4 @@
-# 📡 VBAT-WEBSITE API Contract v1.8
+# 📡 VBAT-WEBSITE API Contract v1.9
 
 > **Project:** VBAT-PONSEL Backend
 > **Maintainer:** Solkhan (mohamadsolkhannawawi)
@@ -302,7 +302,14 @@ Serves file from storage with explicit CORS headers.
 | POST   | `/api/v1/learning-materials/{id}/thumbnail` | Upload thumbnail | auth |
 | POST   | `/api/v1/learning-materials/validate-youtube` | Validate YouTube URL + unlisted check | auth |
 | POST   | `/api/v1/learning-materials/{id}/progress` | Submit view progress | auth |
+| POST   | `/api/v1/learning-materials/bulk-import` | Bulk import materials from XLSX/CSV file (max 5MB) | admin |
 | GET    | `/api/v1/learning-materials/{id}/analytics` | Get views & completion rate | admin |
+
+**Bulk import** (`POST /api/v1/learning-materials/bulk-import`):
+- Multipart body: `file` (`.xlsx`, `.xls`, `.csv`, max 5 MB)
+- Required columns: `lesson_id`, `unit_code`, `unit_title`, `title`
+- Optional columns: `material_type`, `description`, `external_url`, `youtube_url`, `content_text`, `thumbnail_path`, `duration_seconds`, `sort_order`, `is_required`, `quiz_required`, `status`
+- Response includes `imported`, `failed`, and per-row `errors` (row number + messages). Import is transactional; invalid rows are reported without aborting valid ones.
 
 **Filters**: `lesson_id`, `material_type`, `status`, `is_required`, `search`, `sort_by`, `sort_direction`.
 
@@ -443,6 +450,7 @@ Response: `{ "success": true, "data": { "ingested": 1 } }`
 | v1.6    | 2026-09-24 | `/api/v1/events`, `/api/v1/user/notifications`, `/api/v1/admin/analytics/dashboard`, `/api/v1/admin/analytics/export` | Analytics event ingestion, user notifications, admin dashboard, CSV export (REQ-ANA-01/02) |
 | v1.7    | 2026-09-24 | `/api/v1/auth/login`, `/api/v1/auth/logout`, `/api/v1/auth/me` | Auth token issuance, logout, profile — Sanctum Bearer tokens (TASK-BE-06) |
 | v1.8    | 2026-09-24 | `/api/v1/feed/shop`, `/api/v1/feed/home` | Dynamic feed with cursor pagination, mixed content merge, banner insertion (REQ-SF-01) |
+| v1.9    | 2026-09-24 | `POST /api/v1/learning-materials/bulk-import`, auth hardening on core routes, marketplace URL validation | Bulk XLSX/CSV import, auth on POST/PUT/DELETE endpoints, ownership server-side, Shopee/Tokopedia domain validation, analytics export URL fix (Independent Review fixes) |
 
 ---
 

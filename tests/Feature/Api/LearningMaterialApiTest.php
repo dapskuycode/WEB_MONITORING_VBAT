@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LearningMaterial;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -28,6 +29,11 @@ class LearningMaterialApiTest extends TestCase
         ]);
 
         return [$course, $lesson];
+    }
+
+    private function adminUser(): User
+    {
+        return User::factory()->create(['role' => 'super_admin']);
     }
 
     public function test_can_list_learning_materials(): void
@@ -89,6 +95,8 @@ class LearningMaterialApiTest extends TestCase
 
     public function test_can_create_youtube_material(): void
     {
+        $this->actingAs($this->adminUser());
+
         [$course, $lesson] = $this->createCourseAndLesson();
 
         $payload = [
@@ -120,6 +128,8 @@ class LearningMaterialApiTest extends TestCase
 
     public function test_rejects_invalid_youtube_url(): void
     {
+        $this->actingAs($this->adminUser());
+
         [$course, $lesson] = $this->createCourseAndLesson();
 
         $payload = [
@@ -159,6 +169,8 @@ class LearningMaterialApiTest extends TestCase
 
     public function test_can_update_material(): void
     {
+        $this->actingAs($this->adminUser());
+
         [$course, $lesson] = $this->createCourseAndLesson();
 
         $material = LearningMaterial::factory()->create([
@@ -181,6 +193,8 @@ class LearningMaterialApiTest extends TestCase
 
     public function test_can_delete_material(): void
     {
+        $this->actingAs($this->adminUser());
+
         [$course, $lesson] = $this->createCourseAndLesson();
 
         $material = LearningMaterial::factory()->create(['lesson_id' => $lesson->id]);
@@ -195,6 +209,8 @@ class LearningMaterialApiTest extends TestCase
 
     public function test_unit_code_must_be_unique(): void
     {
+        $this->actingAs($this->adminUser());
+
         [$course, $lesson] = $this->createCourseAndLesson();
 
         LearningMaterial::factory()->create([

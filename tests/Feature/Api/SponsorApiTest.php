@@ -6,7 +6,9 @@ use App\Models\City;
 use App\Models\Province;
 use App\Models\Sponsor;
 use App\Models\SponsorTier;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class SponsorApiTest extends TestCase
@@ -19,7 +21,7 @@ class SponsorApiTest extends TestCase
         $this->seed(\Database\Seeders\SponsorTierSeeder::class);
     }
 
-    /** @test */
+    #[Test]
     public function test_can_list_sponsors(): void
     {
         $tier = SponsorTier::where('slug', 'gold')->first();
@@ -33,7 +35,7 @@ class SponsorApiTest extends TestCase
             ->assertJsonCount(3, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function test_can_filter_sponsors_by_tier(): void
     {
         $gold = SponsorTier::where('slug', 'gold')->first();
@@ -49,7 +51,7 @@ class SponsorApiTest extends TestCase
             ->assertJsonPath('data.0.name', 'Gold Sponsor');
     }
 
-    /** @test */
+    #[Test]
     public function test_can_search_sponsors_by_name(): void
     {
         $tier = SponsorTier::first();
@@ -63,7 +65,7 @@ class SponsorApiTest extends TestCase
             ->assertJsonPath('data.0.name', 'Brader Parts');
     }
 
-    /** @test */
+    #[Test]
     public function test_can_show_sponsor_with_benefits(): void
     {
         $tier = SponsorTier::where('slug', 'platinum')->first();
@@ -78,9 +80,10 @@ class SponsorApiTest extends TestCase
             ->assertJsonPath('data.sponsor_tier.slug', 'platinum');
     }
 
-    /** @test */
+    #[Test]
     public function test_can_create_sponsor(): void
     {
+        $admin = User::factory()->create(['role' => 'super_admin']);
         $tier = SponsorTier::where('slug', 'silver')->first();
 
         $payload = [
@@ -92,7 +95,7 @@ class SponsorApiTest extends TestCase
             'weight' => 5,
         ];
 
-        $response = $this->postJson('/api/v1/sponsors', $payload);
+        $response = $this->actingAs($admin)->postJson('/api/v1/sponsors', $payload);
 
         $response->assertCreated()
             ->assertJsonPath('success', true)
@@ -106,13 +109,14 @@ class SponsorApiTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function test_can_update_sponsor(): void
     {
+        $admin = User::factory()->create(['role' => 'super_admin']);
         $tier = SponsorTier::where('slug', 'bronze')->first();
         $sponsor = Sponsor::factory()->create(['tier_id' => $tier->id, 'tier' => 'bronze']);
 
-        $response = $this->putJson("/api/v1/sponsors/{$sponsor->id}", [
+        $response = $this->actingAs($admin)->putJson("/api/v1/sponsors/{$sponsor->id}", [
             'name' => 'Updated Name',
             'tier_slug' => 'gold',
         ]);
@@ -123,13 +127,14 @@ class SponsorApiTest extends TestCase
             ->assertJsonPath('data.sponsor_tier.slug', 'gold');
     }
 
-    /** @test */
+    #[Test]
     public function test_can_soft_delete_sponsor(): void
     {
+        $admin = User::factory()->create(['role' => 'super_admin']);
         $tier = SponsorTier::first();
         $sponsor = Sponsor::factory()->create(['tier_id' => $tier->id]);
 
-        $response = $this->deleteJson("/api/v1/sponsors/{$sponsor->id}");
+        $response = $this->actingAs($admin)->deleteJson("/api/v1/sponsors/{$sponsor->id}");
 
         $response->assertOk()
             ->assertJsonPath('success', true);
@@ -137,7 +142,7 @@ class SponsorApiTest extends TestCase
         $this->assertSoftDeleted('sponsors', ['id' => $sponsor->id]);
     }
 
-    /** @test */
+    #[Test]
     public function test_can_list_tiers(): void
     {
         $response = $this->getJson('/api/v1/sponsors/tiers');
@@ -147,16 +152,18 @@ class SponsorApiTest extends TestCase
             ->assertJsonCount(6, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function test_create_sponsor_validates_required_fields(): void
     {
-        $response = $this->postJson('/api/v1/sponsors', []);
+        $admin = User::factory()->create(['role' => 'super_admin']);
+
+        $response = $this->actingAs($admin)->postJson('/api/v1/sponsors', []);
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['name', 'slug', 'tier_slug']);
     }
 
-    /** @test */
+    #[Test]
     public function test_show_returns_404_for_missing_sponsor(): void
     {
         $response = $this->getJson('/api/v1/sponsors/99999');

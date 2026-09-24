@@ -472,10 +472,14 @@ class AdminApiController extends Controller
             $request->input('event_type'),
         );
 
+        // Build a download URL relative to storage/app/public so it matches
+        // the /api/v1/storage/{path} proxy route (MAJOR review fix).
+        $relativePath = str_replace(storage_path('app/public/'), '', $filename);
+
         return response()->json([
             'success' => true,
             'data' => [
-                'download_url' => url('api/v1/storage/'.str_replace(storage_path('app/'), '', $filename)),
+                'download_url' => url('api/v1/storage/'.$relativePath),
                 'filename' => basename($filename),
             ],
             'message' => 'Export ready',

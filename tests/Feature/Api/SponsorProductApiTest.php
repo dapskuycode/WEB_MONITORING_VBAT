@@ -5,7 +5,9 @@ namespace Tests\Feature\Api;
 use App\Models\Sponsor;
 use App\Models\SponsorProduct;
 use App\Models\SponsorTier;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class SponsorProductApiTest extends TestCase
@@ -18,13 +20,18 @@ class SponsorProductApiTest extends TestCase
         $this->seed(\Database\Seeders\SponsorTierSeeder::class);
     }
 
+    private function adminUser(): User
+    {
+        return User::factory()->create(['role' => 'super_admin']);
+    }
+
     private function createSponsorWithTier(string $tierSlug = 'gold'): Sponsor
     {
         $tier = SponsorTier::where('slug', $tierSlug)->first();
         return Sponsor::factory()->create(['tier_id' => $tier->id, 'tier' => $tierSlug]);
     }
 
-    /** @test */
+    #[Test]
     public function test_can_list_products(): void
     {
         $sponsor = $this->createSponsorWithTier();
@@ -37,7 +44,7 @@ class SponsorProductApiTest extends TestCase
             ->assertJsonCount(3, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function test_can_filter_products_by_sponsor(): void
     {
         $s1 = $this->createSponsorWithTier();
@@ -51,7 +58,7 @@ class SponsorProductApiTest extends TestCase
         $response->assertOk()->assertJsonCount(2, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function test_can_show_product(): void
     {
         $sponsor = $this->createSponsorWithTier();
@@ -64,9 +71,11 @@ class SponsorProductApiTest extends TestCase
             ->assertJsonPath('data.id', $product->id);
     }
 
-    /** @test */
+    #[Test]
     public function test_can_create_product(): void
     {
+        $this->actingAs($this->adminUser());
+
         $sponsor = $this->createSponsorWithTier('gold');
 
         $payload = [
@@ -87,9 +96,11 @@ class SponsorProductApiTest extends TestCase
             ->assertJsonPath('data.sponsor.id', $sponsor->id);
     }
 
-    /** @test */
+    #[Test]
     public function test_create_product_requires_at_least_one_marketplace_url(): void
     {
+        $this->actingAs($this->adminUser());
+
         $sponsor = $this->createSponsorWithTier();
 
         $payload = [
@@ -106,9 +117,11 @@ class SponsorProductApiTest extends TestCase
             ->assertJsonPath('success', false);
     }
 
-    /** @test */
+    #[Test]
     public function test_can_update_product(): void
     {
+        $this->actingAs($this->adminUser());
+
         $sponsor = $this->createSponsorWithTier();
         $product = SponsorProduct::factory()->create(['sponsor_id' => $sponsor->id, 'price' => 100000]);
 
@@ -126,9 +139,11 @@ class SponsorProductApiTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function test_can_soft_delete_product(): void
     {
+        $this->actingAs($this->adminUser());
+
         $sponsor = $this->createSponsorWithTier();
         $product = SponsorProduct::factory()->create(['sponsor_id' => $sponsor->id]);
 
@@ -140,12 +155,15 @@ class SponsorProductApiTest extends TestCase
         $this->assertSoftDeleted('sponsor_products', ['id' => $product->id]);
     }
 
-    /** @test */
+    #[Test]
     public function test_create_product_validates_required_fields(): void
     {
+        $this->actingAs($this->adminUser());
+
         $response = $this->postJson('/api/v1/products', []);
 
+        // sponsor_id is no longer required — it's resolved from auth
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['sponsor_id', 'name', 'price']);
+            ->assertJsonValidationErrors(['name', 'price']);
     }
 }

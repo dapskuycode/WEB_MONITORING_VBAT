@@ -7,6 +7,7 @@ use App\Models\PlacementConfig;
 use App\Models\Sponsor;
 use App\Models\SponsorProduct;
 use App\Models\SponsorTier;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -70,6 +71,9 @@ class PlacementApiTest extends TestCase
 
     public function test_can_log_impression(): void
     {
+        $admin = User::factory()->create(['role' => 'super_admin']);
+        $this->actingAs($admin);
+
         $tier = SponsorTier::where('slug', 'platinum')->first();
         $sponsor = Sponsor::factory()->create(['tier_id' => $tier->id]);
         $campaign = Campaign::factory()->create([
@@ -96,6 +100,9 @@ class PlacementApiTest extends TestCase
 
     public function test_can_log_click(): void
     {
+        $admin = User::factory()->create(['role' => 'super_admin']);
+        $this->actingAs($admin);
+
         $tier = SponsorTier::where('slug', 'platinum')->first();
         $sponsor = Sponsor::factory()->create(['tier_id' => $tier->id]);
         $campaign = Campaign::factory()->create([

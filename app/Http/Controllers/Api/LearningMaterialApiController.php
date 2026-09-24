@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\LearningMaterial;
 use App\Models\LearningMaterialView;
+use App\Services\BulkImportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +14,9 @@ use Illuminate\Validation\Rule;
 
 class LearningMaterialApiController extends Controller
 {
+    public function __construct(
+        private readonly BulkImportService $bulkImportService,
+    ) {}
     /**
      * List learning materials with filtering and pagination.
      */
@@ -314,15 +318,25 @@ class LearningMaterialApiController extends Controller
         $material = LearningMaterial::findOrFail($id);
 
         $validated = $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
             'progress_percent' => ['required', 'integer', 'min:0', 'max:100'],
         ]);
+
+        // Ownership from server auth — NOT from client payload (Decision D-009)
+        $userId = $request->user()?->id;
+
+        if (! $userId) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'Authentication required to record progress.',
+            ], 401);
+        }
 
         $completedAt = $validated['progress_percent'] >= 100 ? now() : null;
 
         $view = LearningMaterialView::updateOrCreate(
             [
-                'user_id' => $validated['user_id'],
+                'user_id' => $userId,
                 'learning_material_id' => $material->id,
             ],
             [
@@ -370,6 +384,99 @@ class LearningMaterialApiController extends Controller
                 'progress_distribution' => $progressDistribution,
             ],
             'message' => 'Analytics retrieved successfully',
+        ]);
+    }
+
+    // ─── Bulk Import (REQ-ADM-02) ────────────────────────────────────────
+
+    /**
+     * Bulk import learning materials from XLSX/CSV file.
+     *
+     * POST /api/v1/learning-materials/bulk-import
+     *
+     * Modes:
+     *  - preview=true  → dry-run: validate & return preview (no DB writes)
+     *  - preview=false → commit: insert validated rows into DB
+     */
+    public function bulkImport(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
+            'preview' => ['nullable', 'boolean'],
+            'skip_invalid' => ['nullable', 'boolean'],
+        ]);
+
+        $file = $request->file('file');
+        $isPreview = $request->boolean('preview', true);
+        $skipInvalid = $request->boolean('skip_invalid', false);
+
+        // Store temporarily for PhpSpreadsheet to read
+        $tempPath = $file->store('temp/imports', 'local');
+        $fullPath = storage_path('app/' . $tempPath);
+
+        try {
+            if ($isPreview) {
+                $maxRows = (int) $request->input('preview_limit', 20);
+                $result = $this->bulkImportService->preview($fullPath, $maxRows);
+            } else {
+                $result = $this->bulkImportService->commit($fullPath, $skipInvalid);
+            }
+        } finally {
+            // Always clean up temp file
+            if (file_exists($fullPath)) {
+                unlink($fullPath);
+            }
+        }
+
+        $statusCode = $result['success'] ? 200 : 422;
+
+        return response()->json([
+            'success' => $result['success'],
+            'data' => $result['data'],
+            'errors' => $result['errors'],
+            'message' => $isPreview
+                ? ($result['success'] ? 'Preview generated successfully' : 'Preview failed')
+                : ($result['success'] ? 'Import completed successfully' : 'Import failed'),
+        ], $statusCode);
+    }
+
+    /**
+     * Download XLSX import template with correct column headers.
+     *
+     * GET /api/v1/learning-materials/bulk-import/template
+     */
+    public function bulkImportTemplate(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'columns' => BulkImportService::TEMPLATE_COLUMNS,
+                'column_descriptions' => [
+                    'lesson_id' => 'Required. ID of the lesson this material belongs to.',
+                    'unit_code' => 'Optional. Auto-generated if empty. Must be unique.',
+                    'unit_title' => 'Optional. Falls back to title if empty.',
+                    'material_type' => 'One of: youtube_video, pdf_document, text_content, external_link. Default: text_content',
+                    'title' => 'Required. Title of the learning material.',
+                    'description' => 'Optional. Description text.',
+                    'youtube_url' => 'Optional. YouTube URL (for youtube_video type).',
+                    'external_url' => 'Optional. External link URL (for external_link type).',
+                    'content_text' => 'Optional. Text content (for text_content type).',
+                    'status' => 'One of: draft, published, archived. Default: draft',
+                ],
+                'example_row' => [
+                    'lesson_id' => 1,
+                    'unit_code' => 'MAT-UNIT-001',
+                    'unit_title' => 'Introduction to Topic',
+                    'material_type' => 'youtube_video',
+                    'title' => 'Video: Getting Started',
+                    'description' => 'An introductory video',
+                    'youtube_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                    'external_url' => null,
+                    'content_text' => null,
+                    'status' => 'published',
+                ],
+            ],
+            'message' => 'Import template specification',
         ]);
     }
 }

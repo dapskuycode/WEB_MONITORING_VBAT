@@ -30,51 +30,25 @@ Route::prefix('v1')->group(function () {
     Route::get('/feed/shop', [FeedApiController::class, 'shop']);
     Route::get('/feed/home', [FeedApiController::class, 'home']);
 
-    // 1. Sponsor & Product CRUD (Phase 1 — REQ-SF-01, REQ-SF-02)
+    // ─── PUBLIC READ-ONLY ENDPOINTS (no auth required) ──────────────────
+
+    // 1. Sponsor & Product — Public read
     Route::get('/sponsors/tiers', [SponsorApiController::class, 'listTiers']);
-    Route::apiResource('sponsors', SponsorApiController::class);
-    Route::post('/sponsors/{id}/logo', [SponsorApiController::class, 'uploadLogo']);
-    Route::apiResource('products', SponsorProductApiController::class);
-    Route::post('/products/{id}/image', [SponsorProductApiController::class, 'uploadImage']);
+    Route::get('/sponsors', [SponsorApiController::class, 'index']);
+    Route::get('/sponsors/{sponsor}', [SponsorApiController::class, 'show']);
+    Route::get('/products', [SponsorProductApiController::class, 'index']);
+    Route::get('/products/{product}', [SponsorProductApiController::class, 'show']);
 
-    // 3. Learning Material CRUD (Phase 2 — REQ-LM-01, REQ-LM-02, REQ-LM-03)
-    Route::apiResource('learning-materials', LearningMaterialApiController::class);
-    Route::post('/learning-materials/{id}/thumbnail', [LearningMaterialApiController::class, 'uploadThumbnail']);
-    Route::post('/learning-materials/{id}/pdf', [LearningMaterialApiController::class, 'uploadPdf']);
+    // 3. Learning Material — Public read
+    Route::get('/learning-materials', [LearningMaterialApiController::class, 'index']);
+    Route::get('/learning-materials/{material}', [LearningMaterialApiController::class, 'show']);
     Route::post('/learning-materials/validate-youtube', [LearningMaterialApiController::class, 'validateYouTube']);
-    Route::post('/learning-materials/{id}/progress', [LearningMaterialApiController::class, 'recordProgress']);
-    Route::get('/learning-materials/{id}/analytics', [LearningMaterialApiController::class, 'analytics']);
 
-    // 4. Placement & Probabilistic Selection (Phase 3 — REQ-SF-03)
+    // 4. Placement & Probabilistic Selection — Public read
     Route::get('/placements/best-deal', [PlacementApiController::class, 'bestDeal']);
     Route::get('/placements/{type}', [PlacementApiController::class, 'show']);
-    Route::post('/placements/impression', [PlacementApiController::class, 'logImpression']);
-    Route::post('/placements/click', [PlacementApiController::class, 'logClick']);
 
-    // Admin placement endpoints
-    Route::get('/admin/placement-configs', [PlacementApiController::class, 'listConfigs']);
-
-    // 7. Admin Override & Notification System (Phase 4 — REQ-ADM-02)
-    Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('admin')->group(function () {
-        Route::get('/notifications', [AdminApiController::class, 'notifications']);
-        Route::get('/notifications/unread-count', [AdminApiController::class, 'unreadCount']);
-        Route::post('/notifications/{id}/read', [AdminApiController::class, 'markNotificationRead']);
-        Route::post('/notifications/{id}/read-all', [AdminApiController::class, 'markAllNotificationsRead']);
-
-        Route::post('/sponsors/{sponsor}/benefit-overrides', [AdminApiController::class, 'overrideBenefit']);
-        Route::put('/sponsors/{sponsor}/tier', [AdminApiController::class, 'changeSponsorTier']);
-
-        Route::put('/campaigns/{campaign}', [AdminApiController::class, 'overrideCampaign']);
-        Route::delete('/products/{product}', [AdminApiController::class, 'deleteProduct']);
-
-        Route::get('/best-deals', [AdminApiController::class, 'listBestDeals']);
-        Route::post('/best-deals', [AdminApiController::class, 'createBestDeal']);
-        Route::delete('/best-deals/{bestDeal}', [AdminApiController::class, 'deleteBestDeal']);
-
-        Route::get('/audit-logs', [AdminApiController::class, 'auditLogs']);
-    });
-
-    // 2. Banners & Promosi Sponsor (Existing — REQ-SF-03)
+    // 2. Banners & Promosi Sponsor — Public read
     Route::get('/banners/hero', [CampaignApiController::class, 'getHeroSliders']);
     Route::get('/banners/shop-horizontal', [CampaignApiController::class, 'getShopHorizontalBanners']);
     Route::get('/banners/cards', [CampaignApiController::class, 'getCardSliders']);
@@ -84,33 +58,91 @@ Route::prefix('v1')->group(function () {
     Route::get('/shop/products', [CampaignApiController::class, 'getAllProducts']);
     Route::get('/shop/best-deals', [CampaignApiController::class, 'getBestDeals']);
 
-    // 2. Harga Dinamis & Event Diskon Global
+    // 2. Harga Dinamis & Event Diskon Global — Public read
     Route::get('/shop/events/active', [EventApiController::class, 'getActiveEvent']);
 
-    // 3. Log Tracker (Impression, Click, Wishlist)
-    Route::post('/track', [TrackerApiController::class, 'logInteraction']);
-    Route::post('/wishlist/toggle', [TrackerApiController::class, 'toggleWishlist']);
+    // 8. Analytics Event Ingestion (Phase 5 — REQ-ANA-01) — Public (anonymous tracking)
+    Route::post('/events', [EventApiController::class, 'ingestBatch']);
 
-    // 4. Demografi Profil Pengguna & Wilayah
-    Route::post('/user/demographics', [DemographicApiController::class, 'updateDemographics']);
+    // 4. Demografi Profil Wilayah — Public read
     Route::get('/regions/provinces', [DemographicApiController::class, 'getProvinces']);
     Route::get('/regions/cities/{provinceId}', [DemographicApiController::class, 'getCitiesByProvince']);
 
-    // 5. Push Notifications Broadcast Feed
+    // 5. Push Notifications Broadcast Feed — Public read
     Route::get('/notifications', [NotificationApiController::class, 'getNotifications']);
 
-    // 8. Analytics Event Ingestion (Phase 5 — REQ-ANA-01)
-    Route::post('/events', [EventApiController::class, 'ingestBatch']);
-
-    // 9. User Notification API (Phase 5 — REQ-ANA-02)
+    // ─── AUTHENTICATED ENDPOINTS (auth:sanctum required) ────────────────
     Route::middleware('auth:sanctum')->group(function () {
+
+        // 1. Sponsor & Product — Write operations
+        Route::post('/sponsors', [SponsorApiController::class, 'store']);
+        Route::put('/sponsors/{sponsor}', [SponsorApiController::class, 'update']);
+        Route::delete('/sponsors/{sponsor}', [SponsorApiController::class, 'destroy']);
+        Route::post('/sponsors/{sponsor}/logo', [SponsorApiController::class, 'uploadLogo']);
+
+        Route::post('/products', [SponsorProductApiController::class, 'store']);
+        Route::put('/products/{product}', [SponsorProductApiController::class, 'update']);
+        Route::delete('/products/{product}', [SponsorProductApiController::class, 'destroy']);
+        Route::post('/products/{product}/image', [SponsorProductApiController::class, 'uploadImage']);
+
+        // 3. Learning Material — Write operations
+        Route::post('/learning-materials', [LearningMaterialApiController::class, 'store']);
+        Route::put('/learning-materials/{material}', [LearningMaterialApiController::class, 'update']);
+        Route::delete('/learning-materials/{material}', [LearningMaterialApiController::class, 'destroy']);
+        Route::post('/learning-materials/{material}/thumbnail', [LearningMaterialApiController::class, 'uploadThumbnail']);
+        Route::post('/learning-materials/{material}/pdf', [LearningMaterialApiController::class, 'uploadPdf']);
+        Route::post('/learning-materials/{material}/progress', [LearningMaterialApiController::class, 'recordProgress']);
+        Route::get('/learning-materials/{material}/analytics', [LearningMaterialApiController::class, 'analytics']);
+
+        // 3b. Bulk Import (REQ-ADM-02)
+        Route::post('/learning-materials/bulk-import', [LearningMaterialApiController::class, 'bulkImport']);
+        Route::get('/learning-materials/bulk-import/template', [LearningMaterialApiController::class, 'bulkImportTemplate']);
+
+        // 4. Placement — Write operations
+        Route::post('/placements/impression', [PlacementApiController::class, 'logImpression']);
+        Route::post('/placements/click', [PlacementApiController::class, 'logClick']);
+
+        // 3. Log Tracker (Impression, Click, Wishlist)
+        Route::post('/track', [TrackerApiController::class, 'logInteraction']);
+        Route::post('/wishlist/toggle', [TrackerApiController::class, 'toggleWishlist']);
+
+        // 4. Demografi Profil Pengguna
+        Route::post('/user/demographics', [DemographicApiController::class, 'updateDemographics']);
+
+        // 9. User Notification API (Phase 5 — REQ-ANA-02)
         Route::get('/user/notifications', [NotificationApiController::class, 'listUserNotifications']);
         Route::post('/user/notifications/{id}/read', [NotificationApiController::class, 'markUserNotificationRead']);
         Route::post('/user/notifications/read-all', [NotificationApiController::class, 'markAllUserNotificationsRead']);
     });
 
-    // 10. Admin Analytics Dashboard (Phase 5 — REQ-ANA-01)
+    // ─── ADMIN ENDPOINTS (auth:sanctum + role:super_admin) ─────────────
     Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('admin')->group(function () {
+        // Notifications
+        Route::get('/notifications', [AdminApiController::class, 'notifications']);
+        Route::get('/notifications/unread-count', [AdminApiController::class, 'unreadCount']);
+        Route::post('/notifications/{id}/read', [AdminApiController::class, 'markNotificationRead']);
+        Route::post('/notifications/{id}/read-all', [AdminApiController::class, 'markAllNotificationsRead']);
+
+        // Sponsor management
+        Route::post('/sponsors/{sponsor}/benefit-overrides', [AdminApiController::class, 'overrideBenefit']);
+        Route::put('/sponsors/{sponsor}/tier', [AdminApiController::class, 'changeSponsorTier']);
+
+        // Campaign management
+        Route::put('/campaigns/{campaign}', [AdminApiController::class, 'overrideCampaign']);
+        Route::delete('/products/{product}', [AdminApiController::class, 'deleteProduct']);
+
+        // Best deals
+        Route::get('/best-deals', [AdminApiController::class, 'listBestDeals']);
+        Route::post('/best-deals', [AdminApiController::class, 'createBestDeal']);
+        Route::delete('/best-deals/{bestDeal}', [AdminApiController::class, 'deleteBestDeal']);
+
+        // Placement configs
+        Route::get('/placement-configs', [PlacementApiController::class, 'listConfigs']);
+
+        // Audit logs
+        Route::get('/audit-logs', [AdminApiController::class, 'auditLogs']);
+
+        // Analytics
         Route::get('/analytics/dashboard', [AdminApiController::class, 'analyticsDashboard']);
         Route::get('/analytics/export', [AdminApiController::class, 'analyticsExport']);
     });

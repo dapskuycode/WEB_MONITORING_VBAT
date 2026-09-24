@@ -86,20 +86,59 @@ class SponsorProductApiController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'sponsor_id' => ['required', 'exists:sponsors,id'],
+            'sponsor_id' => ['nullable', 'exists:sponsors,id'],
             'name' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255', 'unique:sponsor_products'],
             'description' => ['nullable', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
             'discount_price' => ['nullable', 'numeric', 'min:0', 'lt:price'],
             'image_path' => ['nullable', 'string', 'max:500'],
-            'shopee_url' => ['nullable', 'url', 'max:500'],
-            'tokopedia_url' => ['nullable', 'url', 'max:500'],
+            'shopee_url' => ['nullable', 'string', 'max:500'],
+            'tokopedia_url' => ['nullable', 'string', 'max:500'],
             'is_featured' => ['boolean'],
             'order' => ['integer', 'min:0'],
         ]);
 
-        $sponsor = Sponsor::findOrFail($validated['sponsor_id']);
+        // ─── Ownership resolution (Decision D-009) ───────────────────────
+        // sponsor_id is resolved from the authenticated user's sponsor relationship,
+        // NOT trusted from the client payload. Super admins may optionally specify
+        // a different sponsor_id.
+        $user = $request->user();
+
+        if ($user->isSuperAdmin() && isset($validated['sponsor_id'])) {
+            $sponsor = Sponsor::findOrFail($validated['sponsor_id']);
+        } else {
+            $sponsor = $user->sponsor;
+            if (! $sponsor) {
+                return response()->json([
+                    'success' => false,
+                    'data' => null,
+                    'errors' => ['sponsor' => ['Authenticated user has no associated sponsor account']],
+                    'message' => 'Authorization failed',
+                ], 403);
+            }
+        }
+
+        // Enforce domain validation on marketplace URLs (REQ-SF-02)
+        $domainErrors = $this->validateMarketplaceUrls($validated);
+        if (! empty($domainErrors)) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'errors' => $domainErrors,
+                'message' => 'Validation failed',
+            ], 422);
+        }
+
+        // At least one marketplace URL required
+        if (empty($validated['shopee_url']) && empty($validated['tokopedia_url'])) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'errors' => ['marketplace' => ['At least one marketplace URL (Shopee or Tokopedia) is required']],
+                'message' => 'Validation failed',
+            ], 422);
+        }
 
         DB::beginTransaction();
         try {
@@ -119,16 +158,8 @@ class SponsorProductApiController extends Controller
                 }
             }
 
-            // Validate marketplace URLs: at least one required
-            if (empty($validated['shopee_url']) && empty($validated['tokopedia_url'])) {
-                DB::rollBack();
-                return response()->json([
-                    'success' => false,
-                    'data' => null,
-                    'errors' => ['marketplace' => ['At least one marketplace URL (Shopee or Tokopedia) is required']],
-                    'message' => 'Validation failed',
-                ], 422);
-            }
+            // Force sponsor_id from server-resolved sponsor (not client payload)
+            $validated['sponsor_id'] = $sponsor->id;
 
             // Auto-generate slug if not provided
             if (empty($validated['slug'])) {
@@ -136,7 +167,6 @@ class SponsorProductApiController extends Controller
             }
 
             $product = SponsorProduct::create($validated);
-
             DB::commit();
 
             return response()->json([
@@ -164,7 +194,9 @@ class SponsorProductApiController extends Controller
      */
     public function update(Request $request, int $id): JsonResponse
     {
-        $product = SponsorProduct::findOrFail($id);
+        $product = SponsorProduct::with('sponsor')->findOrFail($id);
+
+        $this->authorizeProductMutation($request, $product);
 
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
@@ -173,12 +205,22 @@ class SponsorProductApiController extends Controller
             'price' => ['sometimes', 'numeric', 'min:0'],
             'discount_price' => ['nullable', 'numeric', 'min:0', 'lt:price'],
             'image_path' => ['nullable', 'string', 'max:500'],
-            'shopee_url' => ['nullable', 'url', 'max:500'],
-            'tokopedia_url' => ['nullable', 'url', 'max:500'],
+            'shopee_url' => ['nullable', 'string', 'max:500'],
+            'tokopedia_url' => ['nullable', 'string', 'max:500'],
             'is_featured' => ['sometimes', 'boolean'],
             'is_active' => ['sometimes', 'boolean'],
             'order' => ['sometimes', 'integer', 'min:0'],
         ]);
+
+        $domainErrors = $this->validateMarketplaceUrls($validated);
+        if (! empty($domainErrors)) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'errors' => $domainErrors,
+                'message' => 'Validation failed',
+            ], 422);
+        }
 
         DB::beginTransaction();
         try {
@@ -208,9 +250,11 @@ class SponsorProductApiController extends Controller
      *
      * DELETE /api/v1/products/{id}
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
-        $product = SponsorProduct::findOrFail($id);
+        $product = SponsorProduct::with('sponsor')->findOrFail($id);
+
+        $this->authorizeProductMutation($request, $product);
 
         DB::beginTransaction();
         try {
@@ -242,7 +286,9 @@ class SponsorProductApiController extends Controller
      */
     public function uploadImage(Request $request, int $id): JsonResponse
     {
-        $product = SponsorProduct::findOrFail($id);
+        $product = SponsorProduct::with('sponsor')->findOrFail($id);
+
+        $this->authorizeProductMutation($request, $product);
 
         $validated = $request->validate([
             'image' => ['required', 'image', 'mimes:jpeg,png,webp', 'max:2048'],
@@ -265,5 +311,59 @@ class SponsorProductApiController extends Controller
             'meta' => null,
             'message' => 'Image uploaded successfully',
         ]);
+    }
+
+    /**
+     * Ensure the authenticated sponsor user can only mutate their own products.
+     * Super admins are allowed to mutate any product.
+     */
+    private function authorizeProductMutation(Request $request, SponsorProduct $product): void
+    {
+        $user = $request->user();
+
+        if ($user->isSuperAdmin()) {
+            return;
+        }
+
+        $sponsor = $user->sponsor;
+
+        if (! $sponsor || $product->sponsor_id !== $sponsor->id) {
+            abort(response()->json([
+                'success' => false,
+                'data' => null,
+                'errors' => ['authorization' => ['You are not authorized to manage this product']],
+                'message' => 'Authorization failed',
+            ], 403));
+        }
+    }
+
+    /**
+     * Validate marketplace URLs belong to allowed domains (Shopee/Tokopedia).
+     *
+     * @return array<string, list<string>>
+     */
+    private function validateMarketplaceUrls(array $validated): array
+    {
+        $allowedDomains = [
+            'shopee.co.id',
+            'www.shopee.co.id',
+            'tokopedia.com',
+            'www.tokopedia.com',
+        ];
+
+        $errors = [];
+
+        foreach (['shopee_url', 'tokopedia_url'] as $field) {
+            if (empty($validated[$field])) {
+                continue;
+            }
+
+            $host = parse_url($validated[$field], PHP_URL_HOST);
+            if (! $host || ! in_array(strtolower($host), $allowedDomains, true)) {
+                $errors[$field] = ['The ' . str_replace('_', ' ', $field) . ' must be from shopee.co.id or tokopedia.com'];
+            }
+        }
+
+        return $errors;
     }
 }

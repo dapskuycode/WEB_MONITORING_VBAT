@@ -211,7 +211,7 @@ class AnalyticsEventService
 
         $events = $query->orderBy('created_at')->get();
 
-        $filename = storage_path("app/exports/analytics_{$from}_{$to}.csv");
+        $filename = storage_path("app/public/exports/analytics_{$from}_{$to}.csv");
         if (! is_dir(dirname($filename))) {
             mkdir(dirname($filename), 0755, true);
         }
