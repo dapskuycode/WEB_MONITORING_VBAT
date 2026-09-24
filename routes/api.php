@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\LearningMaterialApiController;
 use App\Http\Controllers\Api\NotificationApiController;
+use App\Http\Controllers\Api\PlacementApiController;
 use App\Http\Controllers\Api\SponsorProductApiController;
 use App\Http\Controllers\Api\SponsorApiController;
 use App\Http\Controllers\Api\TrackerApiController;
@@ -29,6 +30,17 @@ Route::prefix('v1')->group(function () {
     Route::post('/learning-materials/validate-youtube', [LearningMaterialApiController::class, 'validateYouTube']);
     Route::post('/learning-materials/{id}/progress', [LearningMaterialApiController::class, 'recordProgress']);
     Route::get('/learning-materials/{id}/analytics', [LearningMaterialApiController::class, 'analytics']);
+
+    // 4. Placement & Probabilistic Selection (Phase 3 — REQ-SF-03)
+    Route::get('/placements/best-deal', [PlacementApiController::class, 'bestDeal']);
+    Route::get('/placements/{type}', [PlacementApiController::class, 'show']);
+    Route::post('/placements/impression', [PlacementApiController::class, 'logImpression']);
+    Route::post('/placements/click', [PlacementApiController::class, 'logClick']);
+
+    // Admin placement endpoints
+    Route::post('/admin/best-deals/select', [PlacementApiController::class, 'selectBestDeal']);
+    Route::delete('/admin/best-deals/{id}', [PlacementApiController::class, 'removeBestDeal']);
+    Route::get('/admin/placement-configs', [PlacementApiController::class, 'listConfigs']);
 
     // 2. Banners & Promosi Sponsor (Existing — REQ-SF-03)
     Route::get('/banners/hero', [CampaignApiController::class, 'getHeroSliders']);
