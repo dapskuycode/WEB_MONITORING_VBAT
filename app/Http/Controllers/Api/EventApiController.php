@@ -4,10 +4,46 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\DiscountEvent;
+use App\Services\AnalyticsEventService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class EventApiController extends Controller
 {
+    /**
+     * Batch event ingestion endpoint (Phase 5 — REQ-ANA-01).
+     * POST /api/v1/events
+     */
+    public function ingestBatch(Request $request): JsonResponse
+    {
+        $request->validate([
+            'events' => 'required|array|min:1|max:100',
+            'events.*.event_type' => 'required|string|max:64',
+            'events.*.session_id' => 'nullable|uuid',
+            'events.*.target_type' => 'nullable|string|max:64',
+            'events.*.target_id' => 'nullable|integer',
+            'events.*.context' => 'nullable|array',
+            'session_id' => 'nullable|uuid',
+        ]);
+
+        $service = new AnalyticsEventService;
+        $sessionId = $request->input('session_id', (string) \Illuminate\Support\Str::uuid());
+
+        $count = $service->logBatch(
+            $request->input('events'),
+            $sessionId,
+            $request->ip(),
+            $request->userAgent(),
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => "{$count} event(s) logged",
+            'data' => [
+                'count' => $count,
+            ],
+        ], 201);
+    }
     /**
      * Poin 2.4 & 4.3 Harga Dinamis & Event Diskon Aktif:
      * Cek apakah ada event diskon aktif untuk Shop dan daftar produk terpilih.

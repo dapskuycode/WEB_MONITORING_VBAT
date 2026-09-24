@@ -86,6 +86,22 @@ Route::prefix('v1')->group(function () {
     // 5. Push Notifications Broadcast Feed
     Route::get('/notifications', [NotificationApiController::class, 'getNotifications']);
 
+    // 8. Analytics Event Ingestion (Phase 5 — REQ-ANA-01)
+    Route::post('/events', [EventApiController::class, 'ingestBatch']);
+
+    // 9. User Notification API (Phase 5 — REQ-ANA-02)
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/user/notifications', [NotificationApiController::class, 'listUserNotifications']);
+        Route::post('/user/notifications/{id}/read', [NotificationApiController::class, 'markUserNotificationRead']);
+        Route::post('/user/notifications/read-all', [NotificationApiController::class, 'markAllUserNotificationsRead']);
+    });
+
+    // 10. Admin Analytics Dashboard (Phase 5 — REQ-ANA-01)
+    Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('admin')->group(function () {
+        Route::get('/analytics/dashboard', [AdminApiController::class, 'analyticsDashboard']);
+        Route::get('/analytics/export', [AdminApiController::class, 'analyticsExport']);
+    });
+
     // 6. Storage File Proxy with CORS (for Flutter Web CanvasKit & Mobile)
     Route::get('/storage/{path}', function ($path) {
         $fullPath = storage_path('app/public/'.$path);

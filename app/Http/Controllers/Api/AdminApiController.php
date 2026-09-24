@@ -10,6 +10,7 @@ use App\Models\Sponsor;
 use App\Models\SponsorBenefitOverride;
 use App\Models\SponsorProduct;
 use App\Services\AdminNotificationService;
+use App\Services\AnalyticsEventService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -18,6 +19,7 @@ class AdminApiController extends Controller
 {
     public function __construct(
         private readonly AdminNotificationService $notificationService,
+        private readonly AnalyticsEventService $analyticsService,
     ) {}
 
     // ─── Notifications ───────────────────────────────────────────
@@ -426,6 +428,57 @@ class AdminApiController extends Controller
                 'total' => $logs->total(),
             ],
             'message' => null,
+        ]);
+    }
+
+    // ─── Analytics Dashboard (Phase 5 / REQ-ANA-01) ──────────────
+
+    /**
+     * Admin analytics dashboard.
+     */
+    public function analyticsDashboard(Request $request): JsonResponse
+    {
+        $request->validate([
+            'from' => ['required', 'date'],
+            'to' => ['required', 'date', 'after_or_equal:from'],
+        ]);
+
+        $stats = $this->analyticsService->getDashboardStats(
+            $request->input('from'),
+            $request->input('to'),
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats,
+            'message' => null,
+        ]);
+    }
+
+    /**
+     * Export analytics data to CSV.
+     */
+    public function analyticsExport(Request $request): JsonResponse
+    {
+        $request->validate([
+            'from' => ['required', 'date'],
+            'to' => ['required', 'date', 'after_or_equal:from'],
+            'event_type' => ['nullable', 'string', 'max:64'],
+        ]);
+
+        $filename = $this->analyticsService->exportToCsv(
+            $request->input('from'),
+            $request->input('to'),
+            $request->input('event_type'),
+        );
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'download_url' => url('api/v1/storage/'.str_replace(storage_path('app/'), '', $filename)),
+                'filename' => basename($filename),
+            ],
+            'message' => 'Export ready',
         ]);
     }
 }
