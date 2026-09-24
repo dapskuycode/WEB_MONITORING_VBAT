@@ -22,7 +22,7 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 - **To:** Daffa (Mobile) / QA / Stakeholder
 - **Scope:** Phase 7 (REQ-SF-01 Feed Dinamis & Infinite Scroll): `/feed/shop` (product-only feed), `/feed/home` (mixed product + learning material + banner), cursor pagination, in-memory content merge, banner insertion at configurable intervals via `feed_configs`
 - **Commit Range:** (see git log — current branch `feature/req-sf-01-feed` ahead of `dev/solkhan-room` by 1+ commits)
-- **API Contract Version:** v1.8
+- **API Contract Version:** v2.0
 
 ### Changes Summary
 
@@ -108,6 +108,7 @@ Copy this template for each handoff to Mobile team (Daffa) or other stakeholders
 | 6 | 2026-09-24 | Phase 5 (Analytics & Audit) | `76fdf7d..57919ef` | ✅ Signed off |
 | 7 | 2026-09-24 | Phase 6 (Auth Hardening & Deployment Prep) | `6987bf9..4f00a50` | ⏳ Pending sign-off |
 | 8 | 2026-09-24 | Phase 7 (REQ-SF-01 Feed Dinamis & Infinite Scroll) | (see `feature/req-sf-01-feed` branch) | ⏳ Pending sign-off |
+| 9 | 2026-09-24 | **Gap Closing v2.0 (C1, M1, m1, M2, M3, m2)** — 4 new endpoints (73 total), 3 migrations, SoV algorithm, co-branding, storefront, push broadcast, tier badge metadata | `a4c315c` on `feature/gap-closing-priority-1-2` | ⏳ Pending sign-off |
 
 ---
 

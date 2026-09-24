@@ -44,9 +44,23 @@ class SponsorApiController extends Controller
         $sponsors = $query->orderByDesc('weight')->orderByDesc('created_at')
             ->paginate($perPage);
 
+        // Append badge metadata to each sponsor
+        $items = collect($sponsors->items())->map(function ($sponsor) {
+            $tier = $sponsor->sponsorTier;
+            $sponsor->logo_url = $sponsor->logo_path
+                ? Storage::disk('public')->url($sponsor->logo_path) : null;
+            $sponsor->tier_badge = [
+                'label' => $tier?->badge_label ?? strtoupper($sponsor->tier ?? ''),
+                'color' => $tier?->badge_color ?? '#999999',
+                'icon_url' => $tier?->icon_url
+                    ? Storage::disk('public')->url($tier->icon_url) : null,
+            ];
+            return $sponsor;
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $sponsors->items(),
+            'data' => $items,
             'meta' => [
                 'current_page' => $sponsors->currentPage(),
                 'last_page' => $sponsors->lastPage(),
@@ -86,9 +100,28 @@ class SponsorApiController extends Controller
                 ];
             });
 
+        $tier = $sponsor->sponsorTier;
+
+        // Append badge metadata and absolute asset URLs
+        $sponsorData = array_merge($sponsor->toArray(), [
+            'logo_url' => $sponsor->logo_path
+                ? Storage::disk('public')->url($sponsor->logo_path) : null,
+            'co_branding_header_url' => $sponsor->co_branding_header_url
+                ? Storage::disk('public')->url($sponsor->co_branding_header_url) : null,
+            'co_branding_splash_url' => $sponsor->co_branding_splash_url
+                ? Storage::disk('public')->url($sponsor->co_branding_splash_url) : null,
+            'tier_badge' => [
+                'label' => $tier?->badge_label ?? strtoupper($sponsor->tier ?? ''),
+                'color' => $tier?->badge_color ?? '#999999',
+                'icon_url' => $tier?->icon_url
+                    ? Storage::disk('public')->url($tier->icon_url) : null,
+            ],
+            'effective_benefits' => $benefits,
+        ]);
+
         return response()->json([
             'success' => true,
-            'data' => array_merge($sponsor->toArray(), ['effective_benefits' => $benefits]),
+            'data' => $sponsorData,
             'meta' => null,
             'message' => null,
         ]);
@@ -279,6 +312,137 @@ class SponsorApiController extends Controller
     }
 
     /**
+     * Upload co-branding assets (header banner & splash screen logo).
+     * Only available for Diamond-tier sponsors.
+     *
+     * POST /api/v1/sponsors/{id}/co-branding
+     */
+    public function uploadCoBranding(Request $request, int $id): JsonResponse
+    {
+        $sponsor = Sponsor::findOrFail($id);
+
+        // Verify this sponsor is Diamond tier
+        if ($sponsor->tier !== 'diamond' && ($sponsor->sponsorTier?->slug !== 'diamond')) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'Co-branding assets are only available for Diamond-tier sponsors.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'header_banner' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:5120'], // 5MB
+            'splash_logo' => ['nullable', 'image', 'mimes:jpeg,png,webp', 'max:2048'],
+        ]);
+
+        $updates = [];
+
+        if (!empty($validated['header_banner'])) {
+            $path = $validated['header_banner']->storeAs(
+                'sponsor/co-branding',
+                $sponsor->slug.'-header-'.time().'.'.$validated['header_banner']->getClientOriginalExtension(),
+                'public'
+            );
+            $updates['co_branding_header_url'] = $path;
+        }
+
+        if (!empty($validated['splash_logo'])) {
+            $path = $validated['splash_logo']->storeAs(
+                'sponsor/co-branding',
+                $sponsor->slug.'-splash-'.time().'.'.$validated['splash_logo']->getClientOriginalExtension(),
+                'public'
+            );
+            $updates['co_branding_splash_url'] = $path;
+        }
+
+        if (empty($updates)) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'At least one file (header_banner or splash_logo) must be provided.',
+            ], 422);
+        }
+
+        $sponsor->update($updates);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'co_branding_header_url' => $sponsor->co_branding_header_url
+                    ? Storage::disk('public')->url($sponsor->co_branding_header_url) : null,
+                'co_branding_splash_url' => $sponsor->co_branding_splash_url
+                    ? Storage::disk('public')->url($sponsor->co_branding_splash_url) : null,
+            ],
+            'meta' => null,
+            'message' => 'Co-branding assets uploaded successfully.',
+        ]);
+    }
+
+    /**
+     * Dedicated storefront page for a sponsor.
+     * Shows profile, tier info, badge, and paginated products.
+     *
+     * GET /api/v1/sponsors/{id}/storefront
+     */
+    public function storefront(int $id): JsonResponse
+    {
+        $sponsor = Sponsor::with(['sponsorTier', 'province', 'city'])
+            ->where('is_active', true)
+            ->findOrFail($id);
+
+        $tier = $sponsor->sponsorTier;
+
+        // Build badge data
+        $badge = [
+            'label' => $tier?->badge_label ?? strtoupper($sponsor->tier ?? ''),
+            'color' => $tier?->badge_color ?? '#999999',
+            'icon_url' => $tier?->icon_url ? Storage::disk('public')->url($tier->icon_url) : null,
+        ];
+
+        // Paginated products for this sponsor
+        $perPage = min((int) request('per_page', 20), 100);
+        $products = SponsorProduct::with('sponsor')
+            ->where('sponsor_id', $sponsor->id)
+            ->where('is_active', true)
+            ->orderBy('order')
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'sponsor' => array_merge($sponsor->toArray(), [
+                    'logo_url' => $sponsor->logo_path
+                        ? Storage::disk('public')->url($sponsor->logo_path) : null,
+                    'co_branding_header_url' => $sponsor->co_branding_header_url
+                        ? Storage::disk('public')->url($sponsor->co_branding_header_url) : null,
+                    'co_branding_splash_url' => $sponsor->co_branding_splash_url
+                        ? Storage::disk('public')->url($sponsor->co_branding_splash_url) : null,
+                ]),
+                'tier_info' => $tier ? [
+                    'id' => $tier->id,
+                    'slug' => $tier->slug,
+                    'name' => $tier->name,
+                    'badge_label' => $tier->badge_label,
+                    'badge_color' => $tier->badge_color ?? '#999999',
+                    'icon_url' => $tier->icon_url
+                        ? Storage::disk('public')->url($tier->icon_url) : null,
+                    'sort_order' => $tier->sort_order,
+                ] : null,
+                'badge' => $badge,
+                'products' => $products->items(),
+            ],
+            'meta' => [
+                'current_page' => $products->currentPage(),
+                'last_page' => $products->lastPage(),
+                'per_page' => $products->perPage(),
+                'total_products' => $products->total(),
+            ],
+            'message' => null,
+        ]);
+    }
+
+    /**
      * List all available tiers with their benefit summary.
      *
      * GET /api/v1/sponsors/tiers
@@ -291,6 +455,9 @@ class SponsorApiController extends Controller
             ->get()
             ->map(function ($tier) {
                 return array_merge($tier->toArray(), [
+                    'badge_color' => $tier->badge_color ?? '#999999',
+                    'icon_url' => $tier->icon_url
+                        ? Storage::disk('public')->url($tier->icon_url) : null,
                     'benefit_summary' => $tier->benefitCategories->map(fn ($bc) => [
                         'slug' => $bc->slug,
                         'name' => $bc->name,

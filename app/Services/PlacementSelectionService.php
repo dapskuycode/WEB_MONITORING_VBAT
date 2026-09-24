@@ -38,7 +38,7 @@ class PlacementSelectionService
 
         $maxSlots = $slots > 0 ? $slots : $config->max_slots;
 
-        // 2. Get eligible campaigns
+        // 2. Get eligible campaigns (weighted by share_of_voice per tier/config)
         $eligibleCampaigns = $this->getEligibleCampaigns($placementType, $config, $maxSlots);
 
         if ($eligibleCampaigns->isEmpty()) {
@@ -48,8 +48,12 @@ class PlacementSelectionService
                 : new Collection();
         }
 
-        // 3. Weighted probabilistic selection
-        $selected = $this->weightedRandomSelect($eligibleCampaigns, $maxSlots, $config->target_probability);
+        // 3. Apply Share of Voice (SoV) weighting to candidates.
+        //    Each candidate's base weight is boosted by its placement config's SoV.
+        $sovWeightedCandidates = $this->applyShareOfVoiceWeighting($eligibleCampaigns, $placementType);
+
+        // 4. Weighted probabilistic selection
+        $selected = $this->weightedRandomSelect($sovWeightedCandidates, $maxSlots, $config->target_probability);
 
         // 4. Log selections for analytics
         $this->logSelections($selected, $placementType);
@@ -198,6 +202,38 @@ class PlacementSelectionService
         if (!empty($logs)) {
             DB::table('campaign_logs')->insert($logs);
         }
+    }
+
+    /**
+     * Apply Share of Voice (SoV) weighting to campaigns.
+     *
+     * Each campaign's base weight is multiplied by (1 + share_of_voice)
+     * from its sponsor's placement config. Higher SoV = higher chance.
+     *
+     * @param Collection<Campaign> $candidates
+     * @return Collection<Campaign> (with modified weight attribute)
+     */
+    protected function applyShareOfVoiceWeighting(Collection $candidates, string $placementType): Collection
+    {
+        // Fetch SoV values for all relevant tier configs in one query
+        $sovMap = PlacementConfig::active()
+            ->where('placement_type', $placementType)
+            ->whereNotNull('tier_id')
+            ->pluck('share_of_voice', 'tier_id')
+            ->toArray();
+
+        return $candidates->map(function (Campaign $campaign) use ($sovMap) {
+            $tierId = $campaign->sponsor?->tier_id;
+            $sov = ($tierId !== null && isset($sovMap[$tierId]))
+                ? (float) $sovMap[$tierId]
+                : 0.0;
+
+            // Boost weight: base_weight * (1 + SoV)
+            // SoV 0.000 = no boost, SoV 0.500 = 1.5x boost, SoV 1.000 = 2x boost
+            $campaign->weight = (float) $campaign->weight * (1.0 + $sov);
+
+            return $campaign;
+        });
     }
 
     /**

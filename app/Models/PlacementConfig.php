@@ -15,6 +15,7 @@ class PlacementConfig extends Model
         'tier_id',
         'max_slots',
         'target_probability',
+        'share_of_voice',
         'insertion_interval',
         'fallback_behavior',
         'is_active',
@@ -23,6 +24,7 @@ class PlacementConfig extends Model
 
     protected $casts = [
         'target_probability' => 'float',
+        'share_of_voice' => 'float',
         'is_active' => 'boolean',
         'max_slots' => 'integer',
         'insertion_interval' => 'integer',

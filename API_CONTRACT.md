@@ -1,4 +1,4 @@
-# 📡 VBAT-WEBSITE API Contract v1.9
+# 📡 VBAT-WEBSITE API Contract v2.0
 
 > **Project:** VBAT-PONSEL Backend
 > **Maintainer:** Solkhan (mohamadsolkhannawawi)
@@ -437,6 +437,137 @@ Response: `{ "success": true, "data": { "ingested": 1 } }`
 
 ---
 
+## 4.x Gap Closing Endpoints (v2.0)
+
+### 4.x.1 POST `/api/v1/sponsors/{id}/co-branding`
+
+**Auth:** `auth:sanctum` (sponsor who owns this sponsor record only; Diamond tier only)
+
+Upload co-branding assets (header banner & splash logo) for Diamond-tier sponsors.
+
+**Request (multipart/form-data):**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `header_banner` | file (image/jpeg, image/png) | One of two | Header banner image |
+| `splash_logo` | file (image/jpeg, image/png) | One of two | Splash screen logo |
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "co_branding_header_url": "https://...",
+    "co_branding_splash_url": null
+  },
+  "message": "Co-branding assets uploaded successfully."
+}
+```
+
+**Errors:** 403 (non-Diamond tier or non-owner), 422 (no file provided, non-image file)
+
+---
+
+### 4.x.2 GET `/api/v1/sponsors/{id}/storefront`
+
+**Auth:** Public (no token)
+
+Dedicated sponsor storefront page — returns sponsor profile, tier info, badge, and paginated product list.
+
+**Query Parameters:**
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `per_page` | 20 | Items per page (max 50) |
+| `page` | 1 | Page number |
+
+**Response 200:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "sponsor": { "id": 1, "name": "...", "slug": "...", "logo_url": "...", "description": "..." },
+    "tier_info": { "name": "Diamond", "badge_label": "Diamond Partner", "badge_color": "#B9F2FF" },
+    "badge": { "label": "Diamond Partner", "color": "#B9F2FF", "icon_url": null },
+    "products": [ { "id": 1, "name": "...", "price": 500000, "image_url": "..." } ]
+  },
+  "meta": { "total_products": 25, "current_page": 1, "per_page": 20, "last_page": 2 }
+}
+```
+
+**Errors:** 404 (inactive or non-existent sponsor)
+
+---
+
+### 4.x.3 POST `/api/v1/admin/push-broadcast`
+
+**Auth:** `auth:sanctum` + `role:super_admin`
+
+Create and log a push broadcast notification.
+
+**Request (JSON):**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string (max 200) | Yes | Broadcast title |
+| `body` | string (max 1000) | Yes | Broadcast message body |
+| `target_role` | string (all, student, sponsor) | No (default: all) | Target audience |
+| `deep_link_type` | string (max 64) | No | Deep link type for mobile |
+| `deep_link_id` | integer | No | Deep link target ID |
+
+**Response 201:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "title": "New Feature Available",
+    "target_role": "all",
+    "status": "sent",
+    "sent_at": "2026-09-24T17:27:39+00:00"
+  },
+  "message": "Push broadcast created and logged successfully."
+}
+```
+
+**Errors:** 401 (not authenticated), 403 (not admin), 422 (validation)
+
+---
+
+### 4.x.4 Hero Slider Max 6 Validation
+
+Enforced inside `PUT /api/v1/admin/campaigns/{id}` and campaign activation flow. If a sponsor/admin attempts to activate a `hero_slider` type campaign when 6 are already active, returns HTTP 422:
+
+```json
+{
+  "success": false,
+  "message": "Maximum of 6 active hero_slider campaigns are allowed. Please deactivate one before activating a new one."
+}
+```
+
+---
+
+### 4.x.5 Tier Badge Metadata in Sponsor Responses
+
+`GET /api/v1/sponsors` and `GET /api/v1/sponsors/{id}` now include `tier_badge` object:
+
+```json
+{
+  "tier_badge": {
+    "label": "Diamond Partner",
+    "color": "#B9F2FF",
+    "icon_url": null
+  }
+}
+```
+
+`GET /api/v1/sponsors/tiers` now includes `badge_color` and `icon_url` fields per tier.
+
+---
+
 ## 5. Changelog
 
 | Version | Date | Endpoint / Change | Description |
@@ -451,6 +582,7 @@ Response: `{ "success": true, "data": { "ingested": 1 } }`
 | v1.7    | 2026-09-24 | `/api/v1/auth/login`, `/api/v1/auth/logout`, `/api/v1/auth/me` | Auth token issuance, logout, profile — Sanctum Bearer tokens (TASK-BE-06) |
 | v1.8    | 2026-09-24 | `/api/v1/feed/shop`, `/api/v1/feed/home` | Dynamic feed with cursor pagination, mixed content merge, banner insertion (REQ-SF-01) |
 | v1.9    | 2026-09-24 | `POST /api/v1/learning-materials/bulk-import`, auth hardening on core routes, marketplace URL validation | Bulk XLSX/CSV import, auth on POST/PUT/DELETE endpoints, ownership server-side, Shopee/Tokopedia domain validation, analytics export URL fix (Independent Review fixes) |
+| v2.0    | 2026-09-24 | **Gap Closing: C1 Co-Branding, M1 Storefront, m1 Hero Slider Max 6, M2 Push Broadcast, M3 SoV Algorithm, m2 Tier Badge** | 4 new endpoints (73 total), 3 new migrations, SoV-weighted placement selection, Diamond co-branding upload, sponsor storefront with paginated products, admin push broadcast creation, tier badge metadata in sponsor responses |
 
 ---
 
