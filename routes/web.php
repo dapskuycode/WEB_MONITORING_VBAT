@@ -5,6 +5,7 @@ use App\Livewire\SponsorManager;
 use App\Livewire\FeedManager;
 use App\Livewire\BulkUpload;
 use App\Livewire\QuizManager;
+use App\Livewire\RuleConfigManager;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -50,6 +51,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('admin/feed', FeedManager::class)->name('admin.feed');
         Route::get('admin/bulk-upload', BulkUpload::class)->name('admin.bulk-upload');
         Route::get('admin/quizzes', QuizManager::class)->name('admin.quizzes');
+        Route::get('admin/rules', RuleConfigManager::class)->name('admin.rules');
     });
 
     // 2. Modul Sponsor (Mitra Sponsor, Super Admin, & Owner)
