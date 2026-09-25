@@ -11,7 +11,12 @@ use App\Http\Controllers\Api\PlacementApiController;
 use App\Http\Controllers\Api\SponsorProductApiController;
 use App\Http\Controllers\Api\SponsorApiController;
 use App\Http\Controllers\Api\AuthApiController;
+use App\Http\Controllers\Api\BookmarkApiController;
+use App\Http\Controllers\Api\CourseApiController;
+use App\Http\Controllers\Api\EntitlementApiController;
 use App\Http\Controllers\Api\FeedApiController;
+use App\Http\Controllers\Api\LessonApiController;
+use App\Http\Controllers\Api\QuizApiController;
 use App\Http\Controllers\Api\TrackerApiController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +49,17 @@ Route::prefix('v1')->group(function () {
     Route::get('/learning-materials', [LearningMaterialApiController::class, 'index']);
     Route::get('/learning-materials/{material}', [LearningMaterialApiController::class, 'show']);
     Route::post('/learning-materials/validate-youtube', [LearningMaterialApiController::class, 'validateYouTube']);
+
+    // 3a. Course & Lesson — Public read
+    Route::get('/courses', [CourseApiController::class, 'index']);
+    Route::get('/courses/free-class', [CourseApiController::class, 'freeClass']);
+    Route::get('/courses/{id}', [CourseApiController::class, 'show']);
+    Route::get('/lessons', [LessonApiController::class, 'index']);
+    Route::get('/lessons/{id}', [LessonApiController::class, 'show']);
+
+    // 3b. Quiz — Public read
+    Route::get('/quizzes', [QuizApiController::class, 'index']);
+    Route::get('/quizzes/{id}', [QuizApiController::class, 'show']);
 
     // 4. Placement & Probabilistic Selection — Public read
     Route::get('/placements/best-deal', [PlacementApiController::class, 'bestDeal']);
@@ -95,6 +111,36 @@ Route::prefix('v1')->group(function () {
         Route::post('/learning-materials/{material}/pdf', [LearningMaterialApiController::class, 'uploadPdf']);
         Route::post('/learning-materials/{material}/progress', [LearningMaterialApiController::class, 'recordProgress']);
         Route::get('/learning-materials/{material}/analytics', [LearningMaterialApiController::class, 'analytics']);
+
+        // 3a. Course & Lesson — Write operations
+        Route::post('/courses', [CourseApiController::class, 'store']);
+        Route::put('/courses/{id}', [CourseApiController::class, 'update']);
+        Route::post('/courses/{id}/archive', [CourseApiController::class, 'archive']);
+        Route::delete('/courses/{id}', [CourseApiController::class, 'destroy']);
+        Route::post('/lessons', [LessonApiController::class, 'store']);
+        Route::put('/lessons/{id}', [LessonApiController::class, 'update']);
+        Route::delete('/lessons/{id}', [LessonApiController::class, 'destroy']);
+
+        // 3b. Quiz — Write operations & attempts
+        Route::post('/quizzes', [QuizApiController::class, 'store']);
+        Route::put('/quizzes/{id}', [QuizApiController::class, 'update']);
+        Route::delete('/quizzes/{id}', [QuizApiController::class, 'destroy']);
+        Route::post('/quizzes/{id}/questions', [QuizApiController::class, 'addQuestion']);
+        Route::put('/quiz-questions/{id}', [QuizApiController::class, 'updateQuestion']);
+        Route::delete('/quiz-questions/{id}', [QuizApiController::class, 'deleteQuestion']);
+        Route::post('/quizzes/{id}/start-attempt', [QuizApiController::class, 'startAttempt']);
+        Route::post('/quizzes/{id}/submit-attempt', [QuizApiController::class, 'submitAttempt']);
+
+        // 3c. Bookmarks — Learning bookmarks (separate from wishlist)
+        Route::get('/bookmarks', [BookmarkApiController::class, 'index']);
+        Route::post('/bookmarks/toggle', [BookmarkApiController::class, 'toggle']);
+        Route::post('/bookmarks/check', [BookmarkApiController::class, 'check']);
+
+        // 3d. Entitlements — Access gating & certificates
+        Route::get('/entitlements', [EntitlementApiController::class, 'index']);
+        Route::get('/entitlements/courses/{courseId}/access', [EntitlementApiController::class, 'checkAccess']);
+        Route::get('/entitlements/courses/{courseId}/manifest', [EntitlementApiController::class, 'downloadManifest']);
+        Route::post('/entitlements/courses/{courseId}/kta-certificate', [EntitlementApiController::class, 'issueKtaCertificate']);
 
         // 3b. Bulk Import (REQ-ADM-02)
         Route::post('/learning-materials/bulk-import', [LearningMaterialApiController::class, 'bulkImport']);

@@ -109,6 +109,14 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(UserWishlist::class);
     }
 
+    /**
+     * @return HasMany<Entitlement, $this>
+     */
+    public function entitlements(): HasMany
+    {
+        return $this->hasMany(Entitlement::class);
+    }
+
     public function getAgeAttribute(): ?int
     {
         return $this->birth_date ? Carbon::parse($this->birth_date)->age : null;
