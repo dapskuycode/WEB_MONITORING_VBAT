@@ -133,6 +133,14 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasOne(Membership::class);
     }
 
+    /**
+     * @return HasMany<Certificate, $this>
+     */
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(Certificate::class);
+    }
+
     public function getAgeAttribute(): ?int
     {
         return $this->birth_date ? Carbon::parse($this->birth_date)->age : null;

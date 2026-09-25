@@ -40,10 +40,17 @@ Route::prefix('v1')->group(function () {
         
         // Membership & KTA (Phase G — MEM-BE-01)
         Route::get('/membership', [\App\Http\Controllers\Api\MembershipController::class, 'show']);
+        
+        // Certificates & QR (Phase G — CERT-BE-01)
+        Route::get('/certificates', [\App\Http\Controllers\Api\CertificateController::class, 'index']);
+        Route::get('/certificates/{certificate}', [\App\Http\Controllers\Api\CertificateController::class, 'show']);
     });
     
     // Public membership verification
     Route::get('/membership/verify/{membershipNumber}', [\App\Http\Controllers\Api\MembershipController::class, 'verify']);
+    
+    // Public certificate verification
+    Route::get('/certificates/verify/{certificateNumber}', [\App\Http\Controllers\Api\CertificateController::class, 'verify']);
 
     // 1. Feed Dinamis & Infinite Scroll (Phase 7 — REQ-SF-01)
     Route::get('/feed/shop', [FeedApiController::class, 'shop']);
