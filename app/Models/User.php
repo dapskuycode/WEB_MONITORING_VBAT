@@ -117,6 +117,14 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(Entitlement::class);
     }
 
+    /**
+     * @return HasMany<OAuthProvider, $this>
+     */
+    public function oauthProviders(): HasMany
+    {
+        return $this->hasMany(OAuthProvider::class);
+    }
+
     public function getAgeAttribute(): ?int
     {
         return $this->birth_date ? Carbon::parse($this->birth_date)->age : null;

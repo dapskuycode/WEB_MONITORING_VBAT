@@ -29,9 +29,14 @@ Route::prefix('v1')->group(function () {
 
     // Auth (Phase 6 — TASK-BE-06)
     Route::post('/auth/login', [AuthApiController::class, 'login']);
+    
+    // OAuth Social Login (Phase G — AUTH-BE-01)
+    Route::post('/auth/oauth/callback', [\App\Http\Controllers\Api\OAuthController::class, 'callback']);
+    
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthApiController::class, 'logout']);
         Route::get('/auth/me', [AuthApiController::class, 'me']);
+        Route::get('/auth/profile/status', [\App\Http\Controllers\Api\OAuthController::class, 'checkProfileStatus']);
     });
 
     // 1. Feed Dinamis & Infinite Scroll (Phase 7 — REQ-SF-01)
