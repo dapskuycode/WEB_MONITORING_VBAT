@@ -19,6 +19,8 @@ class SponsorProductFactory extends Factory
             'description' => fake()->sentence(),
             'price' => fake()->randomFloat(2, 10000, 5000000),
             'discount_price' => fake()->optional(0.3)->randomFloat(2, 5000, 4500000),
+            'rating' => fake()->optional(0.7)->randomFloat(2, 3.0, 5.0),
+            'sold_count' => fake()->optional(0.7)->numberBetween(0, 5000),
             'image_path' => null,
             'shopee_url' => fake()->optional(0.7)->url(),
             'tokopedia_url' => fake()->optional(0.5)->url(),

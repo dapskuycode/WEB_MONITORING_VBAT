@@ -287,4 +287,122 @@ class FeedApiTest extends TestCase
         $items = $response->json('data');
         $this->assertLessThanOrEqual(50, count($items), 'per_page should be capped at 50');
     }
+
+    /** @test */
+    public function test_shop_feed_end_condition(): void
+    {
+        $sponsor = Sponsor::factory()->create(['is_active' => true]);
+        SponsorProduct::factory()->count(10)->create([
+            'sponsor_id' => $sponsor->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->getJson('/api/v1/feed/shop?per_page=10');
+
+        $response->assertOk();
+        $meta = $response->json('meta');
+        $this->assertNull($meta['next_cursor'], 'next_cursor should be null when exactly per_page items');
+        $this->assertFalse($meta['has_more'], 'has_more should be false on last page');
+    }
+
+    /** @test */
+    public function test_home_feed_cursor_pagination(): void
+    {
+        $sponsor = Sponsor::factory()->create(['is_active' => true]);
+        $products = SponsorProduct::factory()->count(5)->create([
+            'sponsor_id' => $sponsor->id,
+            'is_active' => true,
+        ]);
+
+        $lesson = Lesson::factory()->create();
+        $materials = LearningMaterial::factory()->count(5)->create([
+            'lesson_id' => $lesson->id,
+            'status' => 'published',
+        ]);
+
+        // First page
+        $response1 = $this->getJson('/api/v1/feed/home?per_page=5');
+        $response1->assertOk();
+        $meta1 = $response1->json('meta');
+        $this->assertTrue($meta1['has_more']);
+        $this->assertNotNull($meta1['next_cursor']);
+
+        // Second page
+        $response2 = $this->getJson('/api/v1/feed/home?per_page=5&cursor=' . $meta1['next_cursor']);
+        $response2->assertOk();
+        $meta2 = $response2->json('meta');
+        $this->assertFalse($meta2['has_more']);
+        $this->assertNull($meta2['next_cursor']);
+
+        // No duplicates — compare composite identity (content_type + id), since
+        // products and materials live in separate tables with overlapping id ranges.
+        $keys1 = array_map(fn ($i) => $i['content_type'] . ':' . $i['id'], $response1->json('data'));
+        $keys2 = array_map(fn ($i) => $i['content_type'] . ':' . $i['id'], $response2->json('data'));
+        $this->assertEmpty(array_intersect($keys1, $keys2), 'Home feed pages should not have duplicate items');
+    }
+
+    /** @test */
+    public function test_three_page_sequential_no_duplicate(): void
+    {
+        $sponsor = Sponsor::factory()->create(['is_active' => true]);
+        SponsorProduct::factory()->count(30)->create([
+            'sponsor_id' => $sponsor->id,
+            'is_active' => true,
+        ]);
+
+        $allIds = [];
+        $cursor = null;
+
+        for ($page = 1; $page <= 3; $page++) {
+            $url = '/api/v1/feed/shop?per_page=10' . ($cursor ? '&cursor=' . $cursor : '');
+            $response = $this->getJson($url);
+            $response->assertOk();
+
+            $items = $response->json('data');
+            $this->assertCount(10, $items, "Page {$page} should have 10 items");
+
+            $pageIds = array_column($items, 'id');
+            $this->assertEmpty(array_intersect($allIds, $pageIds), "Page {$page} should not repeat previous IDs");
+            $allIds = array_merge($allIds, $pageIds);
+
+            $cursor = $response->json('meta.next_cursor');
+        }
+
+        $this->assertCount(30, array_unique($allIds), 'All 30 items across 3 pages should be unique');
+    }
+
+    /** @test */
+    public function test_invalid_cursor_returns_graceful_error(): void
+    {
+        $response = $this->getJson('/api/v1/feed/shop?cursor=invalid_garbage_string');
+
+        // Should not crash; return empty or 400 gracefully
+        $this->assertTrue(
+            in_array($response->getStatusCode(), [200, 400], true),
+            'Invalid cursor should return 200 or 400'
+        );
+    }
+
+    /** @test */
+    public function test_home_feed_end_condition(): void
+    {
+        $sponsor = Sponsor::factory()->create(['is_active' => true]);
+        SponsorProduct::factory()->count(3)->create([
+            'sponsor_id' => $sponsor->id,
+            'is_active' => true,
+        ]);
+
+        $lesson = Lesson::factory()->create();
+        LearningMaterial::factory()->count(2)->create([
+            'lesson_id' => $lesson->id,
+            'status' => 'published',
+        ]);
+
+        $response = $this->getJson('/api/v1/feed/home?per_page=10');
+
+        $response->assertOk();
+        $meta = $response->json('meta');
+        $this->assertNull($meta['next_cursor'], 'next_cursor should be null when total items < per_page');
+        $this->assertFalse($meta['has_more'], 'has_more should be false on last page');
+    }
 }

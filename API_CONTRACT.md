@@ -130,56 +130,101 @@ Response:
 | GET    | `/api/v1/feed/shop` | Product-only feed with cursor pagination + banner insertion | Implemented |
 | GET    | `/api/v1/feed/home` | Mixed feed (product + material + banner) with cursor pagination | Implemented |
 
-**Query params:** `?cursor=<base64>&per_page=<1..50>` (default 20)
+**Public endpoint** — no authentication required.
 
-**Response:**
+#### 2.3.1 Common Query Parameters
+
+| Parameter | Type | Default | Range | Description |
+|-----------|------|---------|-------|-------------|
+| `cursor` | string | `null` | base64-encoded JSON | Pagination cursor returned from a previous `meta.next_cursor` |
+| `per_page` | integer | `20` | `1..50` | Number of content items per page; capped at `50` by the API |
+
+#### 2.3.2 Cursor Format
+
+The cursor is a base64-encoded JSON object carrying the last item seen on the previous page:
+
+```json
+{ "created_at": "2026-09-24T10:00:00", "id": 42 }
+```
+
+It is opaque to clients — pass the value of `meta.next_cursor` verbatim into the next request as `?cursor=<value>`.
+
+#### 2.3.3 Content Type Values
+
+| `content_type` | Source | Available in |
+|----------------|--------|--------------|
+| `product` | Active `sponsor_products` joined to active `sponsors` | `shop`, `home` |
+| `material` | `learning_materials` with `status = published` | `home` only |
+| `banner` | Active `campaigns` matching the feed's placement type | `shop`, `home` |
+
+#### 2.3.4 Meta Envelope
+
+Every feed response includes:
+
+```json
+{
+  "meta": {
+    "next_cursor": "eyJjcm...Mn0=",
+    "has_more": true,
+    "per_page": 20
+  }
+}
+```
+
+| Field | Meaning |
+|-------|---------|
+| `next_cursor` | Cursor for the next page; `null` when no more pages |
+| `has_more` | `true` when at least one additional item exists after the current page |
+| `per_page` | Items requested, capped at `50` |
+
+> **Note:** Banners are inserted into the `data` array client-side and do **not** affect cursor calculations. They are pulled from `campaigns` by `placement_type` (`shop_horizontal` for shop feed, `hero_slider` for home feed) every `feed_configs.insertion_interval` items (default `12` for shop, `8` for home).
+
+---
+
+#### 2.3.5 `GET /api/v1/feed/shop`
+
+Product-only feed.
+
+**Success response:**
+
 ```json
 {
   "success": true,
-  "data": {
-    "items": [
-      {
-        "content_type": "product",
-        "id": 42,
-        "name": "Product Name",
-        "description": "...",
-        "price": 99000.0,
-        "discount_price": 79000.0,
-        "image": "https://.../product.png",
-        "shopee_url": "https://shopee.co.id/...",
-        "tokopedia_url": "https://tokopedia.com/...",
-        "rating": "4.9",
-        "sold": "250+",
-        "sponsor": { "id": 3, "name": "Sponsor", "tier": "GOLD" },
-        "created_at": "2026-09-24T10:00:00+07:00"
-      },
-      {
-        "content_type": "material",
-        "id": 7,
-        "title": "Learning Material Title",
-        "description": "...",
-        "material_type": "video",
-        "thumbnail": "https://.../thumb.png",
-        "youtube_url": "https://youtube.com/watch?v=...",
-        "duration_seconds": 600,
-        "created_at": "2026-09-24T09:00:00+07:00"
-      },
-      {
-        "content_type": "banner",
-        "id": 5,
-        "title": "Promo Banner",
-        "description": "...",
-        "media_path": "https://.../banner.png",
-        "media_type": "image",
-        "target_url": "https://...",
-        "placement_type": "hero_slider",
-        "sponsor_name": "Sponsor",
+  "data": [
+    {
+      "content_type": "product",
+      "id": 42,
+      "name": "Product Name",
+      "description": "Product description",
+      "price": 99000.00,
+      "discount_price": 79000.00,
+      "image": "https://example.com/storage/products/42.png",
+      "shopee_url": "https://shopee.co.id/...",
+      "tokopedia_url": "https://tokopedia.com/...",
+      "rating": "4.80",
+      "sold": "250+",
+      "sponsor": {
+        "id": 3,
+        "name": "Sponsor",
         "tier": "GOLD"
-      }
-    ]
-  },
+      },
+      "created_at": "2026-09-24T10:00:00+07:00"
+    },
+    {
+      "content_type": "banner",
+      "id": 5,
+      "title": "Promo Banner",
+      "description": "...",
+      "media_path": "https://example.com/storage/banners/5.png",
+      "media_type": "image",
+      "target_url": "https://...",
+      "placement_type": "shop_horizontal",
+      "sponsor_name": "Sponsor",
+      "tier": "GOLD"
+    }
+  ],
   "meta": {
-    "next_cursor": "eyJjcmVhdGVkX2F0IjoiMjAyNi0wOS0yNCAxMDowMDowMCIsImlkIjo0Mn0=",
+    "next_cursor": "eyJjcm...Mn0=",
     "has_more": true,
     "per_page": 20
   },
@@ -187,13 +232,108 @@ Response:
 }
 ```
 
+**Empty response:**
+
+```json
+{
+  "success": true,
+  "data": [],
+  "meta": {
+    "next_cursor": null,
+    "has_more": false,
+    "per_page": 20
+  },
+  "message": null
+}
+```
+
+---
+
+#### 2.3.6 `GET /api/v1/feed/home`
+
+Mixed feed of products, learning materials, and banners. Sorted by `created_at DESC, id DESC` across types (in-memory merge, SQLite-safe).
+
+**Success response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "content_type": "product",
+      "id": 42,
+      "name": "Product Name",
+      "description": "...",
+      "price": 99000.00,
+      "discount_price": 79000.00,
+      "image": "https://example.com/storage/products/42.png",
+      "shopee_url": "https://shopee.co.id/...",
+      "tokopedia_url": "https://tokopedia.com/...",
+      "rating": null,
+      "sold": null,
+      "sponsor": {
+        "id": 3,
+        "name": "Sponsor",
+        "tier": "GOLD"
+      },
+      "created_at": "2026-09-24T10:00:00+07:00"
+    },
+    {
+      "content_type": "material",
+      "id": 7,
+      "title": "Learning Material Title",
+      "description": "...",
+      "material_type": "video",
+      "thumbnail": "https://example.com/storage/thumbs/7.png",
+      "youtube_url": "https://youtube.com/watch?v=...",
+      "pdf_path": null,
+      "external_url": null,
+      "duration_seconds": 600,
+      "created_at": "2026-09-24T09:00:00+07:00"
+    },
+    {
+      "content_type": "banner",
+      "id": 5,
+      "title": "Promo Banner",
+      "description": "...",
+      "media_path": "https://example.com/storage/banners/5.png",
+      "media_type": "image",
+      "target_url": "https://...",
+      "placement_type": "hero_slider",
+      "sponsor_name": "Sponsor",
+      "tier": "GOLD"
+    }
+  ],
+  "meta": {
+    "next_cursor": "eyJjcm...Mn0=",
+    "has_more": true,
+    "per_page": 20
+  },
+  "message": null
+}
+```
+
+**Error response (invalid cursor):**
+
+```json
+{
+  "success": false,
+  "data": null,
+  "errors": {
+    "cursor": ["The provided cursor is invalid."]
+  },
+  "message": "Invalid cursor"
+}
+```
+
+HTTP status: `400` (or `200` with empty `data` in tolerant mode depending on client handling).
+
 > **Behavior:**
 > - Home feed merges active products + published learning materials, sorted by `created_at DESC, id DESC` (in-memory merge — no SQL UNION, SQLite-safe).
-> - Banners from `campaigns` (placement_type matching feed) are inserted every N items (configurable via `feed_configs.insertion_interval`, default 12).
 > - Inactive products, draft materials, and inactive sponsors are filtered out.
 > - `next_cursor` is `null` on the last page.
 
-### 2.3.1 Feed Config (admin-tunable)
+### 2.3.7 Feed Config (admin-tunable)
 
 `feed_configs` table controls banner insertion per feed type:
 

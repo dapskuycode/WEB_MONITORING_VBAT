@@ -12,6 +12,15 @@ use Illuminate\Support\Collection;
 class FeedService
 {
     /**
+     * Type ranking used for stable tie-break in mixed home feed.
+     * Higher rank = appears earlier when timestamps are equal.
+     */
+    private const TYPE_RANK = [
+        'product' => 2,
+        'material' => 1,
+    ];
+
+    /**
      * Generate shop feed (product-only) with cursor pagination.
      *
      * @return array<string, mixed>
@@ -27,7 +36,11 @@ class FeedService
             ->orderByDesc('id');
 
         $products = $this->cursorPaginate($query, $cursor, $perPage);
-        $nextCursor = $this->encodeCursor($products->last());
+        $hasMore = $products->count() > $perPage;
+        if ($hasMore) {
+            $products = $products->slice(0, $perPage)->values();
+        }
+        $nextCursor = $hasMore ? $this->encodeCursor($products->last()) : null;
 
         $items = $products->map(fn ($p) => $this->formatProductItem($p));
 
@@ -39,7 +52,7 @@ class FeedService
             'items' => $items,
             'meta' => [
                 'next_cursor' => $nextCursor,
-                'has_more' => $products->count() === $perPage,
+                'has_more' => $hasMore,
                 'per_page' => $perPage,
             ],
         ];
@@ -55,12 +68,12 @@ class FeedService
      */
     public function getHomeFeed(?string $cursor = null, int $perPage = 20): array
     {
-        // Determine cursor cutoff
-        $cursorCutoff = null;
+        // Determine cursor cutoff (composite: created_at + id + type)
+        $cut = null;
         if ($cursor) {
             $decoded = $this->decodeCursor($cursor);
             if ($decoded) {
-                $cursorCutoff = $decoded;
+                $cut = $decoded;
             }
         }
 
@@ -68,63 +81,53 @@ class FeedService
         $products = SponsorProduct::with('sponsor')
             ->where('is_active', true)
             ->whereHas('sponsor', fn ($q) => $q->where('is_active', true))
-            ->when($cursorCutoff, function ($q, $cut) {
-                $q->where(function ($q2) use ($cut) {
-                    $q2->where('created_at', '<', $cut['created_at'])
-                        ->orWhere(function ($q3) use ($cut) {
-                            $q3->where('created_at', '=', $cut['created_at'])
-                                ->where('id', '<', $cut['id']);
-                        });
-                });
-            })
+            ->when($cut, fn ($q) => $this->applyHomeCursor($q, $cut, 'product'))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->limit($perPage)
+            ->limit($perPage + 1)
             ->get()
             ->map(fn ($p) => (object) [
                 'sort_date' => $p->created_at,
                 'sort_id' => $p->id,
                 'type' => 'product',
+                'rank' => self::TYPE_RANK['product'],
                 'model' => $p,
             ]);
 
         // Fetch published learning materials
         $materials = LearningMaterial::where('status', 'published')
-            ->when($cursorCutoff, function ($q, $cut) {
-                $q->where(function ($q2) use ($cut) {
-                    $q2->where('created_at', '<', $cut['created_at'])
-                        ->orWhere(function ($q3) use ($cut) {
-                            $q3->where('created_at', '=', $cut['created_at'])
-                                ->where('id', '<', $cut['id']);
-                        });
-                });
-            })
+            ->when($cut, fn ($q) => $this->applyHomeCursor($q, $cut, 'material'))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->limit($perPage)
+            ->limit($perPage + 1)
             ->get()
             ->map(fn ($m) => (object) [
                 'sort_date' => $m->created_at,
                 'sort_id' => $m->id,
                 'type' => 'material',
+                'rank' => self::TYPE_RANK['material'],
                 'model' => $m,
             ]);
 
-        // Merge and sort by created_at desc, then id desc
-        $merged = $products->merge($materials)
-            ->sortByDesc(fn ($item) => $item->sort_date->timestamp)
-            ->sortByDesc(fn ($item) => $item->sort_id)
+        // Merge and apply single stable sort (created_at desc, rank desc, id desc)
+        $merged = $products->toBase()->merge($materials->toBase())
+            ->sort(function ($a, $b) {
+                $timeCmp = $b->sort_date->timestamp <=> $a->sort_date->timestamp;
+                if ($timeCmp !== 0) {
+                    return $timeCmp;
+                }
+
+                $rankCmp = $b->rank <=> $a->rank;
+                if ($rankCmp !== 0) {
+                    return $rankCmp;
+                }
+
+                return $b->sort_id <=> $a->sort_id;
+            })
             ->values();
 
-        // Stable sort: primary key = created_at desc, secondary = id desc
-        $merged = $merged->sort(function ($a, $b) {
-            $timeCmp = $b->sort_date->timestamp <=> $a->sort_date->timestamp;
-            if ($timeCmp !== 0) {
-                return $timeCmp;
-            }
-
-            return $b->sort_id <=> $a->sort_id;
-        })->values();
+        // Determine has_more before slicing
+        $hasMore = $merged->count() > $perPage;
 
         // Take perPage items
         $page = $merged->take($perPage);
@@ -141,10 +144,11 @@ class FeedService
         // Determine next cursor
         $lastItem = $page->last();
         $nextCursor = null;
-        if ($lastItem && $page->count() === $perPage) {
+        if ($lastItem && $hasMore) {
             $nextCursor = base64_encode(json_encode([
                 'created_at' => $lastItem->sort_date->toDateTimeString(),
                 'id' => $lastItem->sort_id,
+                'type' => $lastItem->type,
             ]));
         }
 
@@ -156,7 +160,7 @@ class FeedService
             'items' => $formattedItems,
             'meta' => [
                 'next_cursor' => $nextCursor,
-                'has_more' => $page->count() === $perPage,
+                'has_more' => $hasMore,
                 'per_page' => $perPage,
             ],
         ];
@@ -183,7 +187,7 @@ class FeedService
             }
         }
 
-        return $query->limit($perPage)->get();
+        return $query->limit($perPage + 1)->get();
     }
 
     /**
@@ -246,8 +250,8 @@ class FeedService
             'image' => $image ?: 'assets/images/product_1.png',
             'shopee_url' => $p->shopee_url,
             'tokopedia_url' => $p->tokopedia_url,
-            'rating' => '4.9',
-            'sold' => '250+',
+            'rating' => $p->rating ? (string) $p->rating : null,
+            'sold' => $p->sold_count !== null ? (string) $p->sold_count . '+' : null,
             'sponsor' => [
                 'id' => $p->sponsor?->id,
                 'name' => $p->sponsor?->name ?? 'Mitra Resmi',
@@ -340,5 +344,46 @@ class FeedService
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    /**
+     * Apply composite cursor filter to a query for the home feed.
+     *
+     * The composite cursor includes (created_at, id, type). When filtering a specific
+     * type, we must exclude items that would have already been consumed by the cursor
+     * position, accounting for cross-type ordering via TYPE_RANK.
+     *
+     * @param Builder $query
+     * @param array<string, mixed> $cut
+     * @param string $currentType 'product' or 'material'
+     */
+    private function applyHomeCursor(Builder $query, array $cut, string $currentType): void
+    {
+        $cursorRank = self::TYPE_RANK[$cut['type'] ?? ''] ?? 0;
+        $currentRank = self::TYPE_RANK[$currentType] ?? 0;
+
+        $query->where(function ($q) use ($cut, $cursorRank, $currentRank) {
+            // Strictly older than cursor timestamp
+            $q->where('created_at', '<', $cut['created_at']);
+
+            // Same timestamp: apply tie-break rules
+            $q->orWhere(function ($q2) use ($cut, $cursorRank, $currentRank) {
+                $q2->where('created_at', '=', $cut['created_at']);
+
+                if ($currentRank < $cursorRank) {
+                    // Current type ranks lower than cursor type at same timestamp:
+                    // ALL items of this type at this timestamp are after the cursor
+                    // (nothing to add — already covered by created_at =)
+                } elseif ($currentRank > $cursorRank) {
+                    // Current type ranks higher than cursor type at same timestamp:
+                    // ALL items of this type at this timestamp are before the cursor
+                    // (already covered by created_at < in the outer where)
+                    $q2->whereRaw('1 = 0'); // exclude all at same timestamp
+                } else {
+                    // Same rank (same type): use id tie-break
+                    $q2->where('id', '<', $cut['id']);
+                }
+            });
+        });
     }
 }

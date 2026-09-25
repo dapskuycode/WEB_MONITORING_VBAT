@@ -62,6 +62,8 @@ class SponsorProduct extends Model
         'description',
         'price',
         'discount_price',
+        'rating',
+        'sold_count',
         'image_path',
         'shopee_url',
         'tokopedia_url',
@@ -75,6 +77,8 @@ class SponsorProduct extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'discount_price' => 'decimal:2',
+        'rating' => 'decimal:2',
+        'sold_count' => 'integer',
         'is_featured' => 'boolean',
         'is_active' => 'boolean',
         'view_count' => 'integer',
