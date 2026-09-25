@@ -37,7 +37,13 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthApiController::class, 'logout']);
         Route::get('/auth/me', [AuthApiController::class, 'me']);
         Route::get('/auth/profile/status', [\App\Http\Controllers\Api\OAuthController::class, 'checkProfileStatus']);
+        
+        // Membership & KTA (Phase G — MEM-BE-01)
+        Route::get('/membership', [\App\Http\Controllers\Api\MembershipController::class, 'show']);
     });
+    
+    // Public membership verification
+    Route::get('/membership/verify/{membershipNumber}', [\App\Http\Controllers\Api\MembershipController::class, 'verify']);
 
     // 1. Feed Dinamis & Infinite Scroll (Phase 7 — REQ-SF-01)
     Route::get('/feed/shop', [FeedApiController::class, 'shop']);
