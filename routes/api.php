@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\CourseApiController;
 use App\Http\Controllers\Api\EntitlementApiController;
 use App\Http\Controllers\Api\FeedApiController;
 use App\Http\Controllers\Api\LessonApiController;
+use App\Http\Controllers\Api\MediaServeController;
 use App\Http\Controllers\Api\PaymentApiController;
 use App\Http\Controllers\Api\QuizApiController;
 use App\Http\Controllers\Api\TrackerApiController;
@@ -151,6 +152,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/payment/transactions', [PaymentApiController::class, 'createTransaction']);
         Route::get('/payment/transactions', [PaymentApiController::class, 'transactions']);
         Route::get('/payment/transactions/{id}', [PaymentApiController::class, 'transactionDetail']);
+
+        // 5. Media Authorization — Protected media serve
+        Route::get('/media/serve/{type}/{id}', [MediaServeController::class, 'serve'])->name('api.media.serve');
+        Route::post('/media/access-check', [MediaServeController::class, 'checkAccess']);
 
         // 3b. Bulk Import (REQ-ADM-02)
         Route::post('/learning-materials/bulk-import', [LearningMaterialApiController::class, 'bulkImport']);

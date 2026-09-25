@@ -150,7 +150,12 @@ class LearningMaterialApiTest extends TestCase
 
     public function test_can_show_material_with_computed_attributes(): void
     {
+        $this->actingAs($this->adminUser());
+
         [$course, $lesson] = $this->createCourseAndLesson();
+
+        // Ensure course type is free_class for public access (Phase E requirement)
+        $course->update(['type' => 'free_class']);
 
         $material = LearningMaterial::factory()->youtube()->create([
             'lesson_id' => $lesson->id,

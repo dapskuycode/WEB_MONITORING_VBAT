@@ -140,17 +140,57 @@ class LearningMaterialApiController extends Controller
     /**
      * Display a specific learning material.
      */
-    public function show(int $id): JsonResponse
+    public function show(int $id, Request $request): JsonResponse
     {
         $material = LearningMaterial::with('lesson.course')->findOrFail($id);
 
+        // For guests/public: return only published free materials
+        if (!$request->user() && $material->lesson?->course?->type !== 'free_class') {
+            return response()->json([
+                'success' => false,
+                'error' => 'Authentication required to access this material',
+                'course_type' => $material->lesson?->course?->type,
+            ], 401);
+        }
+
+        // For authenticated users: check authorization
+        if ($request->user()) {
+            $authService = app(\App\Services\MediaAuthorizationService::class);
+            $canAccess = $authService->canAccessMaterial($request->user(), $material);
+            $tier = $authService->getAccessTier($request->user(), $material);
+
+            if (!$canAccess && $material->lesson?->course?->type !== 'free_class') {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Access denied to this material',
+                    'tier' => $tier,
+                    'course_type' => $material->lesson?->course?->type,
+                    'reason' => $tier === 'qualified_pending'
+                        ? 'Hardware Solution quiz threshold not met (90% required)'
+                        : 'No active entitlement for this course',
+                ], 403);
+            }
+        }
+
+        // Build response with access URLs
+        $proxyService = app(\App\Services\MediaProxyService::class);
+        $response = [
+            ...$material->toArray(),
+            'thumbnail_url' => $material->thumbnail_url,
+            'embed_url' => $material->embed_url,
+            'access_tier' => $request->user()
+                ? app(\App\Services\MediaAuthorizationService::class)->getAccessTier($request->user(), $material)
+                : 'public',
+        ];
+
+        // For PDF: generate signed URL
+        if ($material->pdf_path && $request->user()) {
+            $response['pdf_signed_url'] = $proxyService->generateSignedUrl($material->pdf_path);
+        }
+
         return response()->json([
             'success' => true,
-            'data' => [
-                ...$material->toArray(),
-                'thumbnail_url' => $material->thumbnail_url,
-                'embed_url' => $material->embed_url,
-            ],
+            'data' => $response,
             'message' => 'Learning material retrieved successfully',
         ]);
     }
