@@ -184,8 +184,8 @@ class LearningMaterialApiController extends Controller
         ];
 
         // For PDF: generate signed URL
-        if ($material->pdf_path && $request->user()) {
-            $response['pdf_signed_url'] = $proxyService->generateSignedUrl($material->pdf_path);
+        if ($material->file_path && $material->file_type === 'pdf' && $request->user()) {
+            $response['pdf_signed_url'] = $proxyService->generateProxyUrl('learning_material', $material->id);
         }
 
         return response()->json([

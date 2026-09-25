@@ -40,6 +40,7 @@ Route::middleware(['auth'])->group(function () {
         Route::view('admin/best-deals', 'pages.admin.best-deals')->name('admin.best-deals');
         Route::view('admin/bulk-upload', 'pages.admin.bulk-upload')->name('admin.bulk-upload');
         Route::view('admin/notifications', 'pages.admin.notifications')->name('admin.notifications');
+        Route::get('admin/content-cms', \App\Livewire\ContentCms::class)->name('admin.content-cms');
     });
 
     // 2. Modul Sponsor (Mitra Sponsor, Super Admin, & Owner)
