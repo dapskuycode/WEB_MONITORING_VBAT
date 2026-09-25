@@ -1,0 +1,1083 @@
+{
+  "info": {
+    "_postman_id": "vbat-phase-aj-collection",
+    "name": "VBAT-WEBSITE API v2.0 — Phase A-J Complete",
+    "description": "Postman Collection lengkap untuk VBAT-WEBSITE API v2.0. Mencakup Phase A-J: Auth, Profile, Membership, KTA, Certificate, Gamification (Badges/Streaks/Achievements), Info Content, Legal Content, Admin CRUD.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string",
+      "description": "Base URL API VBAT-WEBSITE (local dev)"
+    },
+    {
+      "key": "staging_url",
+      "value": "https://staging-vbat.quantumtele.io/api",
+      "type": "string",
+      "description": "Staging environment URL"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string",
+      "description": "Bearer token dari endpoint login"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Auth & Profile",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Cek kesehatan service API, database, cache."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('token', json.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@vbat.local\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login dengan email/password. Token otomatis disimpan ke variable {{token}}."
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user",
+              "host": ["{{base_url}}"],
+              "path": ["user"]
+            },
+            "description": "Get profil user yang sedang login."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"+6281234567890\",\n  \"address\": \"Jl. Updated No. 123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": ["{{base_url}}"],
+              "path": ["profile"]
+            },
+            "description": "Update profil user (name, phone, address)."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Logout dan revoke token."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Membership & KTA",
+      "item": [
+        {
+          "name": "Get My Membership",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/membership",
+              "host": ["{{base_url}}"],
+              "path": ["membership"]
+            },
+            "description": "Get membership user yang login (KTA number, tier, valid_from, valid_until)."
+          }
+        },
+        {
+          "name": "Verify KTA (Public)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/membership/kta/:ktaNumber",
+              "host": ["{{base_url}}"],
+              "path": ["membership", "kta", ":ktaNumber"]
+            },
+            "description": "Public endpoint untuk verify KTA number (no auth required). Contoh: KTA-000001-2026"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Certificates",
+      "item": [
+        {
+          "name": "List My Certificates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/certificates?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["certificates"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "List sertifikat user yang login (paginated)."
+          }
+        },
+        {
+          "name": "Get Certificate Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/certificates/:id",
+              "host": ["{{base_url}}"],
+              "path": ["certificates", ":id"]
+            },
+            "description": "Detail sertifikat tertentu (hanya milik user yang login)."
+          }
+        },
+        {
+          "name": "Verify Certificate QR (Public)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/certificates/verify/:qrToken",
+              "host": ["{{base_url}}"],
+              "path": ["certificates", "verify", ":qrToken"]
+            },
+            "description": "Public endpoint untuk verify QR token sertifikat (no auth required)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Gamification",
+      "item": [
+        {
+          "name": "Get All Badges (Public)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/badges",
+              "host": ["{{base_url}}"],
+              "path": ["badges"]
+            },
+            "description": "List semua badge yang tersedia (public, no auth)."
+          }
+        },
+        {
+          "name": "Get My Badges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user/badges",
+              "host": ["{{base_url}}"],
+              "path": ["user", "badges"]
+            },
+            "description": "List badge yang sudah diraih user yang login."
+          }
+        },
+        {
+          "name": "Get My Achievements",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/achievements",
+              "host": ["{{base_url}}"],
+              "path": ["achievements"]
+            },
+            "description": "List achievement log user yang login (certificate_earned, streak milestones, dll)."
+          }
+        },
+        {
+          "name": "Get My Streak",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/streaks",
+              "host": ["{{base_url}}"],
+              "path": ["streaks"]
+            },
+            "description": "Get streak user yang login (current_streak, longest_streak, last_activity_date)."
+          }
+        },
+        {
+          "name": "Increment Streak",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activity_type\": \"daily_login\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/streak/increment",
+              "host": ["{{base_url}}"],
+              "path": ["streak", "increment"]
+            },
+            "description": "Increment streak (idempotent — calling twice in same day won't double increment)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Info Content",
+      "item": [
+        {
+          "name": "List Info Contents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/info-contents",
+              "host": ["{{base_url}}"],
+              "path": ["info-contents"]
+            },
+            "description": "List semua info content yang aktif (public, no auth)."
+          }
+        },
+        {
+          "name": "Get Info Content by Slug",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/info-contents/:slug",
+              "host": ["{{base_url}}"],
+              "path": ["info-contents", ":slug"]
+            },
+            "description": "Get info content by slug. Auth required jika premium_only=true."
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Legal Content",
+      "item": [
+        {
+          "name": "Get Terms of Service",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/legal/terms",
+              "host": ["{{base_url}}"],
+              "path": ["legal", "terms"]
+            },
+            "description": "Get latest Terms of Service (public, no auth)."
+          }
+        },
+        {
+          "name": "Get Privacy Policy",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/legal/privacy",
+              "host": ["{{base_url}}"],
+              "path": ["legal", "privacy"]
+            },
+            "description": "Get latest Privacy Policy (public, no auth)."
+          }
+        },
+        {
+          "name": "Get About Us",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/legal/about",
+              "host": ["{{base_url}}"],
+              "path": ["legal", "about"]
+            },
+            "description": "Get About Us content (public, no auth)."
+          }
+        },
+        {
+          "name": "Get Data Consent",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/legal/consent",
+              "host": ["{{base_url}}"],
+              "path": ["legal", "consent"]
+            },
+            "description": "Get latest Data Consent form (public, no auth)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Admin — Membership & KTA",
+      "item": [
+        {
+          "name": "Issue KTA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 2,\n  \"tier_code\": \"silver\",\n  \"valid_months\": 12\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/memberships/issue-kta",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "memberships", "issue-kta"]
+            },
+            "description": "Admin: Issue KTA untuk user tertentu (super_admin only)."
+          }
+        },
+        {
+          "name": "Approve Premium Membership",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"membership_id\": 1,\n  \"tier\": \"gold\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/memberships/approve-premium",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "memberships", "approve-premium"]
+            },
+            "description": "Admin: Approve premium membership upgrade (super_admin only)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. Admin — Certificates",
+      "item": [
+        {
+          "name": "Issue Certificate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 3,\n  \"course_id\": 1,\n  \"course_name\": \"Advanced Training\",\n  \"completion_date\": \"2026-09-20\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/certificates/issue",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "certificates", "issue"]
+            },
+            "description": "Admin: Issue certificate untuk user tertentu (super_admin only)."
+          }
+        },
+        {
+          "name": "Reissue Certificate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"certificate_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/certificates/reissue",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "certificates", "reissue"]
+            },
+            "description": "Admin: Reissue certificate dengan QR baru (super_admin only)."
+          }
+        },
+        {
+          "name": "Revoke Certificate",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Certificate reissue requested\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/certificates/:id",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "certificates", ":id"]
+            },
+            "description": "Admin: Revoke certificate dengan alasan (super_admin only)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. Admin — Gamification",
+      "item": [
+        {
+          "name": "Create Badge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"new-badge\",\n  \"name\": \"New Badge\",\n  \"description\": \"Badge description\",\n  \"icon_url\": \"https://cdn.vbat.io/badges/new.png\",\n  \"points\": 50,\n  \"criteria\": {}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/badges",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "badges"]
+            },
+            "description": "Admin: Create badge baru (super_admin only)."
+          }
+        },
+        {
+          "name": "Update Badge",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Badge Name\",\n  \"description\": \"Updated description\",\n  \"points\": 100\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/badges/:id",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "badges", ":id"]
+            },
+            "description": "Admin: Update badge (super_admin only)."
+          }
+        },
+        {
+          "name": "Delete Badge",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/badges/:id",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "badges", ":id"]
+            },
+            "description": "Admin: Delete badge (super_admin only)."
+          }
+        },
+        {
+          "name": "Update Streak Config",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"max_days\": 365,\n  \"reset_threshold\": 2,\n  \"reward_points\": 10,\n  \"server_side_verify\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/streak/config",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "streak", "config"]
+            },
+            "description": "Admin: Update streak configuration (super_admin only)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Admin — Info Content",
+      "item": [
+        {
+          "name": "Create Info Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"new-info\",\n  \"title\": \"Info Title\",\n  \"content\": \"Info content body\",\n  \"type\": \"support\",\n  \"is_active\": true,\n  \"metadata\": {\n    \"premium_only\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/info-contents",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "info-contents"]
+            },
+            "description": "Admin: Create info content (super_admin only)."
+          }
+        },
+        {
+          "name": "Update Info Content",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Title\",\n  \"content\": \"Updated content\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/info-contents/:id",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "info-contents", ":id"]
+            },
+            "description": "Admin: Update info content (super_admin only)."
+          }
+        },
+        {
+          "name": "Delete Info Content",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/info-contents/:id",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "info-contents", ":id"]
+            },
+            "description": "Admin: Delete info content (super_admin only)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Admin — Legal Content",
+      "item": [
+        {
+          "name": "Create Legal Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"terms\",\n  \"version\": \"3.0\",\n  \"title\": \"Terms of Service v3.0\",\n  \"content\": \"Updated terms content\",\n  \"effective_date\": \"2027-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/legal-contents",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "legal-contents"]
+            },
+            "description": "Admin: Create new legal content version (super_admin only)."
+          }
+        },
+        {
+          "name": "Update Legal Content",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Legal Title\",\n  \"content\": \"Updated legal content\",\n  \"is_current\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/legal-contents/:id",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "legal-contents", ":id"]
+            },
+            "description": "Admin: Update legal content (super_admin only)."
+          }
+        },
+        {
+          "name": "List All Legal Versions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/legal-contents?type=terms",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "legal-contents"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "terms"
+                }
+              ]
+            },
+            "description": "Admin: List all legal content versions (super_admin only)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Error Cases",
+      "item": [
+        {
+          "name": "401 — Unauthenticated (No Token)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/membership",
+              "host": ["{{base_url}}"],
+              "path": ["membership"]
+            },
+            "description": "Test 401 error: call protected endpoint without token."
+          }
+        },
+        {
+          "name": "403 — Unauthorized (Not Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/memberships/issue-kta",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "memberships", "issue-kta"]
+            },
+            "description": "Test 403 error: call admin endpoint with non-admin user."
+          }
+        },
+        {
+          "name": "404 — Not Found (Invalid Certificate ID)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/certificates/99999",
+              "host": ["{{base_url}}"],
+              "path": ["certificates", "99999"]
+            },
+            "description": "Test 404 error: request non-existent certificate."
+          }
+        },
+        {
+          "name": "422 — Validation Error (Invalid Email)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invalid-email\",\n  \"password\": \"123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Test 422 error: validation failure (invalid email format, password too short)."
+          }
+        }
+      ]
+    }
+  ]
+}
