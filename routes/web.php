@@ -3,6 +3,7 @@
 use App\Livewire\ContentCms;
 use App\Livewire\SponsorManager;
 use App\Livewire\FeedManager;
+use App\Livewire\BulkUpload;
 use App\Livewire\QuizManager;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('admin/content', ContentCms::class)->name('admin.content');
         Route::get('admin/sponsors', SponsorManager::class)->name('admin.sponsors');
         Route::get('admin/feed', FeedManager::class)->name('admin.feed');
+        Route::get('admin/bulk-upload', BulkUpload::class)->name('admin.bulk-upload');
         Route::get('admin/quizzes', QuizManager::class)->name('admin.quizzes');
     });
 
