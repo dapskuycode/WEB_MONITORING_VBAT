@@ -140,6 +140,21 @@ Route::prefix('v1')->group(function () {
 
         // Placement configs
         Route::get('/placement-configs', [PlacementApiController::class, 'listConfigs']);
+        Route::post('/placement-configs', [PlacementApiController::class, 'storeConfig']);
+        Route::put('/placement-configs/{config}', [PlacementApiController::class, 'updateConfig']);
+        Route::delete('/placement-configs/{config}', [PlacementApiController::class, 'destroyConfig']);
+
+        // Feed configs
+        Route::get('/feed-configs', [AdminApiController::class, 'listFeedConfigs']);
+        Route::post('/feed-configs', [AdminApiController::class, 'storeFeedConfig']);
+        Route::put('/feed-configs/{config}', [AdminApiController::class, 'updateFeedConfig']);
+        Route::delete('/feed-configs/{config}', [AdminApiController::class, 'destroyFeedConfig']);
+
+        // Benefit categories
+        Route::get('/benefit-categories', [AdminApiController::class, 'listBenefitCategories']);
+        Route::post('/benefit-categories', [AdminApiController::class, 'storeBenefitCategory']);
+        Route::put('/benefit-categories/{category}', [AdminApiController::class, 'updateBenefitCategory']);
+        Route::delete('/benefit-categories/{category}', [AdminApiController::class, 'destroyBenefitCategory']);
 
         // Audit logs
         Route::get('/audit-logs', [AdminApiController::class, 'auditLogs']);

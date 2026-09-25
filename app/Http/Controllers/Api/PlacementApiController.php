@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\BestDeal;
 use App\Models\CampaignLog;
+use App\Models\PlacementConfig;
 use App\Models\SponsorProduct;
 use App\Services\PlacementSelectionService;
 use Illuminate\Http\JsonResponse;
@@ -248,6 +249,77 @@ class PlacementApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => $configs,
+        ]);
+    }
+
+    /**
+     * Admin: store a new placement config.
+     *
+     * POST /api/v1/admin/placement-configs
+     */
+    public function storeConfig(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'placement_type' => 'required|string|in:hero_slider,horizontal_infeed,popup,best_deal,card_infeed',
+            'tier_id' => 'nullable|integer|exists:sponsor_tiers,id',
+            'max_slots' => 'required|integer|min:1|max:20',
+            'target_probability' => 'required|numeric|min:0|max:1',
+            'share_of_voice' => 'required|numeric|min:0|max:1',
+            'insertion_interval' => 'nullable|integer|min:1|max:100',
+            'fallback_behavior' => 'required|string|in:show_default,hide_empty',
+            'is_active' => 'boolean',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        $config = PlacementConfig::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => $config->load('tier:id,slug,name'),
+            'message' => 'Placement config created successfully.',
+        ], 201);
+    }
+
+    /**
+     * Admin: update a placement config.
+     *
+     * PUT /api/v1/admin/placement-configs/{config}
+     */
+    public function updateConfig(Request $request, PlacementConfig $config): JsonResponse
+    {
+        $validated = $request->validate([
+            'placement_type' => 'sometimes|string|in:hero_slider,horizontal_infeed,popup,best_deal,card_infeed',
+            'tier_id' => 'nullable|integer|exists:sponsor_tiers,id',
+            'max_slots' => 'sometimes|integer|min:1|max:20',
+            'target_probability' => 'sometimes|numeric|min:0|max:1',
+            'share_of_voice' => 'sometimes|numeric|min:0|max:1',
+            'insertion_interval' => 'nullable|integer|min:1|max:100',
+            'fallback_behavior' => 'sometimes|string|in:show_default,hide_empty',
+            'is_active' => 'boolean',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        $config->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => $config->fresh()->load('tier:id,slug,name'),
+            'message' => 'Placement config updated successfully.',
+        ]);
+    }
+
+    /**
+     * Admin: delete a placement config.
+     *
+     * DELETE /api/v1/admin/placement-configs/{config}
+     */
+    public function destroyConfig(PlacementConfig $config): JsonResponse
+    {
+        $config->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Placement config deleted successfully.',
         ]);
     }
 }

@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdminAuditLog;
+use App\Models\BenefitCategory;
 use App\Models\BestDeal;
 use App\Models\Campaign;
+use App\Models\FeedConfig;
 use App\Models\Sponsor;
 use App\Models\SponsorBenefitOverride;
 use App\Models\SponsorProduct;
@@ -578,5 +580,171 @@ class AdminApiController extends Controller
             'meta' => null,
             'message' => 'Push broadcast created and logged successfully.',
         ], 201);
+    }
+
+    // ─── Feed Config CRUD ────────────────────────────────────────
+
+    /**
+     * List all feed configs.
+     */
+    public function listFeedConfigs(Request $request): JsonResponse
+    {
+        $configs = FeedConfig::with('tier:id,slug,name')
+            ->orderBy('feed_type')
+            ->orderBy('sort_order')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $configs,
+        ]);
+    }
+
+    /**
+     * Store a new feed config.
+     */
+    public function storeFeedConfig(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'feed_type' => 'required|string|in:home,shop,search,profile',
+            'tier_id' => 'nullable|integer|exists:sponsor_tiers,id',
+            'banner_type' => 'required|string|in:hero,horizontal,popup,card',
+            'insertion_interval' => 'required|integer|min:1|max:100',
+            'max_banners' => 'nullable|integer|min:0|max:20',
+            'is_active' => 'boolean',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        $config = FeedConfig::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => $config->load('tier:id,slug,name'),
+            'message' => 'Feed config created successfully.',
+        ], 201);
+    }
+
+    /**
+     * Update a feed config.
+     */
+    public function updateFeedConfig(Request $request, FeedConfig $config): JsonResponse
+    {
+        $validated = $request->validate([
+            'feed_type' => 'sometimes|string|in:home,shop,search,profile',
+            'tier_id' => 'nullable|integer|exists:sponsor_tiers,id',
+            'banner_type' => 'sometimes|string|in:hero,horizontal,popup,card',
+            'insertion_interval' => 'sometimes|integer|min:1|max:100',
+            'max_banners' => 'nullable|integer|min:0|max:20',
+            'is_active' => 'boolean',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        $config->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => $config->fresh()->load('tier:id,slug,name'),
+            'message' => 'Feed config updated successfully.',
+        ]);
+    }
+
+    /**
+     * Delete a feed config.
+     */
+    public function destroyFeedConfig(FeedConfig $config): JsonResponse
+    {
+        $config->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Feed config deleted successfully.',
+        ]);
+    }
+
+    // ─── Benefit Category CRUD ───────────────────────────────────
+
+    /**
+     * List all benefit categories.
+     */
+    public function listBenefitCategories(Request $request): JsonResponse
+    {
+        $categories = BenefitCategory::orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $categories,
+        ]);
+    }
+
+    /**
+     * Store a new benefit category.
+     */
+    public function storeBenefitCategory(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:benefit_categories,name',
+            'slug' => 'required|string|max:100|unique:benefit_categories,slug',
+            'description' => 'nullable|string|max:500',
+            'icon' => 'nullable|string|max:100',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
+        ]);
+
+        $category = BenefitCategory::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => $category,
+            'message' => 'Benefit category created successfully.',
+        ], 201);
+    }
+
+    /**
+     * Update a benefit category.
+     */
+    public function updateBenefitCategory(Request $request, BenefitCategory $category): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:100|unique:benefit_categories,name,'.$category->id,
+            'slug' => 'sometimes|string|max:100|unique:benefit_categories,slug,'.$category->id,
+            'description' => 'nullable|string|max:500',
+            'icon' => 'nullable|string|max:100',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active' => 'boolean',
+        ]);
+
+        $category->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'data' => $category->fresh(),
+            'message' => 'Benefit category updated successfully.',
+        ]);
+    }
+
+    /**
+     * Delete a benefit category.
+     */
+    public function destroyBenefitCategory(BenefitCategory $category): JsonResponse
+    {
+        // Prevent deletion if category is referenced by tier benefits or overrides
+        $refCount = \App\Models\TierBenefit::where('benefit_category_id', $category->id)->count()
+            + \App\Models\SponsorBenefitOverride::where('benefit_category_id', $category->id)->count();
+
+        if ($refCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "Cannot delete: category is referenced by {$refCount} records.",
+            ], 422);
+        }
+
+        $category->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Benefit category deleted successfully.',
+        ]);
     }
 }

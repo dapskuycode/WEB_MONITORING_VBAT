@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class FeedConfig extends Model
 {
@@ -11,9 +12,12 @@ class FeedConfig extends Model
 
     protected $fillable = [
         'feed_type',
+        'tier_id',
         'banner_type',
         'insertion_interval',
+        'max_banners',
         'is_active',
+        'sort_order',
         'metadata',
     ];
 
@@ -33,5 +37,10 @@ class FeedConfig extends Model
     public function scopeForFeed($query, string $feedType)
     {
         return $query->where('feed_type', $feedType);
+    }
+
+    public function tier(): BelongsTo
+    {
+        return $this->belongsTo(SponsorTier::class);
     }
 }
