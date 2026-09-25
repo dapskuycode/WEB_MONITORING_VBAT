@@ -16,8 +16,10 @@ use App\Http\Controllers\Api\CourseApiController;
 use App\Http\Controllers\Api\EntitlementApiController;
 use App\Http\Controllers\Api\FeedApiController;
 use App\Http\Controllers\Api\LessonApiController;
+use App\Http\Controllers\Api\PaymentApiController;
 use App\Http\Controllers\Api\QuizApiController;
 use App\Http\Controllers\Api\TrackerApiController;
+use App\Http\Controllers\Api\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -64,6 +66,9 @@ Route::prefix('v1')->group(function () {
     // 4. Placement & Probabilistic Selection — Public read
     Route::get('/placements/best-deal', [PlacementApiController::class, 'bestDeal']);
     Route::get('/placements/{type}', [PlacementApiController::class, 'show']);
+
+    // 4. Payment — Package catalog (public)
+    Route::get('/payment/packages', [PaymentApiController::class, 'packages']);
 
     // 2. Banners & Promosi Sponsor — Public read
     Route::get('/banners/hero', [CampaignApiController::class, 'getHeroSliders']);
@@ -142,6 +147,11 @@ Route::prefix('v1')->group(function () {
         Route::get('/entitlements/courses/{courseId}/manifest', [EntitlementApiController::class, 'downloadManifest']);
         Route::post('/entitlements/courses/{courseId}/kta-certificate', [EntitlementApiController::class, 'issueKtaCertificate']);
 
+        // 4. Payment — Transactions (auth required)
+        Route::post('/payment/transactions', [PaymentApiController::class, 'createTransaction']);
+        Route::get('/payment/transactions', [PaymentApiController::class, 'transactions']);
+        Route::get('/payment/transactions/{id}', [PaymentApiController::class, 'transactionDetail']);
+
         // 3b. Bulk Import (REQ-ADM-02)
         Route::post('/learning-materials/bulk-import', [LearningMaterialApiController::class, 'bulkImport']);
         Route::get('/learning-materials/bulk-import/template', [LearningMaterialApiController::class, 'bulkImportTemplate']);
@@ -212,6 +222,9 @@ Route::prefix('v1')->group(function () {
         // Push Broadcast (M2)
         Route::post('/push-broadcast', [AdminApiController::class, 'createPushBroadcast']);
     });
+
+    // 5. Webhooks (public, no auth)
+    Route::post('/webhooks/midtrans', [WebhookController::class, 'midtrans']);
 
     // 6. Storage File Proxy with CORS (for Flutter Web CanvasKit & Mobile)
     Route::get('/storage/{path}', function ($path) {
