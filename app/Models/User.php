@@ -141,6 +141,22 @@ class User extends Authenticatable implements PasskeyUser
         return $this->hasMany(Certificate::class);
     }
 
+    /**
+     * @return HasMany<Achievement, $this>
+     */
+    public function achievements(): HasMany
+    {
+        return $this->hasMany(Achievement::class);
+    }
+
+    /**
+     * @return HasMany<Streak, $this>
+     */
+    public function streaks(): HasMany
+    {
+        return $this->hasMany(Streak::class);
+    }
+
     public function getAgeAttribute(): ?int
     {
         return $this->birth_date ? Carbon::parse($this->birth_date)->age : null;

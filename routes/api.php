@@ -44,6 +44,10 @@ Route::prefix('v1')->group(function () {
         // Certificates & QR (Phase G — CERT-BE-01)
         Route::get('/certificates', [\App\Http\Controllers\Api\CertificateController::class, 'index']);
         Route::get('/certificates/{certificate}', [\App\Http\Controllers\Api\CertificateController::class, 'show']);
+        
+        // Gamification: Badge, Achievement, Streak (Phase G — GAM-BE-01)
+        Route::get('/achievements', [\App\Http\Controllers\Api\GamificationController::class, 'getAchievements']);
+        Route::get('/streaks', [\App\Http\Controllers\Api\GamificationController::class, 'getStreaks']);
     });
     
     // Public membership verification
@@ -51,6 +55,9 @@ Route::prefix('v1')->group(function () {
     
     // Public certificate verification
     Route::get('/certificates/verify/{certificateNumber}', [\App\Http\Controllers\Api\CertificateController::class, 'verify']);
+    
+    // Public badges list
+    Route::get('/badges', [\App\Http\Controllers\Api\GamificationController::class, 'getAllBadges']);
 
     // 1. Feed Dinamis & Infinite Scroll (Phase 7 — REQ-SF-01)
     Route::get('/feed/shop', [FeedApiController::class, 'shop']);
