@@ -2,6 +2,8 @@
 
 use App\Livewire\ContentCms;
 use App\Livewire\SponsorManager;
+use App\Livewire\FeedManager;
+use App\Livewire\UserEntitlementManager;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +46,8 @@ Route::middleware(['auth'])->group(function () {
         Route::view('admin/notifications', 'pages.admin.notifications')->name('admin.notifications');
         Route::get('admin/content', ContentCms::class)->name('admin.content');
         Route::get('admin/sponsors', SponsorManager::class)->name('admin.sponsors');
+        Route::get('admin/feed', FeedManager::class)->name('admin.feed');
+        Route::get('admin/entitlements', UserEntitlementManager::class)->name('admin.entitlements');
     });
 
     // 2. Modul Sponsor (Mitra Sponsor, Super Admin, & Owner)
