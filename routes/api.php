@@ -58,6 +58,16 @@ Route::prefix('v1')->group(function () {
     
     // Public badges list
     Route::get('/badges', [\App\Http\Controllers\Api\GamificationController::class, 'getAllBadges']);
+    
+    // Info & WhatsApp CTA (Phase G — INFO-BE-01)
+    Route::get('/info', [\App\Http\Controllers\Api\InfoContentController::class, 'index']);
+    Route::get('/info/{slug}', [\App\Http\Controllers\Api\InfoContentController::class, 'show']);
+    
+    // Legal content (Phase G — LEGAL-BE-01)
+    Route::get('/legal/terms', [\App\Http\Controllers\Api\LegalController::class, 'getTerms']);
+    Route::get('/legal/privacy', [\App\Http\Controllers\Api\LegalController::class, 'getPrivacy']);
+    Route::get('/legal/about', [\App\Http\Controllers\Api\LegalController::class, 'getAbout']);
+    Route::get('/legal/consent', [\App\Http\Controllers\Api\LegalController::class, 'getConsent']);
 
     // 1. Feed Dinamis & Infinite Scroll (Phase 7 — REQ-SF-01)
     Route::get('/feed/shop', [FeedApiController::class, 'shop']);
