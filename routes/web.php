@@ -10,36 +10,13 @@ use App\Livewire\AnalyticsDashboard;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome')->name('home');
-
-Route::get('quick-login/{role}', function (string $role) {
-    $email = match ($role) {
-        'owner' => 'owner@vbatponsel.com',
-        'sponsor', 'braderparts' => 'sponsor@braderparts.com',
-        'titan', 'titantools' => 'sponsor@titantools.com',
-        'btacc' => 'sponsor@btacc.com',
-        'sunshine' => 'sponsor@sunshine.com',
-        'borneo' => 'sponsor@borneo.com',
-        'pragmafix' => 'sponsor@pragmafix.com',
-        default => 'admin@vbatponsel.com',
-    };
-    $user = User::where('email', $email)->first();
-    if ($user) {
-        auth()->login($user);
-        if ($user->isSponsor()) {
-            return redirect()->route('sponsor.dashboard');
-        }
-
-        return redirect()->route('dashboard');
-    }
-
-    return redirect()->route('login');
-})->name('quick.login');
+Route::view('/', 'pages.auth.login')->name('home');
 
 Route::middleware(['auth'])->group(function () {
     // 1. Dashboard & Modul Admin/Owner (Hanya Super Admin & Owner)
     Route::middleware(['role:super_admin,owner'])->group(function () {
         Route::view('dashboard', 'dashboard')->name('dashboard');
+
         Route::view('admin/sponsors', 'pages.admin.sponsors')->name('admin.sponsors');
         Route::view('admin/products', 'pages.admin.products')->name('admin.products');
         Route::view('admin/campaigns', 'pages.admin.campaigns')->name('admin.campaigns');
