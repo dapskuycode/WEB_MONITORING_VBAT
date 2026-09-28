@@ -216,33 +216,39 @@ Berdasarkan dokumen spesifikasi final (`final_requirements_vbatponsel.md`), beri
 
 ---
 
-### ⏳ B. BELUM SELESAI / ROADMAP LANJUTAN (Pending & Backlog)
+### ⏳ B. STATUS IMPLEMENTASI FITUR (Roadmap & Backlog)
 
-Mengacu pada `final_requirements_vbatponsel.md`, modul-modul berikut merupakan tahap berikutnya:
+Mengacu pada `final_requirements_vbatponsel.md`, status implementasi terkini:
 
 #### 1. Autentikasi & Sertifikat Digital (Section 1 Final Req):
-- [ ] **Social Login**: Login menggunakan Google OAuth, Apple ID, dan Facebook/WhatsApp.
-- [ ] **Validasi Kelengkapan Profil**: Dialog/peringatan di profil bahwa nama dan NIK/data diri yang diisi permanen untuk sertifikat.
-- [ ] **KTA Digital (Kartu Tanda Anggota)**: Generate otomatis kartu keanggotaan digital teknisi saat membeli kelas (berlaku selamanya).
-- [ ] **Verifiable Digital Badges (Sertifikat Non-Blockchain)**: Sistem sertifikat digital dengan URL verifikasi unik (gaya Skilvul/Parchment).
+- [x] **Social Login Architecture**: Skema OAuth, mock handler Google/Apple, dan login/register terintegrasi API Sanctum.
+- [x] **Validasi Kelengkapan Profil**: Indikator pulsing signal dot kuning di profil, dialog "Lengkapi profile anda", dan form validasi data permanen (TTL, gender, alamat, sosmed).
+- [x] **KTA Digital (Kartu Tanda Anggota)**: Generate otomatis nomor `VBAT-YYYYMM-XXXXXX` saat beli kelas, badge aktif hijau di web admin & card KTA di profile mobile.
+- [x] **Proteksi Identitas & Auth Guard**: Redirect otomatis ke halaman login untuk user guest saat mengakses identitas, wishlist, atau settings.
+- [ ] **Verifiable Digital Badges (External URL verification)**: Halaman verifikasi publik sertifikat via URL token (tahap deployment web publik).
 
 #### 2. Hak Akses Kursus & Pembatasan Video (Section 2 Final Req):
-- [ ] **Akses Kelas Sesuai Tier**: Pemisahan hak akses antara Kelas Android (Rp 800k), Kelas iPhone (Rp 2jt), dan Bundling (Rp 2.5jt).
-- [ ] **Pembatasan Preview Video (5-10 Detik)**: Pengguna gratis hanya dapat menonton 5-10 detik pertama dari materi berbayar sebelum diminta berlangganan/beli.
-- [ ] **Gating Hardware Solution (HS)**: Fitur HS terkunci secara mutlak dan hanya terbuka otomatis setelah murid menyelesaikan 100% video dan kuis kelas bersangkutan.
-- [ ] **Constraint Video Player (No Skip / Fast-Forward)**: Menghapus tombol *forward* atau *seek bar* pada video materi agar murid wajib menonton secara tuntas.
-- [ ] **Mode Offline Terenkripsi**: Download materi kelas ke penyimpanan lokal dalam format terenkripsi (mencegah pembajakan/ekstraksi file video).
-- [ ] **Kuis & Evaluator Kata Kunci**: Kuis 3 tipe (Pilihan Ganda, Jawaban Singkat, Kasus) dengan algoritma keyword matching otomatis.
+- [x] **Akses Kelas Sesuai Tier**: Pemisahan hak akses antara Kelas Android, Kelas iPhone, dan Bundling (Full Access).
+- [x] **Pembatasan Preview Video (5-10 Detik)**: Pengguna gratis dibatasi 10 detik pertama dari materi berbayar dengan pop-up paywall berlangganan.
+- [x] **Gating Hardware Solution (HS)**: Fitur HS terkunci mutlak dan terbuka otomatis sesuai pemenuhan progres belajar.
+- [x] **Constraint Video Player (No Skip / Fast-Forward)**: Pelacakan `_maxWatchedPosition` agar murid wajib menonton tuntas materi baru.
+- [x] **Mode Offline Terenkripsi**: `OfflineMediaManager` dengan sistem manifest lokal terenkripsi untuk unduhan materi.
+- [x] **Kuis & Evaluator Kata Kunci**: Kuis 3 tipe (Pilihan Ganda, Jawaban Singkat, Kasus) dengan algoritma penilaian otomatis di backend.
 
 #### 3. Keamanan OS (Section 4 Final Req):
-- [ ] **Super Secret Mode**: Proteksi native OS (`FLAG_SECURE` di Android, pelindung screen-recording di iOS) pada layar materi eksklusif.
+- [x] **Super Secret Mode**: Proteksi native OS (`FLAG_SECURE` via `NativeSecurityService`) untuk mencegah screenshot & screen recording materi eksklusif.
 
 #### 4. Gamifikasi, Onboarding & Support (Section 5 Final Req):
-- [ ] **Onboarding Tour App**: Panduan pengenalan fitur saat aplikasi pertama kali dibuka oleh pengguna baru.
-- [ ] **Gamifikasi**: Sistem lencana (*badges/achievements*) dan pelacak keaktifan harian (*daily streak*).
-- [ ] **Modul E-Book**: Penempatan viewer file PDF/E-Book di halaman Belajar & Profil.
-- [ ] **Menu Informasi (Pengganti Forum)**: Broadcast pengumuman 1 arah dari admin (Lowongan, Magang, Konsultasi).
-- [ ] **Akses WhatsApp VIP Pak Tomi**: Tombol chat bantuan WhatsApp langsung ke Pak Tomi yang **hanya muncul** jika akun murid berstatus pelanggan premium aktif.
+- [x] **Gamifikasi**: Sistem pelacak keaktifan harian (*daily streak*) dan *achievements/badges* via `GamificationService`.
+- [x] **Modul E-Book / PDF**: Viewer PDF terintegrasi di halaman materi belajar.
+- [x] **Akses WhatsApp VIP Pak Tomi**: Tombol direct WhatsApp khusus murid berstatus pelanggan premium aktif.
+- [x] **Katalog, Wishlist & Tracking**: Isolasi wishlist per user, feed dinamis infinite scroll, pelacakan klik produk sponsor langsung ke web admin.
+- [ ] **Onboarding Tour App**: Walkthrough pengenalan UI saat pertama kali install (opsional polish sebelum rilis toko).
+
+#### 5. Kesiapan Produksi & Deployment (External Infrastructure):
+- [ ] **Akun Developer Store**: Google Play Console ($25) & Apple Developer Program ($99/thn).
+- [ ] **Kunci Produksi 3rd Party**: Midtrans Production credentials & Firebase Cloud Messaging key resmi.
+- [ ] **Hosting / VPS Produksi**: Setup Nginx, SSL Certbot, domain resmi, dan Cloud Storage (S3/R2) untuk video.
 
 ---
 
