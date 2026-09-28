@@ -22,17 +22,43 @@ class TrackerApiController extends Controller
             'event_type' => 'required|string|in:view,click,wishlist',
             'campaign_id' => 'nullable|integer',
             'product_id' => 'nullable|integer',
+            'product_name' => 'nullable|string',
             'user_id' => 'nullable|integer',
+            'email' => 'nullable|string|email',
         ]);
 
         $ip = $request->ip();
         $userAgent = $request->userAgent();
 
+        // Resolve user_id
+        $userId = $validated['user_id'] ?? null;
+        if (! $userId && $request->user('sanctum')) {
+            $userId = $request->user('sanctum')->id;
+        }
+        if (! $userId && $request->filled('email')) {
+            $userId = \App\Models\User::where('email', $request->input('email'))->value('id');
+        }
+
+        // Resolve product
+        $product = null;
+        if (! empty($validated['product_id'])) {
+            $product = SponsorProduct::find($validated['product_id']);
+        }
+        if (! $product && $request->filled('product_name')) {
+            $pName = trim($request->input('product_name'));
+            $product = SponsorProduct::where('name', $pName)
+                ->orWhere('name', 'LIKE', '%' . $pName . '%')
+                ->first();
+            if (! $product && str_contains(strtolower($pName), 'infinix')) {
+                $product = SponsorProduct::where('name', 'LIKE', '%Infinix%')->first();
+            }
+        }
+
         // 1. Simpan Log Tracker
         CampaignLog::create([
             'campaign_id' => $validated['campaign_id'] ?? null,
-            'sponsor_product_id' => $validated['product_id'] ?? null,
-            'user_id' => $validated['user_id'] ?? null,
+            'sponsor_product_id' => $product?->id ?? ($validated['product_id'] ?? null),
+            'user_id' => $userId,
             'event_type' => $validated['event_type'],
             'ip_address' => $ip,
             'user_agent' => $userAgent,
@@ -40,25 +66,25 @@ class TrackerApiController extends Controller
         ]);
 
         // 2. Increment Counter langsung pada Model terkait
-        if (! empty($validated['product_id'])) {
-            $product = SponsorProduct::where('id', $validated['product_id'])->first();
-            if ($product) {
-                if ($validated['event_type'] === 'view') {
-                    $product->increment('view_count');
-                } elseif ($validated['event_type'] === 'click') {
-                    $product->increment('click_count');
-                } elseif ($validated['event_type'] === 'wishlist' && ! empty($validated['user_id'])) {
-                    UserWishlist::firstOrCreate([
-                        'user_id' => $validated['user_id'],
-                        'sponsor_product_id' => $product->id,
-                    ]);
-                }
+        if ($product) {
+            if ($validated['event_type'] === 'view') {
+                $product->increment('view_count');
+            } elseif ($validated['event_type'] === 'click') {
+                $product->increment('click_count');
+            } elseif ($validated['event_type'] === 'wishlist' && $userId) {
+                UserWishlist::firstOrCreate([
+                    'user_id' => $userId,
+                    'sponsor_product_id' => $product->id,
+                ]);
             }
         }
 
         return response()->json([
             'status' => 'success',
             'message' => 'Interaksi berhasil direkam',
+            'product_id' => $product?->id,
+            'product_name' => $product?->name,
+            'click_count' => $product?->click_count,
         ]);
     }
 
@@ -69,15 +95,45 @@ class TrackerApiController extends Controller
     public function toggleWishlist(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'product_id' => 'required|integer|exists:sponsor_products,id',
+            'product_id' => 'nullable|integer',
+            'product_name' => 'nullable|string',
             'user_id' => 'nullable|integer',
+            'email' => 'nullable|string|email',
         ]);
 
-        $userId = $validated['user_id'] ?? 1; // Fallback demo user
-        $productId = $validated['product_id'];
+        $userId = $validated['user_id'] ?? null;
+        if (! $userId && $request->user('sanctum')) {
+            $userId = $request->user('sanctum')->id;
+        }
+        if (! $userId && $request->filled('email')) {
+            $userId = \App\Models\User::where('email', $request->input('email'))->value('id');
+        }
+        $userId = $userId ?? 1; // Fallback
+
+        // Resolve product
+        $product = null;
+        if (! empty($validated['product_id'])) {
+            $product = SponsorProduct::find($validated['product_id']);
+        }
+        if (! $product && $request->filled('product_name')) {
+            $pName = trim($request->input('product_name'));
+            $product = SponsorProduct::where('name', $pName)
+                ->orWhere('name', 'LIKE', '%' . $pName . '%')
+                ->first();
+            if (! $product && str_contains(strtolower($pName), 'infinix')) {
+                $product = SponsorProduct::where('name', 'LIKE', '%Infinix%')->first();
+            }
+        }
+
+        if (! $product) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Produk tidak ditemukan',
+            ], 404);
+        }
 
         $existing = UserWishlist::where('user_id', $userId)
-            ->where('sponsor_product_id', $productId)
+            ->where('sponsor_product_id', $product->id)
             ->first();
 
         if ($existing) {
@@ -86,13 +142,13 @@ class TrackerApiController extends Controller
         } else {
             UserWishlist::create([
                 'user_id' => $userId,
-                'sponsor_product_id' => $productId,
+                'sponsor_product_id' => $product->id,
             ]);
             $isWishlisted = true;
 
             // Catat ke campaign_logs juga
             CampaignLog::create([
-                'sponsor_product_id' => $productId,
+                'sponsor_product_id' => $product->id,
                 'user_id' => $userId,
                 'event_type' => 'wishlist',
                 'ip_address' => $request->ip(),
@@ -104,7 +160,46 @@ class TrackerApiController extends Controller
         return response()->json([
             'status' => 'success',
             'is_wishlisted' => $isWishlisted,
-            'total_wishlists' => UserWishlist::where('sponsor_product_id', $productId)->count(),
+            'product_id' => $product->id,
+            'total_wishlists' => UserWishlist::where('sponsor_product_id', $product->id)->count(),
+        ]);
+    }
+
+    /**
+     * Get wishlist items for the specified user.
+     */
+    public function getUserWishlist(Request $request): JsonResponse
+    {
+        $userId = $request->input('user_id');
+        if (! $userId && $request->user('sanctum')) {
+            $userId = $request->user('sanctum')->id;
+        }
+        if (! $userId && $request->filled('email')) {
+            $userId = \App\Models\User::where('email', $request->input('email'))->value('id');
+        }
+
+        if (! $userId) {
+            return response()->json(['status' => 'success', 'data' => []]);
+        }
+
+        $wishlists = UserWishlist::with('sponsorProduct')
+            ->where('user_id', $userId)
+            ->get();
+
+        $items = $wishlists->map(function ($w) {
+            $p = $w->sponsorProduct;
+            return [
+                'id' => $p?->id,
+                'name' => $p?->name ?? 'Produk Sponsor',
+                'price' => 'Rp' . number_format($p?->price ?? 0, 0, ',', '.'),
+                'image' => $p?->image_path ?? 'assets/images/product_battery.png',
+                'link' => $p?->shopee_url ?? ($p?->tokopedia_url ?? ''),
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $items,
         ]);
     }
 }

@@ -26,6 +26,14 @@ class DemographicApiController extends Controller
         }
         $request->merge(['gender' => $genderInput]);
 
+        // Normalize province if province_name is provided
+        if ($request->filled('province_name') && ! $request->filled('province_id')) {
+            $province = Province::where('name', 'LIKE', '%'.$request->input('province_name').'%')->first();
+            if ($province) {
+                $request->merge(['province_id' => $province->id]);
+            }
+        }
+
         // If city_name is provided but city_id is missing, look up city
         if ($request->filled('city_name') && ! $request->filled('city_id')) {
             $city = City::where('name', 'LIKE', '%'.$request->input('city_name').'%')->first();
@@ -39,58 +47,79 @@ class DemographicApiController extends Controller
 
         $validated = $request->validate([
             'user_id' => 'nullable|integer|exists:users,id',
+            'email' => 'nullable|string|email',
             'name' => 'nullable|string|max:255',
             'birth_date' => 'nullable|date|before:today',
             'gender' => 'nullable|string|in:male,female,other',
             'province_id' => 'nullable|integer|exists:provinces,id',
             'city_id' => 'nullable|integer|exists:cities,id',
-            'phone' => 'nullable|string',
-            'whatsapp' => 'nullable|string',
+            'district' => 'nullable|string|max:255',
+            'village' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:50',
+            'whatsapp' => 'nullable|string|max:50',
             'address' => 'nullable|string',
+            'instagram' => 'nullable|string|max:255',
+            'facebook' => 'nullable|string|max:255',
+            'tiktok' => 'nullable|string|max:255',
+            'youtube' => 'nullable|string|max:255',
         ]);
 
-        $defaultStudent = User::where('role', 'student')->first();
-        $userId = $validated['user_id'] ?? ($defaultStudent ? $defaultStudent->id : 4);
-        $user = User::where('id', $userId)->firstOrFail();
-
-        $updateData = ['profile_completed' => true];
-        if (! empty($validated['name'])) {
-            $updateData['name'] = $validated['name'];
+        $user = $request->user('sanctum') ?? $request->user();
+        if (! $user && $request->filled('email')) {
+            $user = User::where('email', $request->input('email'))->first();
         }
-        if (! empty($validated['birth_date'])) {
-            $updateData['birth_date'] = $validated['birth_date'];
+        if (! $user && ! empty($validated['user_id'])) {
+            $user = User::find($validated['user_id']);
         }
-        if (! empty($validated['gender'])) {
-            $updateData['gender'] = $validated['gender'];
-        }
-        if (isset($validated['province_id'])) {
-            $updateData['province_id'] = $validated['province_id'];
-        }
-        if (isset($validated['city_id'])) {
-            $updateData['city_id'] = $validated['city_id'];
-        }
-        if (isset($validated['phone'])) {
-            $updateData['phone'] = $validated['phone'];
-        }
-        if (isset($validated['whatsapp'])) {
-            $updateData['whatsapp'] = $validated['whatsapp'];
-        }
-        if (isset($validated['address'])) {
-            $updateData['address'] = $validated['address'];
+        if (! $user) {
+            $user = User::where('role', 'student')->first();
         }
 
-        $user->update($updateData);
+        if (! $user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Pengguna tidak ditemukan',
+            ], 404);
+        }
+
+        $fields = [
+            'name', 'birth_date', 'gender', 'province_id', 'city_id',
+            'district', 'village', 'phone', 'whatsapp', 'address',
+            'instagram', 'facebook', 'tiktok', 'youtube',
+        ];
+
+        foreach ($fields as $field) {
+            if ($request->has($field)) {
+                $user->{$field} = $validated[$field] ?? $request->input($field);
+            }
+        }
+
+        // Automatically calculate profile_completed based on mandatory * fields
+        $user->profile_completed = $user->isProfileComplete();
+        $user->save();
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Data demografi berhasil diperbarui ke database',
+            'message' => 'Data profil berhasil diperbarui ke database',
             'data' => [
                 'user_id' => $user->id,
                 'name' => $user->name,
+                'email' => $user->email,
                 'age' => $user->age,
+                'birth_date' => $user->birth_date?->format('Y-m-d'),
                 'gender' => $user->gender,
+                'phone' => $user->phone,
+                'whatsapp' => $user->whatsapp,
+                'address' => $user->address,
                 'city' => $user->city?->name,
                 'province' => $user->province?->name,
+                'district' => $user->district,
+                'village' => $user->village,
+                'instagram' => $user->instagram,
+                'facebook' => $user->facebook,
+                'tiktok' => $user->tiktok,
+                'youtube' => $user->youtube,
+                'profile_completed' => (bool)$user->profile_completed,
             ],
         ]);
     }

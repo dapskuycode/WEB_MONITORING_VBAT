@@ -27,4 +27,9 @@ class UserWishlist extends Model
     {
         return $this->belongsTo(SponsorProduct::class, 'sponsor_product_id');
     }
+
+    public function sponsorProduct(): BelongsTo
+    {
+        return $this->belongsTo(SponsorProduct::class, 'sponsor_product_id');
+    }
 }

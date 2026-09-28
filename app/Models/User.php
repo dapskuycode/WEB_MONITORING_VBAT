@@ -30,9 +30,15 @@ class User extends Authenticatable implements PasskeyUser
         'gender',
         'province_id',
         'city_id',
+        'district',
+        'village',
         'phone',
         'whatsapp',
         'address',
+        'instagram',
+        'facebook',
+        'tiktok',
+        'youtube',
         'profile_completed',
     ];
 
@@ -160,5 +166,17 @@ class User extends Authenticatable implements PasskeyUser
     public function getAgeAttribute(): ?int
     {
         return $this->birth_date ? Carbon::parse($this->birth_date)->age : null;
+    }
+
+    public function isProfileComplete(): bool
+    {
+        return !empty($this->name)
+            && !empty($this->birth_date)
+            && !empty($this->gender)
+            && !empty($this->phone)
+            && !empty($this->whatsapp)
+            && !empty($this->address)
+            && !empty($this->province_id)
+            && !empty($this->city_id);
     }
 }

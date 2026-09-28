@@ -12,6 +12,45 @@ use Illuminate\Validation\ValidationException;
 class AuthApiController extends Controller
 {
     /**
+     * Register a new user and issue a Sanctum token.
+     *
+     * POST /api/v1/auth/register
+     */
+    public function register(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name'     => ['required', 'string', 'max:255'],
+            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        $user = User::create([
+            'name'              => $request->name,
+            'email'             => $request->email,
+            'password'          => Hash::make($request->password),
+            'role'              => 'student',
+            'profile_completed' => false,
+        ]);
+
+        $token = $user->createToken('mobile-app')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registrasi berhasil',
+            'data'    => [
+                'user'  => [
+                    'id'    => $user->id,
+                    'name'  => $user->name,
+                    'email' => $user->email,
+                    'role'  => $user->role,
+                ],
+                'token' => $token,
+                'type'  => 'Bearer',
+            ],
+        ], 201);
+    }
+
+    /**
      * Issue a Sanctum token for the user.
      *
      * POST /api/v1/auth/login
@@ -70,16 +109,34 @@ class AuthApiController extends Controller
      */
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user();
+        $user = $request->user()->load(['province', 'city', 'membership']);
 
         return response()->json([
             'success' => true,
             'data'    => [
-                'id'         => $user->id,
-                'name'       => $user->name,
-                'email'      => $user->email,
-                'role'       => $user->role,
-                'created_at' => $user->created_at?->toIso8601String(),
+                'id'                => $user->id,
+                'name'              => $user->name,
+                'email'             => $user->email,
+                'role'              => $user->role,
+                'birth_date'        => $user->birth_date?->format('Y-m-d'),
+                'gender'            => $user->gender,
+                'phone'             => $user->phone,
+                'whatsapp'          => $user->whatsapp,
+                'address'           => $user->address,
+                'province_id'       => $user->province_id,
+                'province'          => $user->province?->name,
+                'city_id'           => $user->city_id,
+                'city'              => $user->city?->name,
+                'district'          => $user->district,
+                'village'           => $user->village,
+                'instagram'         => $user->instagram,
+                'facebook'          => $user->facebook,
+                'tiktok'            => $user->tiktok,
+                'youtube'           => $user->youtube,
+                'profile_completed' => (bool)$user->isProfileComplete(),
+                'membership'        => $user->membership?->membership_number,
+                'is_active_member'  => $user->membership?->isActive() ?? false,
+                'created_at'        => $user->created_at?->toIso8601String(),
             ],
         ]);
     }

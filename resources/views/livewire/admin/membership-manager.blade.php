@@ -36,7 +36,7 @@
                     <td class="px-6 py-4 whitespace-nowrap">{{ $user->name }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">{{ $user->email }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        {{ $user->membership?->kta_number ?? '-' }}
+                        {{ $user->membership?->membership_number ?? '-' }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         @if($user->membership)

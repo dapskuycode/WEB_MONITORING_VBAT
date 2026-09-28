@@ -88,7 +88,8 @@ class LegacyDataSeeder extends Seeder
         ];
 
         foreach ($sampleDemographics as $s) {
-            User::updateOrCreate(
+            $city = \App\Models\City::find($s['city_id']);
+            $user = User::updateOrCreate(
                 ['email' => $s['email']],
                 [
                     'name' => $s['name'],
@@ -97,9 +98,25 @@ class LegacyDataSeeder extends Seeder
                     'gender' => $s['gender'],
                     'birth_date' => $s['birth_date'],
                     'city_id' => $s['city_id'],
+                    'province_id' => $city?->province_id,
                     'profile_completed' => true,
                 ]
             );
+
+            // Berikan membership KTA resmi untuk teknisi percontohan
+            if (in_array($s['email'], ['andi@teknisi.id', 'rian@repair.id', 'siti@service.id'])) {
+                \App\Models\Membership::updateOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'membership_number' => 'VBAT-2026-' . str_pad((string)$user->id, 4, '0', STR_PAD_LEFT),
+                        'status' => 'active',
+                        'purchase_type' => 'bundling',
+                        'issued_at' => now()->subMonths(1),
+                        'expires_at' => null,
+                        'notes' => 'Member Resmi Teknisi Ponsel Profesional VBAT',
+                    ]
+                );
+            }
         }
 
         // 3. Seed Sponsors from SQL or Default

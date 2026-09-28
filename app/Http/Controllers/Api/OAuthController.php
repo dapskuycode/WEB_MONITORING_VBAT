@@ -17,7 +17,7 @@ class OAuthController extends Controller
     public function callback(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'provider' => 'required|in:google,apple,facebook',
+            'provider' => 'required|in:google,apple,facebook,whatsapp',
             'provider_user' => 'required|array',
             'provider_user.id' => 'required|string',
             'provider_user.email' => 'nullable|email',

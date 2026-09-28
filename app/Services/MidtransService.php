@@ -17,9 +17,9 @@ class MidtransService
 
     public function __construct()
     {
-        $this->serverKey = config('services.midtrans.server_key', '');
-        $this->clientKey = config('services.midtrans.client_key', '');
-        $this->isProduction = config('services.midtrans.is_production', false);
+        $this->serverKey = (string) (config('services.midtrans.server_key') ?? 'SB-Mid-server-mock-key');
+        $this->clientKey = (string) (config('services.midtrans.client_key') ?? 'SB-Mid-client-mock-key');
+        $this->isProduction = (bool) (config('services.midtrans.is_production') ?? false);
         $this->snapUrl = $this->isProduction
             ? 'https://app.midtrans.com/snap/v1/transactions'
             : 'https://app.sandbox.midtrans.com/snap/v1/transactions';

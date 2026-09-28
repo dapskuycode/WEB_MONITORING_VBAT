@@ -19,11 +19,11 @@ class MembershipService
 
         $kta = Membership::create([
             'user_id' => $user->id,
-            'kta_number' => self::generateKTANumber(),
+            'membership_number' => Membership::generateMembershipNumber(),
             'status' => 'active',
             'issued_at' => now(),
             'expires_at' => null, // Permanent per D-013
-            'tier' => $purchaseData['tier'] ?? 'basic',
+            'purchase_type' => $purchaseData['purchase_type'] ?? ($purchaseData['tier'] ?? 'Android'),
         ]);
 
         return $kta;

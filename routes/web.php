@@ -47,10 +47,9 @@ Route::middleware(['auth'])->group(function () {
         Route::view('admin/best-deals', 'pages.admin.best-deals')->name('admin.best-deals');
         Route::view('admin/bulk-upload', 'pages.admin.bulk-upload')->name('admin.bulk-upload');
         Route::view('admin/notifications', 'pages.admin.notifications')->name('admin.notifications');
+        Route::view('admin/users', 'pages.admin.users')->name('admin.users');
         Route::get('admin/content', ContentCms::class)->name('admin.content');
-        Route::get('admin/sponsors', SponsorManager::class)->name('admin.sponsors');
         Route::get('admin/feed', FeedManager::class)->name('admin.feed');
-        Route::get('admin/bulk-upload', BulkUpload::class)->name('admin.bulk-upload');
         Route::get('admin/quizzes', QuizManager::class)->name('admin.quizzes');
         Route::get('admin/rules', RuleConfigManager::class)->name('admin.rules');
         Route::get('admin/analytics', AnalyticsDashboard::class)->name('admin.analytics');

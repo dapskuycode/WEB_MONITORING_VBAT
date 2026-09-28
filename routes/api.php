@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\EntitlementApiController;
 use App\Http\Controllers\Api\FeedApiController;
 use App\Http\Controllers\Api\LessonApiController;
 use App\Http\Controllers\Api\MediaServeController;
+use App\Http\Controllers\Api\MembershipController;
 use App\Http\Controllers\Api\PaymentApiController;
 use App\Http\Controllers\Api\QuizApiController;
 use App\Http\Controllers\Api\TrackerApiController;
@@ -28,10 +29,22 @@ Route::prefix('v1')->group(function () {
     Route::get('/health', [HealthController::class, 'index']);
 
     // Auth (Phase 6 — TASK-BE-06)
+    Route::post('/auth/register', [AuthApiController::class, 'register']);
     Route::post('/auth/login', [AuthApiController::class, 'login']);
     
     // OAuth Social Login (Phase G — AUTH-BE-01)
     Route::post('/auth/oauth/callback', [\App\Http\Controllers\Api\OAuthController::class, 'callback']);
+    
+    // Demografi Profil Pengguna (Mendukung auth:sanctum maupun email/user_id fallback)
+    Route::post('/user/demographics', [DemographicApiController::class, 'updateDemographics']);
+
+    // Aktivasi Membership KTA dari Mobile (Mendukung auth:sanctum maupun email/user_id fallback)
+    Route::post('/membership/activate', [MembershipController::class, 'activate']);
+
+    // Log Tracker & Wishlist (Mendukung auth:sanctum maupun email/user_id fallback / anonymous)
+    Route::post('/track', [TrackerApiController::class, 'logInteraction']);
+    Route::post('/wishlist/toggle', [TrackerApiController::class, 'toggleWishlist']);
+    Route::get('/wishlist/user', [TrackerApiController::class, 'getUserWishlist']);
     
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthApiController::class, 'logout']);
@@ -200,12 +213,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/placements/impression', [PlacementApiController::class, 'logImpression']);
         Route::post('/placements/click', [PlacementApiController::class, 'logClick']);
 
-        // 3. Log Tracker (Impression, Click, Wishlist)
-        Route::post('/track', [TrackerApiController::class, 'logInteraction']);
-        Route::post('/wishlist/toggle', [TrackerApiController::class, 'toggleWishlist']);
 
-        // 4. Demografi Profil Pengguna
-        Route::post('/user/demographics', [DemographicApiController::class, 'updateDemographics']);
 
         // 9. User Notification API (Phase 5 — REQ-ANA-02)
         Route::get('/user/notifications', [NotificationApiController::class, 'listUserNotifications']);
