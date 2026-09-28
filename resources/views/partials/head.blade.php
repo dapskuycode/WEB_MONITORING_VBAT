@@ -13,3 +13,10 @@
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 @fluxAppearance
+<script>
+    // Enforce dark mode permanently
+    document.documentElement.classList.add('dark');
+    try {
+        localStorage.setItem('flux.appearance', 'dark');
+    } catch (e) {}
+</script>
