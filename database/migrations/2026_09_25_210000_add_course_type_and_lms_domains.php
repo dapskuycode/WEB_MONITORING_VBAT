@@ -63,7 +63,7 @@ return new class extends Migration
             $table->string('note')->nullable();
             $table->timestamps();
 
-            $table->unique(['user_id', 'bookmarkable_type', 'bookmarkable_id']);
+            $table->unique(['user_id', 'bookmarkable_type', 'bookmarkable_id'], 'learning_bm_user_morph_unique');
         });
 
         // 4. Entitlement (package access)

@@ -24,7 +24,7 @@ return new class extends Migration
             $table->text('reason')->nullable();
             $table->timestamps();
 
-            $table->unique(['sponsor_id', 'benefit_category_id']);
+            $table->unique(['sponsor_id', 'benefit_category_id'], 'sponsor_benefit_override_unique');
         });
     }
 
