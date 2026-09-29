@@ -17,6 +17,10 @@ class DatabaseSeeder extends Seeder
         $this->call([
             LegacyDataSeeder::class,
             SponsorTierSeeder::class,
+            BestDealAndCampaignSeeder::class,
+            FeedConfigSeeder::class,
+            GamificationSeeder::class,
+            PaymentPackageSeeder::class,
         ]);
     }
 }

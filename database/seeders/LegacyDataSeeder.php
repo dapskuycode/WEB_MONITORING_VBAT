@@ -13,16 +13,13 @@ class LegacyDataSeeder extends Seeder
     public function run(): void
     {
         $sqlPath = base_path('../hasil_backup.sql');
-        if (! file_exists($sqlPath)) {
-            $this->command->warn("Backup file not found at: {$sqlPath}");
-
-            return;
+        if (file_exists($sqlPath)) {
+            $this->command->info('Parsing and importing data from backup SQL...');
+            $this->seedProvincesAndCities($sqlPath);
+        } else {
+            $this->command->warn("Backup file not found at: {$sqlPath}. Seeding fallback provinces and cities...");
+            $this->seedFallbackProvincesAndCities();
         }
-
-        $this->command->info('Parsing and importing data from backup SQL...');
-
-        // 1. Seed Provinces & Cities
-        $this->seedProvincesAndCities($sqlPath);
 
         // 2. Create Default Users (Super Admin, Owner, Sponsor)
         $superAdmin = User::updateOrCreate(
@@ -212,6 +209,37 @@ class LegacyDataSeeder extends Seeder
         }
         fclose($file);
         Schema::enableForeignKeyConstraints();
+    }
+
+    private function seedFallbackProvincesAndCities(): void
+    {
+        $provinces = [
+            ['id' => 11, 'name' => 'ACEH'],
+            ['id' => 31, 'name' => 'DKI JAKARTA'],
+            ['id' => 32, 'name' => 'JAWA BARAT'],
+            ['id' => 35, 'name' => 'JAWA TIMUR'],
+        ];
+        foreach ($provinces as $p) {
+            DB::table('provinces')->updateOrInsert(['id' => $p['id']], ['name' => $p['name'], 'created_at' => now(), 'updated_at' => now()]);
+        }
+
+        $cities = [
+            ['id' => 1101, 'province_id' => 11, 'name' => 'KABUPATEN ACEH SELATAN', 'type' => 'Kabupaten'],
+            ['id' => 3171, 'province_id' => 31, 'name' => 'KOTA JAKARTA PUSAT', 'type' => 'Kota'],
+            ['id' => 3174, 'province_id' => 31, 'name' => 'KOTA JAKARTA SELATAN', 'type' => 'Kota'],
+            ['id' => 3273, 'province_id' => 32, 'name' => 'KOTA BANDUNG', 'type' => 'Kota'],
+            ['id' => 3204, 'province_id' => 32, 'name' => 'KABUPATEN BANDUNG', 'type' => 'Kabupaten'],
+            ['id' => 3578, 'province_id' => 35, 'name' => 'KOTA SURABAYA', 'type' => 'Kota'],
+        ];
+        foreach ($cities as $c) {
+            DB::table('cities')->updateOrInsert(['id' => $c['id']], [
+                'province_id' => $c['province_id'],
+                'name' => $c['name'],
+                'type' => $c['type'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 
     /**
