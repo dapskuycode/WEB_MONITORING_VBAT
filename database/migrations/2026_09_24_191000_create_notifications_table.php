@@ -20,7 +20,7 @@ return new class extends Migration
             $table->timestamp('read_at')->nullable();
             $table->timestamp('created_at')->useCurrent();
 
-            $table->index(['recipient_type', 'recipient_id', 'is_read', 'created_at']);
+            $table->index(['recipient_type', 'recipient_id', 'is_read', 'created_at'], 'notif_recipient_read_idx');
         });
     }
 
