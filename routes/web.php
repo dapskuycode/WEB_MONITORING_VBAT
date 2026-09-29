@@ -12,6 +12,14 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'pages.auth.login')->name('home');
 
+Route::get('/home', function () {
+    $user = auth()->user();
+    if ($user && $user->isSponsor()) {
+        return redirect()->route('sponsor.dashboard');
+    }
+    return redirect()->route('dashboard');
+})->middleware('auth')->name('home.redirect');
+
 Route::middleware(['auth'])->group(function () {
     // 1. Dashboard & Modul Admin/Owner (Hanya Super Admin & Owner)
     Route::middleware(['role:super_admin,owner'])->group(function () {
