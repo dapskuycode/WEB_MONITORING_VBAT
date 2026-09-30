@@ -41,7 +41,7 @@
                 </flux:tooltip>
             </flux:navbar>
 
-            <x-desktop-user-menu />
+            <x-desktop-user-menu position="bottom" align="end" />
         </flux:header>
 
         <!-- Mobile Menu -->
