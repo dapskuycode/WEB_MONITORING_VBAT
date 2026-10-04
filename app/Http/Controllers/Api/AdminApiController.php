@@ -270,7 +270,7 @@ class AdminApiController extends Controller
             && $campaign->status !== 'active'
         ) {
             $activeHeroCount = Campaign::where('placement_type', 'hero_slider')
-                ->where('status', 'active')
+                ->whereIn('status', ['active', 'approved'])
                 ->whereNull('deleted_at')
                 ->count();
 

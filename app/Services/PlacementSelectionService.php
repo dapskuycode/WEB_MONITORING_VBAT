@@ -71,7 +71,7 @@ class PlacementSelectionService
         $now = now();
 
         return Campaign::where('placement_type', $placementType)
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'approved'])
             ->where('start_date', '<=', $now->toDateString())
             ->where(function ($q) use ($now) {
                 $q->whereNull('end_date')->orWhere('end_date', '>=', $now->toDateString());

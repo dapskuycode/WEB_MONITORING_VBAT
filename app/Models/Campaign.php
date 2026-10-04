@@ -88,7 +88,7 @@ class Campaign extends Model
      */
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('status', 'active');
+        return $query->whereIn('status', ['active', 'approved']);
     }
 
     /**
