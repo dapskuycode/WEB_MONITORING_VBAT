@@ -12,22 +12,36 @@ class VideoThumbnailService
      */
     public static function generateThumbnail(string $relativeMediaPath): ?string
     {
-        $fullPath = storage_path('app/public/'.$relativeMediaPath);
-        if (! file_exists($fullPath)) {
-            $fullPath = public_path($relativeMediaPath);
-        }
+        try {
+            $fullPath = storage_path('app/public/'.$relativeMediaPath);
+            if (! file_exists($fullPath)) {
+                $fullPath = public_path($relativeMediaPath);
+            }
 
-        if (! file_exists($fullPath)) {
-            return null;
-        }
+            if (! file_exists($fullPath)) {
+                return null;
+            }
 
-        $base = pathinfo($relativeMediaPath, PATHINFO_FILENAME);
-        $dir = pathinfo($relativeMediaPath, PATHINFO_DIRNAME);
-        $thumbRelative = ($dir === '.' ? '' : $dir.'/').$base.'_thumb.jpg';
-        $thumbFullPath = storage_path('app/public/'.$thumbRelative);
+            $base = pathinfo($relativeMediaPath, PATHINFO_FILENAME);
+            $dir = pathinfo($relativeMediaPath, PATHINFO_DIRNAME);
+            $thumbRelative = ($dir === '.' ? '' : $dir.'/').$base.'_thumb.jpg';
+            $thumbFullPath = storage_path('app/public/'.$thumbRelative);
 
-        // Run python cv2 frame extractor
-        $script = <<<PYTHON
+            // Check if shell_exec or exec is available and not disabled by php.ini (e.g. on aaPanel)
+            $disabledFunctions = explode(',', ini_get('disable_functions') ?: '');
+            $disabledFunctions = array_map('trim', $disabledFunctions);
+
+            // If ffmpeg CLI is available via exec
+            if (function_exists('exec') && ! in_array('exec', $disabledFunctions)) {
+                @exec('ffmpeg -y -ss 00:00:01 -i '.escapeshellarg($fullPath).' -vframes 1 -q:v 2 '.escapeshellarg($thumbFullPath).' 2>&1', $out, $ret);
+                if ($ret === 0 && file_exists($thumbFullPath)) {
+                    return $thumbRelative;
+                }
+            }
+
+            // Fallback to python3 cv2 if shell_exec is allowed
+            if (function_exists('shell_exec') && ! in_array('shell_exec', $disabledFunctions)) {
+                $script = <<<PYTHON
 import cv2
 import os
 
@@ -44,10 +58,15 @@ if ret:
 cap.release()
 PYTHON;
 
-        $output = @shell_exec('python3 -c '.escapeshellarg($script));
+                $output = @\shell_exec('python3 -c '.escapeshellarg($script));
 
-        if ($output && str_contains($output, 'SUCCESS') && file_exists($thumbFullPath)) {
-            return $thumbRelative;
+                if ($output && str_contains($output, 'SUCCESS') && file_exists($thumbFullPath)) {
+                    return $thumbRelative;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Silently report and ignore so video upload never crashes
+            report($e);
         }
 
         return null;
