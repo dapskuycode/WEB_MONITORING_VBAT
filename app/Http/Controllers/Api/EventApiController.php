@@ -73,7 +73,7 @@ class EventApiController extends Controller
 
             $image = $p->image_path;
             if ($image && ! str_starts_with($image, 'http') && ! str_starts_with($image, 'assets/')) {
-                $image = url('api/v1/storage/'.$image);
+                $image = url('storage/'.$image);
             }
 
             return [

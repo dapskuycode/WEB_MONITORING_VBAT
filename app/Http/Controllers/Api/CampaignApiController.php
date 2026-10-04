@@ -64,7 +64,7 @@ class CampaignApiController extends Controller
                 $tierUpper = strtoupper($s->tier ?? 'PARTNER');
                 $logo = $s->logo_path;
                 if ($logo && ! str_starts_with($logo, 'http') && ! str_starts_with($logo, 'assets/')) {
-                    $logo = url('api/v1/storage/'.$logo);
+                    $logo = url('storage/'.$logo);
                 }
 
                 return [
@@ -86,7 +86,7 @@ class CampaignApiController extends Controller
                     'products' => $s->products->map(function ($p) use ($s) {
                         $image = $p->image_path;
                         if ($image && ! str_starts_with($image, 'http') && ! str_starts_with($image, 'assets/')) {
-                            $image = url('api/v1/storage/'.$image);
+                            $image = url('storage/'.$image);
                         }
 
                         return [
@@ -234,7 +234,7 @@ class CampaignApiController extends Controller
 
             $image = $p->image_path;
             if ($image && ! str_starts_with($image, 'http') && ! str_starts_with($image, 'assets/')) {
-                $image = url('api/v1/storage/'.$image);
+                $image = url('storage/'.$image);
             }
 
             return [
@@ -326,7 +326,7 @@ class CampaignApiController extends Controller
 
             $image = $p->image_path;
             if ($image && ! str_starts_with($image, 'http') && ! str_starts_with($image, 'assets/')) {
-                $image = url('api/v1/storage/'.$image);
+                $image = url('storage/'.$image);
             }
 
             $badgeText = isset($p->pivot) && isset($p->pivot->badge_text) ? $p->pivot->badge_text : 'BEST DEAL';
@@ -374,11 +374,20 @@ class CampaignApiController extends Controller
     {
         $mediaPath = $c->media_path;
         if ($mediaPath && ! str_starts_with($mediaPath, 'http') && ! str_starts_with($mediaPath, 'assets/')) {
-            $mediaPath = url('api/v1/storage/'.$mediaPath);
+            $mediaPath = url('storage/'.$mediaPath);
+        }
+
+        $thumbnailUrl = $c->thumbnail_url;
+        if ($thumbnailUrl && ! str_starts_with($thumbnailUrl, 'http') && ! str_starts_with($thumbnailUrl, 'assets/')) {
+            $thumbnailUrl = url(ltrim($thumbnailUrl, '/'));
         }
 
         $sponsorName = $c->sponsor ? $c->sponsor->name : 'Sponsor';
         $sponsorTier = $c->sponsor ? strtoupper($c->sponsor->tier ?? 'PARTNER') : 'PARTNER';
+        $sponsorLogo = $c->sponsor?->logo_path;
+        if ($sponsorLogo && ! str_starts_with($sponsorLogo, 'http') && ! str_starts_with($sponsorLogo, 'assets/')) {
+            $sponsorLogo = url('storage/'.$sponsorLogo);
+        }
 
         return [
             'id' => $c->id,
@@ -387,7 +396,7 @@ class CampaignApiController extends Controller
             'description' => $c->description,
             'media_path' => $mediaPath,
             'media_type' => $c->media_type,
-            'thumbnail_url' => $c->thumbnail_url,
+            'thumbnail_url' => $thumbnailUrl,
             'thumbnail_path' => $c->thumbnail_path,
             'target_url' => $c->target_url,
             'start_date' => $c->start_date?->toDateString(),
@@ -398,7 +407,7 @@ class CampaignApiController extends Controller
                 'id' => $c->sponsor?->id,
                 'name' => $sponsorName,
                 'tier' => $sponsorTier,
-                'logo' => $c->sponsor?->logo_path,
+                'logo' => $sponsorLogo,
                 'whatsapp' => $c->sponsor?->whatsapp,
             ],
         ];

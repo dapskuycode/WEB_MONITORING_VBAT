@@ -237,7 +237,7 @@ class FeedService
     {
         $image = $p->image_path;
         if ($image && ! str_starts_with($image, 'http') && ! str_starts_with($image, 'assets/')) {
-            $image = url('api/v1/storage/'.$image);
+            $image = url('storage/'.$image);
         }
 
         return [
@@ -268,7 +268,7 @@ class FeedService
     {
         $thumbnail = $m->thumbnail_path;
         if ($thumbnail && ! str_starts_with($thumbnail, 'http') && ! str_starts_with($thumbnail, 'assets/')) {
-            $thumbnail = url('api/v1/storage/'.$thumbnail);
+            $thumbnail = url('storage/'.$thumbnail);
         }
 
         return [
@@ -293,7 +293,7 @@ class FeedService
     {
         $mediaPath = $c->media_path;
         if ($mediaPath && ! str_starts_with($mediaPath, 'http') && ! str_starts_with($mediaPath, 'assets/')) {
-            $mediaPath = url('api/v1/storage/'.$mediaPath);
+            $mediaPath = url('storage/'.$mediaPath);
         }
 
         return [
