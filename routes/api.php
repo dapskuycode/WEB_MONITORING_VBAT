@@ -275,6 +275,29 @@ Route::prefix('v1')->group(function () {
     Route::post('/webhooks/midtrans', [WebhookController::class, 'midtrans']);
 
     // 6. Storage File Proxy with CORS (for Flutter Web CanvasKit & Mobile)
+    Route::get('/media-file', function (\Illuminate\Http\Request $request) {
+        $path = $request->query('path');
+        if (! $path) {
+            abort(404);
+        }
+        $fullPath = storage_path('app/public/'.$path);
+        if (! file_exists($fullPath)) {
+            $assetPath = public_path($path);
+            if (file_exists($assetPath)) {
+                $fullPath = $assetPath;
+            } else {
+                abort(404);
+            }
+        }
+        $mime = mime_content_type($fullPath) ?: 'image/jpeg';
+
+        return response()->file($fullPath, [
+            'Access-Control-Allow-Origin' => '*',
+            'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+            'Content-Type' => $mime,
+        ]);
+    });
+
     Route::get('/storage/{path}', function ($path) {
         $fullPath = storage_path('app/public/'.$path);
         if (! file_exists($fullPath)) {
