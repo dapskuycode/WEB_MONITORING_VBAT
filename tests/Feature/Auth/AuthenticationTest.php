@@ -68,6 +68,24 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_sponsor_is_redirected_to_sponsor_dashboard_upon_login(): void
+    {
+        $sponsor = User::factory()->create([
+            'role' => 'sponsor',
+        ]);
+
+        $response = $this->post(route('login.store'), [
+            'email' => $sponsor->email,
+            'password' => 'password',
+        ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('sponsor.dashboard', absolute: false));
+
+        $this->assertAuthenticated();
+    }
+
     public function test_users_can_logout(): void
     {
         $user = User::factory()->create();
