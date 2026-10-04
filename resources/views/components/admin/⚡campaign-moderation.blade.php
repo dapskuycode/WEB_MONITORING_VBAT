@@ -47,14 +47,22 @@ new class extends Component
     public function approve($id)
     {
         $c = Campaign::findOrFail($id);
-        $c->update(['status' => 'approved', 'rejection_reason' => null]);
+        $payload = ['status' => 'approved'];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('campaigns', 'rejection_reason')) {
+            $payload['rejection_reason'] = null;
+        }
+        $c->update($payload);
         $this->loadCampaigns();
     }
 
     public function reject($id)
     {
         $c = Campaign::findOrFail($id);
-        $c->update(['status' => 'rejected', 'rejection_reason' => 'Materi visual atau link promosi tidak memenuhi panduan komunitas.']);
+        $payload = ['status' => 'rejected'];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('campaigns', 'rejection_reason')) {
+            $payload['rejection_reason'] = 'Materi visual atau link promosi tidak memenuhi panduan komunitas.';
+        }
+        $c->update($payload);
         $this->loadCampaigns();
     }
 
