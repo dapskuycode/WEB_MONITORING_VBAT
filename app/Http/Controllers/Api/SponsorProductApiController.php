@@ -20,7 +20,9 @@ class SponsorProductApiController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = SponsorProduct::with(['sponsor'])->where('is_active', true);
+        $query = SponsorProduct::with(['sponsor'])
+            ->where('is_active', true)
+            ->whereHas('sponsor', fn($s) => $s->where('is_active', true));
 
         if ($request->has('sponsor_id')) {
             $query->where('sponsor_id', $request->input('sponsor_id'));

@@ -13,14 +13,17 @@ new class extends Component
 {
     public $activeTab = 'sponsors'; // 'sponsors' | 'matrix'
 
+    // Search & Filters (SPONSOR-02)
+    public $search = '';
+    public $filterTier = '';
+    public $filterStatus = '';
+
     // Sponsors list & form state
-    public $sponsors;
     public $showModal = false;
     public $editingId = null;
 
     public $name = '';
     public $tier = 'gold';
-    public $weight = 35;
     public $website_url = '';
     public $contact_email = '';
     public $phone = '';
@@ -32,29 +35,25 @@ new class extends Component
     public $userEmail = '';
     public $userPassword = '';
 
+    // Detail modal state
+    public $showDetailModal = false;
+    public $detailSponsorId = null;
+    public $detailActiveTab = 'profile'; // 'profile' | 'benefits' | 'products'
+
     // Matrix state (SPONSOR-01)
     public $matrixTiers = [];
     public $matrixCategories = [];
-    public $matrix = []; // [category_slug => [tier_slug => [value, is_unlimited, is_disabled, initial_value, last_number]]]
+    public $matrix = [];
 
     public $showResetConfirmModal = false;
-    public $resetType = 'row'; // 'row' | 'all'
+    public $resetType = 'row';
     public $resetTargetCategorySlug = null;
     public $resetDiff = [];
     public $saveSuccessMessage = '';
 
     public function mount()
     {
-        $this->loadSponsors();
         $this->loadMatrix();
-    }
-
-    public function loadSponsors()
-    {
-        $this->sponsors = Sponsor::with(['user', 'sponsorTier'])
-            ->withCount('products', 'campaigns')
-            ->orderByDesc('weight')
-            ->get();
     }
 
     public function loadMatrix()
@@ -108,6 +107,161 @@ new class extends Component
         $this->matrix = $matrixData;
     }
 
+    public function getSponsorsProperty()
+    {
+        return Sponsor::with(['user', 'sponsorTier', 'products'])
+            ->withCount('products', 'campaigns')
+            ->when($this->search, function ($q) {
+                $q->where(function ($sub) {
+                    $sub->where('name', 'like', '%' . $this->search . '%')
+                        ->orWhere('contact_email', 'like', '%' . $this->search . '%')
+                        ->orWhere('phone', 'like', '%' . $this->search . '%');
+                });
+            })
+            ->when($this->filterTier, function ($q) {
+                $q->where(function ($sub) {
+                    $sub->where('tier', strtolower($this->filterTier))
+                        ->orWhereHas('sponsorTier', fn($st) => $st->where('slug', strtolower($this->filterTier)));
+                });
+            })
+            ->when($this->filterStatus !== '', function ($q) {
+                $q->where('is_active', (bool)$this->filterStatus);
+            })
+            ->orderByDesc('weight')
+            ->get();
+    }
+
+    public function changeTier($sponsorId, $newTierSlug)
+    {
+        $sponsor = Sponsor::findOrFail($sponsorId);
+        $tier = SponsorTier::where('slug', $newTierSlug)->firstOrFail();
+        
+        // Auto-derive weight from tier Share of Voice (SPONSOR-04)
+        $sov = TierBenefit::where('tier_id', $tier->id)
+            ->whereHas('benefitCategory', fn($q) => $q->where('slug', 'share_of_voice'))
+            ->value('value') ?? 0;
+
+        $sponsor->update([
+            'tier' => $newTierSlug,
+            'tier_id' => $tier->id,
+            'weight' => (int)$sov,
+        ]);
+
+        $this->saveSuccessMessage = "Tier untuk '{$sponsor->name}' berhasil diubah ke {$tier->name}. Batas kuota dan bobot tayang langsung mengikuti tier baru!";
+    }
+
+    public function toggleStatus($id)
+    {
+        $s = Sponsor::findOrFail($id);
+        $s->is_active = !$s->is_active;
+        $s->save();
+        $this->saveSuccessMessage = "Status mitra '{$s->name}' berhasil diubah menjadi " . ($s->is_active ? 'Aktif' : 'Nonaktif') . ".";
+    }
+
+    public function openDetailModal($id)
+    {
+        $this->detailSponsorId = $id;
+        $this->detailActiveTab = 'profile';
+        $this->showDetailModal = true;
+    }
+
+    public function getDetailSponsorProperty()
+    {
+        if (!$this->detailSponsorId) return null;
+        return Sponsor::with(['sponsorTier', 'user', 'products', 'campaigns'])->find($this->detailSponsorId);
+    }
+
+    public function openCreateModal()
+    {
+        $this->reset(['editingId', 'name', 'tier', 'website_url', 'contact_email', 'phone', 'whatsapp', 'description', 'userEmail', 'userPassword']);
+        $this->tier = 'gold';
+        $this->is_active = true;
+        $this->createUserAccount = true;
+        $this->showModal = true;
+    }
+
+    public function editSponsor($id)
+    {
+        $sponsor = Sponsor::findOrFail($id);
+        $this->editingId = $sponsor->id;
+        $this->name = $sponsor->name;
+        $this->tier = strtolower($sponsor->tier ?? 'gold');
+        $this->website_url = $sponsor->website_url;
+        $this->contact_email = $sponsor->contact_email;
+        $this->phone = $sponsor->phone;
+        $this->whatsapp = $sponsor->whatsapp;
+        $this->description = $sponsor->description;
+        $this->is_active = (bool)$sponsor->is_active;
+        $this->createUserAccount = false;
+        $this->showModal = true;
+    }
+
+    public function save()
+    {
+        $this->validate([
+            'name' => 'required|string|max:255',
+            'tier' => 'required|in:kontribusi,bronze,silver,gold,platinum,diamond',
+        ]);
+
+        $tierModel = SponsorTier::where('slug', $this->tier)->first();
+        $tierId = $tierModel?->id;
+        $sov = $tierModel ? (TierBenefit::where('tier_id', $tierId)->whereHas('benefitCategory', fn($q) => $q->where('slug', 'share_of_voice'))->value('value') ?? 0) : 0;
+
+        $userId = null;
+        if ($this->createUserAccount && !empty($this->userEmail) && !empty($this->userPassword)) {
+            $user = User::create([
+                'name' => $this->name,
+                'email' => $this->userEmail,
+                'password' => Hash::make($this->userPassword),
+                'role' => 'sponsor',
+                'phone' => $this->phone,
+                'whatsapp' => $this->whatsapp,
+            ]);
+            $userId = $user->id;
+        }
+
+        if ($this->editingId) {
+            $sponsor = Sponsor::findOrFail($this->editingId);
+            $sponsor->update([
+                'name' => $this->name,
+                'tier' => $this->tier,
+                'tier_id' => $tierId,
+                'weight' => (int)$sov,
+                'website_url' => $this->website_url,
+                'contact_email' => $this->contact_email,
+                'phone' => $this->phone,
+                'whatsapp' => $this->whatsapp,
+                'description' => $this->description,
+                'is_active' => $this->is_active,
+            ]);
+        } else {
+            Sponsor::create([
+                'user_id' => $userId,
+                'name' => $this->name,
+                'slug' => Str::slug($this->name) . '-' . rand(100, 999),
+                'tier' => $this->tier,
+                'tier_id' => $tierId,
+                'weight' => (int)$sov,
+                'website_url' => $this->website_url,
+                'contact_email' => $this->contact_email,
+                'phone' => $this->phone,
+                'whatsapp' => $this->whatsapp,
+                'description' => $this->description,
+                'is_active' => $this->is_active,
+            ]);
+        }
+
+        $this->showModal = false;
+        $this->saveSuccessMessage = "Data mitra sponsor berhasil disimpan!";
+    }
+
+    public function deleteSponsor($id)
+    {
+        Sponsor::destroy($id);
+        $this->saveSuccessMessage = "Mitra sponsor berhasil dihapus.";
+    }
+
+    // Matrix Methods (SPONSOR-01)
     public function toggleUnlimited($catSlug, $tierSlug)
     {
         if (!isset($this->matrix[$catSlug][$tierSlug])) return;
@@ -148,7 +302,6 @@ new class extends Component
             }
         }
 
-        // If no differences found, still allow confirm
         if (empty($this->resetDiff)) {
             $this->resetDiff[] = [
                 'category_name' => $catName,
@@ -206,7 +359,6 @@ new class extends Component
                 if (isset($this->matrix[$catSlug][$t['slug']])) {
                     $cell = &$this->matrix[$catSlug][$t['slug']];
                     $cell['value'] = $cell['initial_value'];
-                    // Restore unlimited status based on initial
                     $cell['is_unlimited'] = is_null($cell['initial_value']) && in_array($catSlug, ['kuota_produk', 'best_deal_slot', 'push_broadcast']) && $t['slug'] === 'diamond';
                     if ($cell['is_unlimited']) {
                         $cell['value'] = null;
@@ -262,108 +414,6 @@ new class extends Component
         $this->saveSuccessMessage = "Matriks benefit ke-6 tier berhasil disimpan permanen ke database dan langsung aktif!";
         $this->loadMatrix();
     }
-
-    public function openCreateModal()
-    {
-        $this->reset(['editingId', 'name', 'tier', 'weight', 'website_url', 'contact_email', 'phone', 'whatsapp', 'description', 'userEmail', 'userPassword']);
-        $this->tier = 'gold';
-        $this->weight = 35;
-        $this->is_active = true;
-        $this->createUserAccount = true;
-        $this->showModal = true;
-    }
-
-    public function editSponsor($id)
-    {
-        $sponsor = Sponsor::findOrFail($id);
-        $this->editingId = $sponsor->id;
-        $this->name = $sponsor->name;
-        $this->tier = strtolower($sponsor->tier ?? 'gold');
-        $this->weight = $sponsor->weight ?? 35;
-        $this->website_url = $sponsor->website_url;
-        $this->contact_email = $sponsor->contact_email;
-        $this->phone = $sponsor->phone;
-        $this->whatsapp = $sponsor->whatsapp;
-        $this->description = $sponsor->description;
-        $this->is_active = (bool)$sponsor->is_active;
-        $this->createUserAccount = false;
-        $this->showModal = true;
-    }
-
-    public function save()
-    {
-        $this->validate([
-            'name' => 'required|string|max:255',
-            'tier' => 'required|in:kontribusi,bronze,silver,gold,platinum,diamond',
-            'weight' => 'required|integer|min:0|max:100',
-        ]);
-
-        $tierModel = SponsorTier::where('slug', $this->tier)->first();
-        $tierId = $tierModel?->id;
-
-        $userId = null;
-        if ($this->createUserAccount && !empty($this->userEmail) && !empty($this->userPassword)) {
-            $user = User::create([
-                'name' => $this->name,
-                'email' => $this->userEmail,
-                'password' => Hash::make($this->userPassword),
-                'role' => 'sponsor',
-                'phone' => $this->phone,
-                'whatsapp' => $this->whatsapp,
-            ]);
-            $userId = $user->id;
-        }
-
-        if ($this->editingId) {
-            $sponsor = Sponsor::findOrFail($this->editingId);
-            $sponsor->update([
-                'name' => $this->name,
-                'tier' => $this->tier,
-                'tier_id' => $tierId,
-                'weight' => $this->weight,
-                'website_url' => $this->website_url,
-                'contact_email' => $this->contact_email,
-                'phone' => $this->phone,
-                'whatsapp' => $this->whatsapp,
-                'description' => $this->description,
-                'is_active' => $this->is_active,
-            ]);
-        } else {
-            Sponsor::create([
-                'user_id' => $userId,
-                'name' => $this->name,
-                'slug' => Str::slug($this->name) . '-' . rand(100, 999),
-                'tier' => $this->tier,
-                'tier_id' => $tierId,
-                'weight' => $this->weight,
-                'website_url' => $this->website_url,
-                'contact_email' => $this->contact_email,
-                'phone' => $this->phone,
-                'whatsapp' => $this->whatsapp,
-                'description' => $this->description,
-                'is_active' => $this->is_active,
-                'start_date' => now(),
-                'end_date' => now()->addYear(),
-            ]);
-        }
-
-        $this->showModal = false;
-        $this->loadSponsors();
-    }
-
-    public function toggleStatus($id)
-    {
-        $s = Sponsor::findOrFail($id);
-        $s->is_active = !$s->is_active;
-        $s->save();
-        $this->loadSponsors();
-    }
-
-    public function deleteSponsor($id)
-    {
-        Sponsor::destroy($id);
-        $this->loadSponsors();
-    }
 };
 ?>
 
@@ -373,10 +423,10 @@ new class extends Component
         <div>
             <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
                 <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                Manajemen Sponsor & Benefit per Tier
+                Manajemen Sponsor
             </h1>
             <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                Kelola seluruh akun mitra sponsor dan sesuaikan matriks benefit 6 tier secara terpusat.
+                Kelola kartu mitra sponsor, pantau kuota terpakai bulan ini, dan atur matriks benefit 6 tier.
             </p>
         </div>
         @if ($activeTab === 'sponsors')
@@ -387,11 +437,11 @@ new class extends Component
         @endif
     </div>
 
-    <!-- Alert Notifikasi Simpan -->
+    <!-- Alert Notifikasi Simpan / Aksi -->
     @if ($saveSuccessMessage)
         <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-sm flex items-center justify-between">
             <div class="flex items-center gap-2 font-medium">
-                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 {{ $saveSuccessMessage }}
             </div>
             <button wire:click="$set('saveSuccessMessage', '')" class="text-emerald-600 hover:text-emerald-800 text-xs font-bold">✕ Tutup</button>
@@ -402,91 +452,175 @@ new class extends Component
     <div class="flex border-b border-zinc-200 dark:border-zinc-800 gap-3">
         <button wire:click="$set('activeTab', 'sponsors')" class="pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 {{ $activeTab === 'sponsors' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-            Daftar Mitra Sponsor
-            <span class="ml-1 text-xs px-2 py-0.5 rounded-full {{ $activeTab === 'sponsors' ? 'bg-blue-100 text-blue-800' : 'bg-zinc-100 text-zinc-600' }}">{{ count($sponsors) }}</span>
+            Daftar Sponsor (SPONSOR-02)
+            <span class="ml-1 text-xs px-2 py-0.5 rounded-full {{ $activeTab === 'sponsors' ? 'bg-blue-100 text-blue-800' : 'bg-zinc-100 text-zinc-600' }}">{{ count($this->sponsors) }}</span>
         </button>
 
         <button wire:click="$set('activeTab', 'matrix')" class="pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 {{ $activeTab === 'matrix' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
-            Matriks Benefit per Tier (SPONSOR-01)
+            Benefit per Tier (SPONSOR-01)
             <span class="ml-1 text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 font-semibold">6 Tier × 14 Benefit</span>
         </button>
     </div>
 
-    <!-- TAB 1: DAFTAR SPONSOR -->
+    <!-- TAB 1: DAFTAR SPONSOR (SPONSOR-02 CARDS & FILTERS) -->
     @if ($activeTab === 'sponsors')
-        <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-zinc-50 dark:bg-zinc-800/50 text-xs font-semibold text-zinc-500 uppercase border-b border-zinc-200 dark:border-zinc-800">
-                        <tr>
-                            <th class="px-6 py-4">Nama Sponsor</th>
-                            <th class="px-6 py-4">Tier Resmi</th>
-                            <th class="px-6 py-4">Akun Portal</th>
-                            <th class="px-6 py-4">Kontak & Marketplace</th>
-                            <th class="px-6 py-4">Status Tayang</th>
-                            <th class="px-6 py-4 text-right">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
-                        @forelse ($sponsors as $sponsor)
-                            <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition">
-                                <td class="px-6 py-4">
-                                    <div class="font-bold text-zinc-900 dark:text-white text-base">{{ $sponsor->name }}</div>
-                                    <div class="text-xs text-zinc-500">{{ $sponsor->products_count }} Produk • {{ $sponsor->campaigns_count }} Banner Iklan</div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    @php
-                                        $tSlug = strtolower($sponsor->tier ?? 'kontribusi');
-                                        $badgeColors = [
-                                            'diamond' => 'bg-cyan-100 text-cyan-800 border-cyan-300',
-                                            'platinum' => 'bg-purple-100 text-purple-800 border-purple-300',
-                                            'gold' => 'bg-amber-100 text-amber-900 border-amber-300',
-                                            'silver' => 'bg-slate-100 text-slate-800 border-slate-300',
-                                            'bronze' => 'bg-orange-100 text-orange-900 border-orange-300',
-                                            'kontribusi' => 'bg-blue-100 text-blue-800 border-blue-300',
-                                        ];
-                                    @endphp
-                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase border {{ $badgeColors[$tSlug] ?? 'bg-zinc-100 text-zinc-800' }}">
-                                        👑 {{ $sponsor->sponsorTier?->name ?? strtoupper($sponsor->tier) }}
-                                    </span>
-                                    <div class="text-xs text-zinc-400 mt-1 font-medium">Share of Voice: {{ $sponsor->weight }}%</div>
-                                </td>
-                                <td class="px-6 py-4 text-xs">
-                                    @if ($sponsor->user)
-                                        <div class="font-semibold text-zinc-900 dark:text-zinc-100">{{ $sponsor->user->email }}</div>
-                                        <span class="text-emerald-600 font-medium">✓ Aktif</span>
+        <div class="space-y-4">
+            <!-- Filter & Search Toolbar -->
+            <div class="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <!-- Search Input -->
+                <div class="relative flex-1">
+                    <svg class="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" wire:model.live.debounce.250ms="search" placeholder="Cari nama sponsor, email, atau no. telepon..." class="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white focus:outline-blue-500">
+                </div>
+
+                <!-- Filters -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <select wire:model.live="filterTier" class="px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white font-medium">
+                        <option value="">Semua Tier</option>
+                        <option value="diamond">👑 Diamond</option>
+                        <option value="platinum">⭐ Platinum</option>
+                        <option value="gold">🥇 Gold</option>
+                        <option value="silver">🥈 Silver</option>
+                        <option value="bronze">🥉 Bronze</option>
+                        <option value="kontribusi">🤝 Kontribusi</option>
+                    </select>
+
+                    <select wire:model.live="filterStatus" class="px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white font-medium">
+                        <option value="">Semua Status</option>
+                        <option value="1">🟢 Aktif Saja</option>
+                        <option value="0">🔴 Nonaktif Saja</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Kartu Sponsor (Card Grid) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                @forelse ($this->sponsors as $sponsor)
+                    @php
+                        $tSlug = strtolower($sponsor->tier ?? 'kontribusi');
+                        $maxQuota = $sponsor->resolveBenefit('kuota_produk');
+                        $usedCount = $sponsor->products_count ?? 0;
+                        $isUnlimited = is_null($maxQuota);
+                        $quotaPercent = (!$isUnlimited && $maxQuota > 0) ? min(100, round(($usedCount / $maxQuota) * 100)) : 0;
+                        $isOverQuota = (!$isUnlimited && $usedCount >= $maxQuota);
+
+                        $tierBadgeStyle = match($tSlug) {
+                            'diamond' => 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 border-cyan-300',
+                            'platinum' => 'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-300',
+                            'gold' => 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300',
+                            'silver' => 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-300',
+                            'bronze' => 'bg-orange-50 dark:bg-orange-950/40 text-orange-900 dark:text-orange-300 border-orange-300',
+                            default => 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-300',
+                        };
+                    @endphp
+
+                    <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4">
+                        <!-- Top: Logo, Nama, Website & Status Toggle -->
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <!-- Logo Thumbnail -->
+                                <div class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0">
+                                    @if ($sponsor->logo_path)
+                                        <img src="{{ asset('storage/' . $sponsor->logo_path) }}" alt="{{ $sponsor->name }}" class="w-full h-full object-cover">
                                     @else
-                                        <span class="text-zinc-400 italic">Belum dibuatkan akun</span>
+                                        <span class="font-black text-sm text-zinc-500 uppercase">{{ substr($sponsor->name, 0, 2) }}</span>
                                     @endif
-                                </td>
-                                <td class="px-6 py-4 text-xs text-zinc-600 dark:text-zinc-300">
-                                    <div>WA: {{ $sponsor->whatsapp ?? '-' }}</div>
-                                    <a href="{{ $sponsor->website_url }}" target="_blank" class="text-blue-600 hover:underline truncate block max-w-[150px]">
-                                        {{ $sponsor->website_url ?? '-' }}
-                                    </a>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <button wire:click="toggleStatus({{ $sponsor->id }})" class="px-3 py-1 text-xs rounded-full font-bold {{ $sponsor->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">
-                                        {{ $sponsor->is_active ? 'Aktif' : 'Nonaktif' }}
-                                    </button>
-                                </td>
-                                <td class="px-6 py-4 text-right space-x-2">
-                                    <button wire:click="editSponsor({{ $sponsor->id }})" class="px-3 py-1.5 text-xs bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 text-zinc-800 dark:text-zinc-200 rounded-lg font-semibold">
-                                        Edit
-                                    </button>
-                                    <button wire:click="deleteSponsor({{ $sponsor->id }})" wire:confirm="Hapus sponsor ini?" class="px-3 py-1.5 text-xs bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg font-semibold">
-                                        Hapus
-                                    </button>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-zinc-500">Belum ada mitra sponsor.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                </div>
+
+                                <div>
+                                    <h3 class="font-bold text-zinc-900 dark:text-white text-base leading-snug line-clamp-1">
+                                        {{ $sponsor->name }}
+                                    </h3>
+                                    @if ($sponsor->website_url)
+                                        <a href="{{ $sponsor->website_url }}" target="_blank" class="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5 truncate max-w-[160px]">
+                                            <span>Kunjungi Toko</span>
+                                            <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                        </a>
+                                    @else
+                                        <span class="text-xs text-zinc-400">Belum ada link toko</span>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- Status Toggle -->
+                            <button type="button" wire:click="toggleStatus({{ $sponsor->id }})" title="Klik untuk mengaktifkan / menonaktifkan sponsor" class="px-2.5 py-1 text-[11px] font-bold rounded-full border transition flex items-center gap-1.5 shrink-0 {{ $sponsor->is_active ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-300' }}">
+                                <span class="w-2 h-2 rounded-full {{ $sponsor->is_active ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
+                                {{ $sponsor->is_active ? 'Aktif' : 'Nonaktif' }}
+                            </button>
+                        </div>
+
+                        <!-- Mid 1: Quick Tier Switcher (Single click without leaving page) -->
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Tiering Sponsor</label>
+                            <div class="relative">
+                                <select wire:change="changeTier({{ $sponsor->id }}, $event.target.value)" class="w-full pl-3 pr-8 py-1.5 text-xs font-bold rounded-xl border {{ $tierBadgeStyle }} bg-white dark:bg-zinc-800 cursor-pointer focus:ring-blue-500 focus:outline-none">
+                                    <option value="diamond" {{ $tSlug === 'diamond' ? 'selected' : '' }}>👑 Diamond (Prioritas #1)</option>
+                                    <option value="platinum" {{ $tSlug === 'platinum' ? 'selected' : '' }}>⭐ Platinum (Top 3)</option>
+                                    <option value="gold" {{ $tSlug === 'gold' ? 'selected' : '' }}>🥇 Gold (Top 5)</option>
+                                    <option value="silver" {{ $tSlug === 'silver' ? 'selected' : '' }}>🥈 Silver (Official)</option>
+                                    <option value="bronze" {{ $tSlug === 'bronze' ? 'selected' : '' }}>🥉 Bronze (Partner)</option>
+                                    <option value="kontribusi" {{ $tSlug === 'kontribusi' ? 'selected' : '' }}>🤝 Kontribusi (Kontributor)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Mid 2: Indikator Kuota Terpakai Bulan Ini -->
+                        <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 space-y-2 text-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="text-zinc-600 dark:text-zinc-400 font-medium">Pemakaian Kuota Bulan Ini:</span>
+                                <span class="font-bold {{ $isOverQuota ? 'text-rose-600' : 'text-zinc-900 dark:text-white' }}">
+                                    @if ($isUnlimited)
+                                        Terpakai {{ $usedCount }} dari <span class="text-purple-600 font-black">∞ Bebas</span>
+                                    @else
+                                        Terpakai {{ $usedCount }} dari {{ $maxQuota }}
+                                    @endif
+                                </span>
+                            </div>
+
+                            @if (!$isUnlimited && $maxQuota > 0)
+                                <div class="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2 overflow-hidden">
+                                    <div class="h-2 rounded-full transition-all duration-300 {{ $isOverQuota ? 'bg-rose-500' : ($quotaPercent > 80 ? 'bg-amber-500' : 'bg-blue-600') }}" style="width: {{ $quotaPercent }}%"></div>
+                                </div>
+                            @elseif ($isUnlimited)
+                                <div class="w-full bg-purple-100 dark:bg-purple-900/30 rounded-full h-2 overflow-hidden">
+                                    <div class="h-2 rounded-full bg-purple-500 w-full"></div>
+                                </div>
+                            @endif
+
+                            <div class="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 pt-1 border-t border-zinc-200 dark:border-zinc-700/60">
+                                <span>Akun Portal:</span>
+                                @if ($sponsor->user)
+                                    <span class="font-semibold text-emerald-600 truncate max-w-[150px]">{{ $sponsor->user->email }}</span>
+                                @else
+                                    <span class="italic text-zinc-400">Belum ada akun</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Bottom: Action Buttons -->
+                        <div class="flex items-center justify-between pt-2 border-t border-zinc-200 dark:border-zinc-800 text-xs">
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" wire:click="openDetailModal({{ $sponsor->id }})" class="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    Detail
+                                </button>
+                                <button type="button" wire:click="editSponsor({{ $sponsor->id }})" class="px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-semibold hover:bg-blue-100 transition">
+                                    Edit
+                                </button>
+                            </div>
+
+                            <button type="button" wire:click="deleteSponsor({{ $sponsor->id }})" wire:confirm="Yakin ingin menghapus mitra sponsor '{{ $sponsor->name }}'?" class="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-zinc-800 rounded-lg transition" title="Hapus sponsor">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-span-full py-12 text-center bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 text-zinc-500">
+                        <svg class="w-12 h-12 text-zinc-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Tidak ada mitra sponsor yang cocok dengan kriteria pencarian / filter.
+                    </div>
+                @endforelse
             </div>
         </div>
     @endif
@@ -653,7 +787,112 @@ new class extends Component
         </div>
     @endif
 
-    <!-- MODAL KONFIRMASI RESET (Diff Before vs After) -->
+    <!-- MODAL DETAIL SPONSOR (Profil, Benefit, Produk) -->
+    @if ($showDetailModal && $this->detailSponsor)
+        @php $s = $this->detailSponsor; @endphp
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+            <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between border-b pb-3 dark:border-zinc-800">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border flex items-center justify-center font-bold text-sm">
+                            @if ($s->logo_path)
+                                <img src="{{ asset('storage/' . $s->logo_path) }}" class="w-full h-full object-cover rounded-xl">
+                            @else
+                                {{ substr($s->name, 0, 2) }}
+                            @endif
+                        </div>
+                        <div>
+                            <h2 class="text-base font-bold text-zinc-900 dark:text-white">{{ $s->name }}</h2>
+                            <span class="text-xs font-semibold text-zinc-500 uppercase">{{ $s->sponsorTier?->name ?? $s->tier }}</span>
+                        </div>
+                    </div>
+                    <button wire:click="$set('showDetailModal', false)" class="text-zinc-400 hover:text-zinc-600 font-bold">✕</button>
+                </div>
+
+                <!-- Sub Tabs in Detail Modal -->
+                <div class="flex border-b dark:border-zinc-800 text-xs font-bold gap-4">
+                    <button wire:click="$set('detailActiveTab', 'profile')" class="pb-2 border-b-2 {{ $detailActiveTab === 'profile' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-400' }}">Profil</button>
+                    <button wire:click="$set('detailActiveTab', 'benefits')" class="pb-2 border-b-2 {{ $detailActiveTab === 'benefits' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-400' }}">Benefit Tier</button>
+                    <button wire:click="$set('detailActiveTab', 'products')" class="pb-2 border-b-2 {{ $detailActiveTab === 'products' ? 'border-blue-600 text-blue-600' : 'border-transparent text-zinc-400' }}">Produk ({{ count($s->products) }})</button>
+                </div>
+
+                <!-- Tab Content: Profil -->
+                @if ($detailActiveTab === 'profile')
+                    <div class="space-y-3 text-xs">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50">
+                                <span class="text-zinc-400 block mb-0.5">Kontak WhatsApp:</span>
+                                <span class="font-bold text-zinc-800 dark:text-zinc-200">{{ $s->whatsapp ?: '-' }}</span>
+                            </div>
+                            <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50">
+                                <span class="text-zinc-400 block mb-0.5">Email Penanggung Jawab:</span>
+                                <span class="font-bold text-zinc-800 dark:text-zinc-200">{{ $s->contact_email ?: '-' }}</span>
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50">
+                            <span class="text-zinc-400 block mb-0.5">Website / Toko Online:</span>
+                            <a href="{{ $s->website_url }}" target="_blank" class="text-blue-600 hover:underline font-bold">{{ $s->website_url ?: '-' }}</a>
+                        </div>
+                        <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50">
+                            <span class="text-zinc-400 block mb-0.5">Deskripsi Perusahaan:</span>
+                            <p class="text-zinc-700 dark:text-zinc-300 leading-relaxed">{{ $s->description ?: 'Tidak ada deskripsi.' }}</p>
+                        </div>
+                    </div>
+                @endif
+
+                <!-- Tab Content: Benefits -->
+                @if ($detailActiveTab === 'benefits')
+                    <div class="space-y-2 text-xs max-h-64 overflow-y-auto">
+                        @foreach ($matrixCategories as $cat)
+                            @php
+                                $val = $s->resolveBenefit($cat['slug']);
+                                $isUn = is_null($val) && in_array($cat['slug'], ['kuota_produk', 'best_deal_slot', 'push_broadcast']) && $s->tier === 'diamond';
+                            @endphp
+                            <div class="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                                <span class="font-medium text-zinc-700 dark:text-zinc-300">{{ $cat['name'] }}</span>
+                                <span class="font-bold {{ $isUn ? 'text-purple-600' : 'text-zinc-900 dark:text-white' }}">
+                                    @if ($isUn)
+                                        ∞ (Tidak Terbatas)
+                                    @elseif (is_bool($val))
+                                        {{ $val ? '✓ Ya' : '✗ Tidak' }}
+                                    @else
+                                        {{ $val ?? '—' }}
+                                    @endif
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                <!-- Tab Content: Produk -->
+                @if ($detailActiveTab === 'products')
+                    <div class="space-y-2 text-xs max-h-64 overflow-y-auto">
+                        @forelse ($s->products as $p)
+                            <div class="p-2.5 rounded-lg border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                                <div>
+                                    <div class="font-bold text-zinc-900 dark:text-white">{{ $p->name }}</div>
+                                    <div class="text-[11px] text-zinc-400">Rp {{ number_format($p->price, 0, ',', '.') }}</div>
+                                </div>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold {{ $p->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-zinc-100 text-zinc-500' }}">
+                                    {{ $p->is_active ? 'Aktif' : 'Nonaktif' }}
+                                </span>
+                            </div>
+                        @empty
+                            <p class="text-zinc-400 text-center py-6">Belum ada produk yang diunggah sponsor ini.</p>
+                        @endforelse
+                    </div>
+                @endif
+
+                <div class="flex justify-end pt-3 border-t dark:border-zinc-800">
+                    <button wire:click="$set('showDetailModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    <!-- MODAL KONFIRMASI RESET MATRIX (Diff Before vs After) -->
     @if ($showResetConfirmModal)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
             <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-4">
@@ -701,7 +940,7 @@ new class extends Component
         </div>
     @endif
 
-    <!-- MODAL FORM TAMBAH / EDIT SPONSOR -->
+    <!-- MODAL FORM TAMBAH / EDIT SPONSOR (Tanpa start_date / end_date & tanpa manual weight) -->
     @if ($showModal)
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
             <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
@@ -718,22 +957,17 @@ new class extends Component
                         <input type="text" wire:model="name" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white focus:outline-blue-500">
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Tier Sponsor *</label>
-                            <select wire:model="tier" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
-                                <option value="diamond">Diamond (Prioritas #1)</option>
-                                <option value="platinum">Platinum (Top 3)</option>
-                                <option value="gold">Gold (Top 5)</option>
-                                <option value="silver">Silver</option>
-                                <option value="bronze">Bronze</option>
-                                <option value="kontribusi">Kontribusi</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Bobot Share of Voice (%) *</label>
-                            <input type="number" wire:model="weight" min="0" max="100" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
-                        </div>
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Tier Sponsor *</label>
+                        <select wire:model="tier" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white font-medium">
+                            <option value="diamond">👑 Diamond (Prioritas #1 - Bebas Kuota)</option>
+                            <option value="platinum">⭐ Platinum (Top 3)</option>
+                            <option value="gold">🥇 Gold (Top 5)</option>
+                            <option value="silver">🥈 Silver (Official)</option>
+                            <option value="bronze">🥉 Bronze (Partner)</option>
+                            <option value="kontribusi">🤝 Kontribusi (Kontributor)</option>
+                        </select>
+                        <span class="text-[11px] text-zinc-400 mt-0.5 block">*Bobot tayang dan kuota produk otomatis mengikuti benefit tier yang dipilih.</span>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
@@ -748,8 +982,21 @@ new class extends Component
                     </div>
 
                     <div>
+                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Email Kontak</label>
+                        <input type="email" wire:model="contact_email" placeholder="contact@sponsor.com" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
+                    </div>
+
+                    <div>
                         <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Deskripsi Singkat</label>
                         <textarea wire:model="description" rows="2" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white"></textarea>
+                    </div>
+
+                    <div class="pt-1">
+                        <label class="flex items-center gap-2 text-xs font-bold text-zinc-900 dark:text-white cursor-pointer">
+                            <input type="checkbox" wire:model="is_active" class="rounded text-blue-600">
+                            Status Akun Aktif (Dapat tayang di aplikasi)
+                        </label>
+                        <span class="text-[11px] text-zinc-400 ml-5 block">Ketika kontrak berakhir, cukup nonaktifkan status ini.</span>
                     </div>
 
                     @if (!$editingId)
