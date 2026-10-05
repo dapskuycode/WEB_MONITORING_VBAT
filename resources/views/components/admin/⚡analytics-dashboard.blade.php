@@ -30,11 +30,10 @@ new class extends Component
             else $ageGroups['> 40 Thn']++;
         }
 
-        // 2. Demografi Gender
+        // 2. Demografi Gender (ADMIN-02: Hanya Laki-laki & Perempuan)
         $genderCounts = [
-            'Laki-laki' => User::where('gender', 'male')->count(),
-            'Perempuan' => User::where('gender', 'female')->count(),
-            'Lainnya' => User::where('gender', 'other')->orWhereNull('gender')->count(),
+            'Laki-laki' => User::where('gender', 'male')->orWhere('gender', 'Laki-laki')->count(),
+            'Perempuan' => User::where('gender', 'female')->orWhere('gender', 'Perempuan')->count(),
         ];
 
         // 3. Demografi Kota Teratas
@@ -88,17 +87,17 @@ new class extends Component
 ?>
 
 <div class="space-y-6">
-    <!-- Header -->
+    <!-- Header (ADMIN-01: Satu Judul Tunggal Bersih) -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-700 pb-5">
         <div>
             <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
                 <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                Dashboard Analitik Super Admin & Owner
+                Super Dashboard — Analitik & Metrik
             </h1>
             <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                Visualisasi metrik demografi pengguna, performa kampanye sponsor, dan Heat Index ketertarikan produk.
+                Pantau performa platform VBAT: pengguna aktif, demografi teknisi, kampanye sponsor, dan metrik kunci lainnya.
             </p>
         </div>
         <div class="flex items-center gap-2">
@@ -193,7 +192,7 @@ new class extends Component
                     @php $gPct = $totalGender > 0 ? round(($gCount / $totalGender) * 100, 1) : 0; @endphp
                     <div class="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-700">
                         <div class="flex items-center gap-3">
-                            <div class="w-7 h-7 rounded-full flex items-center justify-center {{ $gLabel === 'Laki-laki' ? 'bg-blue-100 text-blue-600' : ($gLabel === 'Perempuan' ? 'bg-pink-100 text-pink-600' : 'bg-zinc-200 text-zinc-600') }}">
+                            <div class="w-7 h-7 rounded-full flex items-center justify-center {{ $gLabel === 'Laki-laki' ? 'bg-blue-100 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400' : 'bg-pink-100 text-pink-600 dark:bg-pink-950/60 dark:text-pink-400' }}">
                                 <span class="text-xs font-bold">{{ substr($gLabel, 0, 1) }}</span>
                             </div>
                             <span class="text-sm font-medium text-zinc-900 dark:text-zinc-100">{{ $gLabel }}</span>

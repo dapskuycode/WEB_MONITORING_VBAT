@@ -19,9 +19,9 @@ class DemographicApiController extends Controller
     {
         // Normalize gender if Indonesian term is passed
         $genderInput = $request->input('gender');
-        if ($genderInput === 'Laki-laki') {
+        if ($genderInput !== null && in_array(strtolower(trim((string) $genderInput)), ['laki-laki', 'male'])) {
             $genderInput = 'male';
-        } elseif ($genderInput === 'Perempuan') {
+        } elseif ($genderInput !== null && in_array(strtolower(trim((string) $genderInput)), ['perempuan', 'female'])) {
             $genderInput = 'female';
         }
         $request->merge(['gender' => $genderInput]);
@@ -50,7 +50,7 @@ class DemographicApiController extends Controller
             'email' => 'nullable|string|email',
             'name' => 'nullable|string|max:255',
             'birth_date' => 'nullable|date|before:today',
-            'gender' => 'nullable|string|in:male,female,other',
+            'gender' => 'nullable|string|in:male,female,laki-laki,perempuan',
             'province_id' => 'nullable|integer|exists:provinces,id',
             'city_id' => 'nullable|integer|exists:cities,id',
             'district' => 'nullable|string|max:255',
