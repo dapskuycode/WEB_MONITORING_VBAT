@@ -156,6 +156,8 @@ Route::prefix('v1')->group(function () {
         Route::put('/products/{product}', [SponsorProductApiController::class, 'update']);
         Route::delete('/products/{product}', [SponsorProductApiController::class, 'destroy']);
         Route::post('/products/{product}/image', [SponsorProductApiController::class, 'uploadImage']);
+        Route::post('/products/{product}/best-deal', [SponsorProductApiController::class, 'submitToBestDeal']);
+        Route::delete('/products/{product}/best-deal', [SponsorProductApiController::class, 'removeFromBestDeal']);
 
         // 3. Learning Material — Write operations
         Route::post('/learning-materials', [LearningMaterialApiController::class, 'store']);

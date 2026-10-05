@@ -12,6 +12,34 @@ class Sponsor extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected static function booted(): void
+    {
+        static::saving(function (self $sponsor) {
+            if (! $sponsor->tier_id && $sponsor->tier) {
+                $tierModel = SponsorTier::where('slug', strtolower($sponsor->tier))->first();
+                if ($tierModel) {
+                    $sponsor->tier_id = $tierModel->id;
+                }
+            } elseif ($sponsor->tier_id && ! $sponsor->tier) {
+                $sponsor->tier = SponsorTier::find($sponsor->tier_id)?->slug;
+            }
+
+            // SPONSOR-04: Otomatis sinkronisasi bobot sponsor dari Share of Voice tier
+            if ($sponsor->isDirty(['tier_id', 'tier'])) {
+                $sov = $sponsor->resolveBenefit('share_of_voice');
+                if ($sov !== null && is_numeric($sov)) {
+                    $sponsor->weight = (int) $sov;
+                }
+            }
+        });
+
+        static::saved(function (self $sponsor) {
+            if ($sponsor->wasChanged(['tier_id', 'tier', 'weight']) || $sponsor->wasRecentlyCreated) {
+                $sponsor->syncCampaignWeights();
+            }
+        });
+    }
+
     protected $fillable = [
         'user_id',
         'name',
@@ -150,10 +178,89 @@ class Sponsor extends Model
         }
 
         // Fall back to tier default
-        $tierBenefit = TierBenefit::where('tier_id', $this->tier_id)
+        $tierId = $this->tier_id;
+        if (! $tierId && $this->tier) {
+            $tierId = SponsorTier::where('slug', strtolower($this->tier))->value('id');
+        }
+
+        if (! $tierId) {
+            return null;
+        }
+
+        $tierBenefit = TierBenefit::where('tier_id', $tierId)
             ->where('benefit_category_id', $category->id)
             ->first();
 
         return $tierBenefit?->value;
+    }
+
+    /**
+     * Sinkronisasi bobot kampanye aktif sponsor dengan Share of Voice tier (SPONSOR-04).
+     */
+    public function syncCampaignWeights(): void
+    {
+        $sov = $this->resolveBenefit('share_of_voice');
+        $weight = ($sov !== null && is_numeric($sov)) ? (int)$sov : (int)($this->weight ?? 0);
+        $this->campaigns()->update(['weight' => $weight]);
+    }
+
+    /**
+     * Ambil batas kuota unggah produk bulanan (SPONSOR-05).
+     * Mengembalikan null jika unlimited (Diamond).
+     */
+    public function getMonthlyProductQuota(): ?int
+    {
+        // Diamond tier is unlimited
+        if (strtolower($this->tier ?? '') === 'diamond') {
+            return null;
+        }
+
+        $quota = $this->resolveBenefit('kuota_produk');
+        if ($quota === null) {
+            return null; // Unlimited
+        }
+
+        return (int)$quota;
+    }
+
+    /**
+     * Hitung total produk yang diunggah pada bulan kalender berjalan (SPONSOR-05).
+     */
+    public function getCurrentMonthProductsCount(): int
+    {
+        return $this->products()
+            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->count();
+    }
+
+    /**
+     * Cek apakah sponsor telah memenuhi batas kuota produk bulan ini (SPONSOR-05).
+     */
+    public function hasReachedProductQuota(): bool
+    {
+        $max = $this->getMonthlyProductQuota();
+        if ($max === null) {
+            return false; // Unlimited untuk Diamond
+        }
+
+        return $this->getCurrentMonthProductsCount() >= $max;
+    }
+
+    /**
+     * Ambil kuota slot Best Deal sponsor (SPONSOR-06).
+     * Diamond: null (Unlimited), Kontribusi: 0 (Disabled).
+     */
+    public function getBestDealSlotQuota(): ?int
+    {
+        if (strtolower($this->tier ?? '') === 'kontribusi') {
+            return 0;
+        }
+
+        if (strtolower($this->tier ?? '') === 'diamond') {
+            return null; // Unlimited
+        }
+
+        $slot = $this->resolveBenefit('best_deal_slot');
+        return $slot !== null ? (int)$slot : 1;
     }
 }

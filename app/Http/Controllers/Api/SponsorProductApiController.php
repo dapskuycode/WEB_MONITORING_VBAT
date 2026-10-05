@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\BestDeal;
 use App\Models\Sponsor;
 use App\Models\SponsorProduct;
 use Illuminate\Http\JsonResponse;
@@ -144,20 +145,16 @@ class SponsorProductApiController extends Controller
 
         DB::beginTransaction();
         try {
-            // Validate product quota against effective benefit
-            $maxProducts = $sponsor->resolveBenefit('katalog_produk');
-
-            if ($maxProducts !== null && is_numeric($maxProducts)) {
-                $currentCount = $sponsor->products()->whereNull('deleted_at')->count();
-                if ($currentCount >= (int) $maxProducts) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'data' => null,
-                        'errors' => ['katalog_produk' => ['Product quota exceeded for this tier']],
-                        'message' => 'Validation failed',
-                    ], 422);
-                }
+            // SPONSOR-05: Batas Kuota & Aturan Unggah Bulanan
+            $maxProducts = $sponsor->getMonthlyProductQuota();
+            if ($maxProducts !== null && $sponsor->hasReachedProductQuota()) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'data' => null,
+                    'errors' => ['kuota_produk' => ["Batas kuota produk bulanan ({$maxProducts} produk) untuk tier {$sponsor->tier} telah tercapai. Kuota akan di-reset pada tanggal 1 bulan depan, atau hubungi Admin untuk menaikkan tier."]],
+                    'message' => "Batas kuota produk bulanan ({$maxProducts} produk) telah tercapai.",
+                ], 422);
             }
 
             // Force sponsor_id from server-resolved sponsor (not client payload)
@@ -312,6 +309,92 @@ class SponsorProductApiController extends Controller
             ],
             'meta' => null,
             'message' => 'Image uploaded successfully',
+        ]);
+    }
+
+    /**
+     * Submit product directly to active Best Deal program (SPONSOR-06).
+     *
+     * POST /api/v1/products/{product}/best-deal
+     */
+    public function submitToBestDeal(Request $request, SponsorProduct $product): JsonResponse
+    {
+        $this->authorizeProductMutation($request, $product);
+
+        $sponsor = $product->sponsor;
+        if (! $sponsor) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'Sponsor tidak ditemukan.',
+            ], 404);
+        }
+
+        if (strtolower($sponsor->tier ?? '') === 'kontribusi') {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'errors' => ['tier' => ['Tier Kontribusi tidak memiliki slot Best Deal. Silakan hubungi admin untuk upgrade tier.']],
+                'message' => 'Tier Kontribusi tidak memiliki slot Best Deal.',
+            ], 422);
+        }
+
+        $activeBestDeal = BestDeal::active()->first();
+        if (! $activeBestDeal) {
+            $activeBestDeal = BestDeal::create([
+                'title' => 'BEST DEALS VBAT',
+                'description' => 'Program promo produk pilihan terbaik dari mitra resmi.',
+                'is_active' => true,
+                'selection_type' => 'auto',
+            ]);
+        }
+
+        $tierRank = match(strtolower($sponsor->tier ?? '')) {
+            'diamond' => 1,
+            'platinum' => 2,
+            'gold' => 3,
+            'silver' => 4,
+            'bronze' => 5,
+            default => 6,
+        };
+
+        $activeBestDeal->products()->syncWithoutDetaching([
+            $product->id => [
+                'badge_text' => 'BEST DEAL ' . strtoupper($sponsor->tier ?? ''),
+                'order' => $tierRank,
+            ]
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'product_id' => $product->id,
+                'best_deal_id' => $activeBestDeal->id,
+                'badge_text' => 'BEST DEAL ' . strtoupper($sponsor->tier ?? ''),
+                'order' => $tierRank,
+            ],
+            'message' => "Produk '{$product->name}' berhasil diajukan dan langsung tayang di Best Deal!",
+        ]);
+    }
+
+    /**
+     * Remove product from active Best Deal program (SPONSOR-06).
+     *
+     * DELETE /api/v1/products/{product}/best-deal
+     */
+    public function removeFromBestDeal(Request $request, SponsorProduct $product): JsonResponse
+    {
+        $this->authorizeProductMutation($request, $product);
+
+        $activeBestDeal = BestDeal::active()->first();
+        if ($activeBestDeal) {
+            $activeBestDeal->products()->detach($product->id);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => null,
+            'message' => "Produk '{$product->name}' telah ditarik dari Best Deal.",
         ]);
     }
 

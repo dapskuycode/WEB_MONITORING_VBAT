@@ -2,6 +2,7 @@
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use App\Models\BestDeal;
 use App\Models\Sponsor;
 use App\Models\SponsorProduct;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,7 @@ new class extends Component
     public $sponsor;
     public $showModal = false;
     public $editingId = null;
+    public $flashMessage = '';
 
     // Filter
     public $search = '';
@@ -46,7 +48,7 @@ new class extends Component
         }
 
         if ($this->sponsor) {
-            $query = SponsorProduct::where('sponsor_id', $this->sponsor->id)->latest();
+            $query = SponsorProduct::with('bestDeals')->where('sponsor_id', $this->sponsor->id)->latest();
 
             if (!empty($this->search)) {
                 $query->where(function($q) {
@@ -68,6 +70,12 @@ new class extends Component
 
     public function openCreateModal()
     {
+        if ($this->sponsor && $this->sponsor->hasReachedProductQuota()) {
+            $max = $this->sponsor->getMonthlyProductQuota();
+            $this->flashMessage = "Batas kuota produk bulanan Anda ({$max} produk) telah tercapai. Kuota akan di-reset pada tanggal 1 bulan depan.";
+            return;
+        }
+
         $this->reset(['editingId', 'name', 'description', 'price', 'discount_price', 'imageFile', 'image_url', 'existing_image', 'shopee_url', 'tokopedia_url']);
         $this->is_active = true;
         $this->showModal = true;
@@ -139,6 +147,12 @@ new class extends Component
             'is_active' => $this->is_active,
         ];
 
+        if (!$this->editingId && $this->sponsor && $this->sponsor->hasReachedProductQuota()) {
+            $max = $this->sponsor->getMonthlyProductQuota();
+            $this->addError('name', "Batas kuota produk bulanan ({$max} produk) untuk tier ini telah tercapai.");
+            return;
+        }
+
         if ($this->editingId) {
             $product = SponsorProduct::where('sponsor_id', $this->sponsor->id)->findOrFail($this->editingId);
             $product->update($data);
@@ -149,6 +163,61 @@ new class extends Component
 
         $this->showModal = false;
         $this->loadData();
+    }
+
+    public function submitToBestDeal($productId)
+    {
+        if (!$this->sponsor) return;
+
+        if (strtolower($this->sponsor->tier ?? '') === 'kontribusi') {
+            $this->flashMessage = 'Tier Kontribusi tidak memiliki slot Best Deal. Silakan hubungi admin untuk upgrade tier.';
+            return;
+        }
+
+        $product = SponsorProduct::where('sponsor_id', $this->sponsor->id)->findOrFail($productId);
+
+        $activeBestDeal = BestDeal::active()->first();
+        if (!$activeBestDeal) {
+            $activeBestDeal = BestDeal::create([
+                'title' => 'BEST DEALS VBAT',
+                'description' => 'Program promo produk pilihan terbaik dari mitra resmi.',
+                'is_active' => true,
+                'selection_type' => 'auto',
+            ]);
+        }
+
+        $tierRank = match(strtolower($this->sponsor->tier ?? '')) {
+            'diamond' => 1,
+            'platinum' => 2,
+            'gold' => 3,
+            'silver' => 4,
+            'bronze' => 5,
+            default => 6,
+        };
+
+        $activeBestDeal->products()->syncWithoutDetaching([
+            $product->id => [
+                'badge_text' => 'BEST DEAL ' . strtoupper($this->sponsor->tier ?? ''),
+                'order' => $tierRank,
+            ]
+        ]);
+
+        $this->loadData();
+        $this->flashMessage = "Produk '{$product->name}' berhasil diajukan dan langsung tayang di Best Deal!";
+    }
+
+    public function removeFromBestDeal($productId)
+    {
+        if (!$this->sponsor) return;
+
+        $product = SponsorProduct::where('sponsor_id', $this->sponsor->id)->findOrFail($productId);
+        $activeBestDeal = BestDeal::active()->first();
+        if ($activeBestDeal) {
+            $activeBestDeal->products()->detach($product->id);
+        }
+
+        $this->loadData();
+        $this->flashMessage = "Produk '{$product->name}' telah ditarik dari Best Deal.";
     }
 
     public function toggleStatus($id)
@@ -173,6 +242,16 @@ new class extends Component
 ?>
 
 <div class="space-y-6">
+    @if ($flashMessage)
+        <div class="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 text-xs flex items-center justify-between shadow-sm">
+            <div class="flex items-center gap-2">
+                <flux:icon name="information-circle" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>{{ $flashMessage }}</span>
+            </div>
+            <button wire:click="$set('flashMessage', '')" class="text-blue-500 hover:text-blue-700 font-bold">✕</button>
+        </div>
+    @endif
+
     <!-- Header Page -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-700 pb-5">
         <div>
@@ -195,6 +274,48 @@ new class extends Component
             <flux:icon name="plus" class="w-4 h-4" />
             Tambah Produk Baru
         </button>
+    </div>
+
+    @php
+        $quota = $sponsor?->getMonthlyProductQuota();
+        $isUnlimited = is_null($quota);
+        $usedCount = $sponsor ? $sponsor->getCurrentMonthProductsCount() : 0;
+        $quotaReached = $sponsor ? $sponsor->hasReachedProductQuota() : false;
+        $percentage = (!$isUnlimited && $quota > 0) ? min(100, round(($usedCount / $quota) * 100)) : 0;
+    @endphp
+
+    <!-- Quota Card / Bar (SPONSOR-05) -->
+    <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-zinc-500 uppercase tracking-wider">Pemakaian Kuota Produk Bulan Ini</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-full font-bold {{ $quotaReached ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' }}">
+                    {{ $quotaReached ? 'Kuota Penuh' : 'Tersedia' }}
+                </span>
+            </div>
+            <div class="text-sm font-bold text-zinc-900 dark:text-white">
+                @if ($isUnlimited)
+                    Terpakai <span class="text-indigo-600 font-extrabold">{{ $usedCount }}</span> dari <span class="text-purple-600 font-black">∞ Bebas (Diamond)</span>
+                @else
+                    Terpakai <span class="{{ $quotaReached ? 'text-rose-600' : 'text-indigo-600' }} font-extrabold">{{ $usedCount }}</span> dari {{ $quota }} produk
+                @endif
+            </div>
+            <p class="text-[11px] text-zinc-400">
+                Dihitung per bulan kalender dan di-reset otomatis setiap tanggal 1 pukul 00:00 WIB.
+            </p>
+        </div>
+
+        @if (!$isUnlimited)
+            <div class="w-full md:w-64 space-y-1.5">
+                <div class="flex justify-between text-[11px] font-semibold text-zinc-500">
+                    <span>Progres Kuota</span>
+                    <span>{{ $percentage }}%</span>
+                </div>
+                <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2.5 overflow-hidden">
+                    <div class="h-2.5 rounded-full transition-all duration-300 {{ $quotaReached ? 'bg-rose-500' : ($percentage > 80 ? 'bg-amber-500' : 'bg-indigo-600') }}" style="width: {{ $percentage }}%"></div>
+                </div>
+            </div>
+        @endif
     </div>
 
     <!-- Alert Edukasi -->
@@ -226,9 +347,10 @@ new class extends Component
             <table class="w-full text-left text-sm table-fixed">
                 <thead class="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 font-semibold border-b border-zinc-200 dark:border-zinc-800">
                     <tr>
-                        <th class="px-5 py-3.5 w-5/12">Nama & Deskripsi Produk</th>
-                        <th class="px-5 py-3.5 w-3/12">Harga Normal / Diskon</th>
+                        <th class="px-5 py-3.5 w-4/12">Nama & Deskripsi Produk</th>
+                        <th class="px-5 py-3.5 w-2/12">Harga Normal / Diskon</th>
                         <th class="px-5 py-3.5 w-2/12">Marketplace</th>
+                        <th class="px-5 py-3.5 w-2/12 text-center">Best Deal</th>
                         <th class="px-5 py-3.5 w-1/12 text-center">Status</th>
                         <th class="px-5 py-3.5 w-1/12 text-right">Aksi</th>
                     </tr>
@@ -243,7 +365,7 @@ new class extends Component
                                     @php
                                         $img = $prod->image_path;
                                         if ($img && !str_starts_with($img, 'http') && !str_starts_with($img, 'assets/')) {
-                                            $img = asset('storage/' . $img);
+                                             $img = asset('storage/' . $img);
                                         } elseif (!$img) {
                                             $img = asset('assets/images/product_1.png');
                                         }
@@ -297,6 +419,36 @@ new class extends Component
                             </div>
                         </td>
 
+                        <!-- Kolom Best Deal (SPONSOR-06) -->
+                        <td class="px-5 py-3.5 text-center">
+                            @php
+                                $inBestDeal = $prod->bestDeals()->where('is_active', true)->exists();
+                                $isKontribusi = strtolower($sponsor?->tier ?? '') === 'kontribusi';
+                            @endphp
+
+                            @if ($inBestDeal)
+                                <div class="space-y-1">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        Tayang di Best Deal
+                                    </span>
+                                    <button type="button" wire:click="removeFromBestDeal({{ $prod->id }})" class="text-[10px] text-rose-500 hover:underline block mx-auto font-semibold">
+                                        Tarik
+                                    </button>
+                                </div>
+                            @else
+                                @if ($isKontribusi)
+                                    <button type="button" disabled title="Tier Kontribusi tidak memiliki slot Best Deal" class="px-2 py-1 text-[10px] font-bold rounded-lg bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-600 cursor-not-allowed border border-zinc-200 dark:border-zinc-700">
+                                        Slot Best Deal (0)
+                                    </button>
+                                @else
+                                    <button type="button" wire:click="submitToBestDeal({{ $prod->id }})" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition shadow-sm">
+                                        + Ajukan Best Deal
+                                    </button>
+                                @endif
+                            @endif
+                        </td>
+
                         <!-- Kolom Status -->
                         <td class="px-5 py-3.5 text-center">
                             <button wire:click="toggleStatus({{ $prod->id }})" class="cursor-pointer">
@@ -326,7 +478,7 @@ new class extends Component
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-5 py-12 text-center text-zinc-500 dark:text-zinc-400">
+                        <td colspan="6" class="px-5 py-12 text-center text-zinc-500 dark:text-zinc-400">
                             <flux:icon name="shopping-bag" class="w-10 h-10 mx-auto text-zinc-300 dark:text-zinc-700 mb-2" />
                             <p class="font-medium text-sm">Belum ada produk di katalog Anda.</p>
                             <p class="text-xs text-zinc-400 mt-1">Klik tombol "Tambah Produk Baru" untuk mulai memasukkan suku cadang & alat servis toko Anda.</p>
