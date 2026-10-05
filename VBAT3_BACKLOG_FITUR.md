@@ -70,9 +70,9 @@
 5. **Persistensi:** Tombol *Simpan Semua* di bawah tabel menyimpan seluruh perubahan ke database.
 
 * **Acceptance Criteria (DoD):**
-  - [ ] Keenam tier (`Kontribusi`, `Bronze`, `Silver`, `Gold`, `Platinum`, `Diamond`) tampil berdampingan dalam 1 layar.
-  - [ ] Perubahan nilai langsung tersimpan ke database dan mempengaruhi kuota serta aturan tayang secara real-time.
-  - [ ] Tidak ada nilai benefit yang di-hardcode di kode program.
+  - [x] Keenam tier (`Kontribusi`, `Bronze`, `Silver`, `Gold`, `Platinum`, `Diamond`) tampil berdampingan dalam 1 layar.
+  - [x] Perubahan nilai langsung tersimpan ke database dan mempengaruhi kuota serta aturan tayang secara real-time.
+  - [x] Tidak ada nilai benefit yang di-hardcode di kode program.
 
 ---
 
@@ -92,9 +92,9 @@
   - Toggle Aktif/Nonaktif: Menonaktifkan sponsor yang masa kontraknya habis tanpa menghapus riwayat datanya.
   - Hapus (Soft Delete) dengan konfirmasi keamanan.
 * **Acceptance Criteria (DoD):**
-  - [ ] Admin dapat mengganti tier dan status sponsor tanpa berpindah halaman.
-  - [ ] Sponsor nonaktif otomatis hilang dari tampilan publik aplikasi mobile.
-  - [ ] Tidak ada field tanggal kontrak otomatis (dikelola manual oleh admin).
+  - [x] Admin dapat mengganti tier dan status sponsor tanpa berpindah halaman.
+  - [x] Sponsor nonaktif otomatis hilang dari tampilan publik aplikasi mobile.
+  - [x] Tidak ada field tanggal kontrak otomatis (dikelola manual oleh admin).
 
 ---
 
@@ -110,8 +110,8 @@
   - Tampil di kartu mitra, Best Deal, dan halaman sponsor pada aplikasi mobile.
   - Field form co-branding header dan splash **resmi dihapus**.
 * **Acceptance Criteria (DoD):**
-  - [ ] Logo berhasil diunggah oleh admin maupun sponsor.
-  - [ ] Logo tampil pada aplikasi Flutter tanpa kendala CORS / 404.
+  - [x] Logo berhasil diunggah oleh admin maupun sponsor.
+  - [x] Logo tampil pada aplikasi Flutter tanpa kendala CORS / 404.
 
 ---
 
@@ -124,8 +124,8 @@
   - Sistem otomatis membaca nilai `share_of_voice` dari tier sponsor terkait (hasil pengaturan SPONSOR-01).
   - Algoritma rotasi banner di API `/banners/hero`, `/banners/cards`, dan `/banners/popup` menggunakan pembobotan otomatis ini.
 * **Acceptance Criteria (DoD):**
-  - [ ] Form sponsor bersih dari input bobot manual.
-  - [ ] Banner dari tier ber-Share of Voice lebih tinggi (misal Platinum 50% vs Silver 20%) tampil lebih sering secara proporsional.
+  - [x] Form sponsor bersih dari input bobot manual.
+  - [x] Banner dari tier ber-Share of Voice lebih tinggi (misal Platinum 50% vs Silver 20%) tampil lebih sering secara proporsional.
 
 ---
 
@@ -138,8 +138,8 @@
   - Kuota dihitung per bulan kalender dan di-reset setiap tanggal 1 pukul 00:00 WIB.
   - Jika admin menaikkan tier sponsor di tengah bulan, batas kuota langsung bertambah secara instan.
 * **Acceptance Criteria (DoD):**
-  - [ ] Sponsor dengan kuota terpenuhi tidak dapat menambah produk baru sampai kuota ditambah atau masuk bulan baru.
-  - [ ] Tier Diamond dengan kuota `∞` tidak pernah terhalang batas kuota.
+  - [x] Sponsor dengan kuota terpenuhi tidak dapat menambah produk baru sampai kuota ditambah atau masuk bulan baru.
+  - [x] Tier Diamond dengan kuota `∞` tidak pernah terhalang batas kuota.
 
 ---
 
@@ -154,8 +154,8 @@
   - **Prioritas Tampilan:** Mengikuti hierarki tier (Diamond Slot #1 > Platinum Top 3 > Gold Top 5 > Silver/Bronze Standar).
   - Sponsor dapat melihat status produk: *Menunggu*, *Tayang*, atau *Selesai*.
 * **Acceptance Criteria (DoD):**
-  - [ ] Penayangan Best Deal berjalan otomatis tanpa approval admin.
-  - [ ] Kontribusi tidak dapat mengajukan produk ke Best Deal.
+  - [x] Penayangan Best Deal berjalan otomatis tanpa approval admin.
+  - [x] Kontribusi tidak dapat mengajukan produk ke Best Deal.
 
 ---
 
@@ -179,8 +179,8 @@
      - Event tersimpan dalam status terjadwal dan otomatis aktif saat waktu server menyentuh waktu mulai.
 * **Catatan Teknis:** Pastikan sinkronisasi zona waktu server dan panel admin menggunakan `Asia/Jakarta` (WIB).
 * **Acceptance Criteria (DoD):**
-  - [ ] Mode "Aktifkan Sekarang" langsung memunculkan event di aplikasi tanpa menunggu jadwal.
-  - [ ] Mode "Pakai Jadwal Tanggal" otomatis aktif pada waktu yang ditentukan tanpa intervensi manual.
+  - [x] Mode "Aktifkan Sekarang" langsung memunculkan event di aplikasi tanpa menunggu jadwal.
+  - [x] Mode "Pakai Jadwal Tanggal" otomatis aktif pada waktu yang ditentukan tanpa intervensi manual.
 
 ---
 
@@ -194,8 +194,8 @@
   - Mendukung geser manual (swipe gesture).
   - Dilengkapi indikator titik (*dot indicators*) aktif.
 * **Acceptance Criteria (DoD):**
-  - [ ] Jika terdapat ≥ 2 event aktif, seluruhnya tampil bergantian di banner aplikasi.
-  - [ ] Banner tidak saling menimpa atau error saat dimuat.
+  - [x] Jika terdapat ≥ 2 event aktif, seluruhnya tampil bergantian di banner aplikasi.
+  - [x] Banner tidak saling menimpa atau error saat dimuat.
 
 ---
 
@@ -210,7 +210,7 @@
 * **Bentuk Hasil:**
   - Event `onTap` pada kartu Best Deal di Beranda mengarahkan navigasi ke `BestDealsPage` (route `/shop/best-deals`).
 * **Acceptance Criteria (DoD):**
-  - [ ] Menekan kartu Best Deal di Beranda membuka halaman Best Deals, bukan Shop.
+  - [x] Menekan kartu Best Deal di Beranda membuka halaman Best Deals, bukan Shop.
 
 ---
 
@@ -222,7 +222,7 @@
   - Format teks diubah menjadi nama tier saja: `Kontribusi`, `Bronze`, `Silver`, `Gold`, `Platinum`, `Diamond`.
   - Menampilkan ikon penanda visual di samping nama tier sesuai skema warna resminya.
 * **Acceptance Criteria (DoD):**
-  - [ ] Seluruh kartu mitra dan badge menampilkan nama tier ringkas disertai ikon.
+  - [x] Seluruh kartu mitra dan badge menampilkan nama tier ringkas disertai ikon.
 
 ---
 
@@ -239,8 +239,8 @@
   - Menata ulang whitespace, margin, dan padding antar-komponen card.
   - Menempatkan kartu metrik performa utama (KPI cards) rapi di posisi teratas.
 * **Acceptance Criteria (DoD):**
-  - [ ] Tidak ada judul berulang di seluruh halaman admin.
-  - [ ] Tata letak visual nyaman digunakan sesuai persetujuan Product Owner.
+  - [x] Tidak ada judul berulang di seluruh halaman admin.
+  - [x] Tata letak visual nyaman digunakan sesuai persetujuan Product Owner.
 
 ---
 
@@ -253,7 +253,7 @@
   - Panel analitik demografi dashboard hanya memuat 2 kategori gender (baris "Lainnya 0 (0%)" dihapus total).
   - Validasi backend diubah: `in:male,female,laki-laki,perempuan`.
 * **Acceptance Criteria (DoD):**
-  - [ ] Pilihan dan statistik "Lainnya" bersih dari form dan dasbor analitik.
+  - [x] Pilihan dan statistik "Lainnya" bersih dari form dan dasbor analitik.
 
 ---
 
