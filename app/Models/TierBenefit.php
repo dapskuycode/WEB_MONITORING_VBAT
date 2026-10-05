@@ -14,12 +14,18 @@ class TierBenefit extends Model
         'tier_id',
         'benefit_category_id',
         'value',
+        'initial_value',
         'label',
+        'is_unlimited',
+        'is_disabled',
         'is_default_awal',
     ];
 
     protected $casts = [
         'value' => 'array',
+        'initial_value' => 'array',
+        'is_unlimited' => 'boolean',
+        'is_disabled' => 'boolean',
         'is_default_awal' => 'boolean',
     ];
 
