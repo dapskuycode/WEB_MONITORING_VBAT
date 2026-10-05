@@ -9,6 +9,8 @@ use App\Models\SponsorTier;
 use App\Models\User;
 use Database\Seeders\SponsorTierSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -214,5 +216,103 @@ class SponsorDashboardTest extends TestCase
         $response = $this->getJson('/api/v1/products');
         $response->assertOk();
         $this->assertFalse(collect($response->json('data'))->contains('name', 'Hidden Product'));
+    }
+
+    public function test_admin_can_upload_valid_sponsor_logo()
+    {
+        Storage::fake('public');
+
+        $goldTier = SponsorTier::where('slug', 'gold')->first();
+        $file = UploadedFile::fake()->image('sponsor_logo.png', 300, 300);
+
+        Livewire::actingAs($this->admin)
+            ->test('admin.sponsor-manager')
+            ->call('openCreateModal')
+            ->set('name', 'Logo Brand Co')
+            ->set('tier', 'gold')
+            ->set('logo', $file)
+            ->set('createUserAccount', false)
+            ->call('save');
+
+        $sponsor = Sponsor::where('name', 'Logo Brand Co')->first();
+        $this->assertNotNull($sponsor);
+        $this->assertNotNull($sponsor->logo_path);
+        Storage::disk('public')->assertExists($sponsor->logo_path);
+        $this->assertNotNull($sponsor->logo_url);
+        $this->assertStringContainsString('storage/', $sponsor->logo_url);
+    }
+
+    public function test_non_image_file_is_rejected_when_uploading_logo()
+    {
+        Storage::fake('public');
+
+        $pdfFile = UploadedFile::fake()->create('contract.pdf', 500, 'application/pdf');
+
+        Livewire::actingAs($this->admin)
+            ->test('admin.sponsor-manager')
+            ->call('openCreateModal')
+            ->set('name', 'Invalid File Co')
+            ->set('tier', 'silver')
+            ->set('logo', $pdfFile)
+            ->set('createUserAccount', false)
+            ->call('save')
+            ->assertHasErrors(['logo']);
+
+        $this->assertDatabaseMissing('sponsors', ['name' => 'Invalid File Co']);
+    }
+
+    public function test_admin_can_remove_sponsor_logo()
+    {
+        Storage::fake('public');
+
+        $goldTier = SponsorTier::where('slug', 'gold')->first();
+        $sponsor = Sponsor::create([
+            'name' => 'Has Logo Co',
+            'slug' => 'has-logo-co',
+            'tier' => 'gold',
+            'tier_id' => $goldTier->id,
+            'logo_path' => 'sponsors/logos/old_logo.png',
+            'is_active' => true,
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test('admin.sponsor-manager')
+            ->call('editSponsor', $sponsor->id)
+            ->call('removeLogo')
+            ->call('save');
+
+        $sponsor->refresh();
+        $this->assertNull($sponsor->logo_path);
+    }
+
+    public function test_sponsor_can_upload_logo_from_sponsor_portal_dashboard()
+    {
+        Storage::fake('public');
+
+        $sponsorUser = User::factory()->create(['role' => 'sponsor']);
+        $tier = SponsorTier::where('slug', 'platinum')->first();
+
+        $sponsor = Sponsor::create([
+            'user_id' => $sponsorUser->id,
+            'name' => 'Mitra Mandiri Portal',
+            'slug' => 'mitra-mandiri-portal',
+            'tier' => 'platinum',
+            'tier_id' => $tier->id,
+            'is_active' => true,
+        ]);
+
+        $file = UploadedFile::fake()->image('portal_logo.png', 400, 400);
+
+        Livewire::actingAs($sponsorUser)
+            ->test('sponsor.sponsor-dashboard')
+            ->set('showLogoModal', true)
+            ->set('logo', $file)
+            ->call('saveLogo')
+            ->assertSet('showLogoModal', false)
+            ->assertSet('logoSuccessMessage', 'Logo resmi sponsor Anda berhasil diperbarui!');
+
+        $sponsor->refresh();
+        $this->assertNotNull($sponsor->logo_path);
+        Storage::disk('public')->assertExists($sponsor->logo_path);
     }
 }

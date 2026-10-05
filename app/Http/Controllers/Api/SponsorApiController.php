@@ -49,6 +49,7 @@ class SponsorApiController extends Controller
             $tier = $sponsor->sponsorTier;
             $sponsor->logo_url = $sponsor->logo_path
                 ? Storage::disk('public')->url($sponsor->logo_path) : null;
+            $sponsor->logo = $sponsor->logo_url;
             $sponsor->tier_badge = [
                 'label' => $tier?->badge_label ?? strtoupper($sponsor->tier ?? ''),
                 'color' => $tier?->badge_color ?? '#999999',
@@ -105,6 +106,8 @@ class SponsorApiController extends Controller
         // Append badge metadata and absolute asset URLs
         $sponsorData = array_merge($sponsor->toArray(), [
             'logo_url' => $sponsor->logo_path
+                ? Storage::disk('public')->url($sponsor->logo_path) : null,
+            'logo' => $sponsor->logo_path
                 ? Storage::disk('public')->url($sponsor->logo_path) : null,
             'co_branding_header_url' => $sponsor->co_branding_header_url
                 ? Storage::disk('public')->url($sponsor->co_branding_header_url) : null,
@@ -288,26 +291,44 @@ class SponsorApiController extends Controller
     {
         $sponsor = Sponsor::findOrFail($id);
 
+        // Authorization: Admin / Owner can upload for any sponsor; sponsor user only for their own sponsor
+        $user = $request->user();
+        if ($user && $user->isSponsor() && $sponsor->user_id !== $user->id) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'errors' => ['unauthorized' => ['Anda hanya dapat mengunggah logo untuk profil sponsor Anda sendiri.']],
+                'message' => 'Unauthorized: Hanya pemilik akun sponsor atau admin yang dapat mengganti logo.',
+            ], 403);
+        }
+
         $validated = $request->validate([
-            'logo' => ['required', 'image', 'mimes:jpeg,png,webp', 'max:2048'], // 2MB max
+            'logo' => ['required', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'], // 2MB max
+        ], [
+            'logo.required' => 'Berkas logo wajib diunggah.',
+            'logo.image' => 'Berkas harus berupa gambar valid (JPG, PNG, atau WEBP). Dokumen non-gambar seperti PDF tidak diizinkan.',
+            'logo.mimes' => 'Format berkas logo yang diperbolehkan hanya JPG, PNG, atau WEBP.',
+            'logo.max' => 'Ukuran berkas logo tidak boleh melebihi 2MB.',
         ]);
 
         $path = $validated['logo']->storeAs(
-            'sponsor/logos',
+            'sponsors/logos',
             $sponsor->slug.'-'.time().'.'.$validated['logo']->getClientOriginalExtension(),
             'public'
         );
 
         $sponsor->update(['logo_path' => $path]);
+        $url = asset('storage/' . ltrim($path, '/'));
 
         return response()->json([
             'success' => true,
             'data' => [
                 'logo_path' => $path,
-                'logo_url' => Storage::disk('public')->url($path),
+                'logo_url' => $url,
+                'logo' => $url,
             ],
             'meta' => null,
-            'message' => 'Logo uploaded successfully',
+            'message' => 'Logo sponsor berhasil diperbarui',
         ]);
     }
 

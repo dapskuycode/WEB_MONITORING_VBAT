@@ -1,6 +1,7 @@
 <?php
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use App\Models\Sponsor;
 use App\Models\SponsorTier;
 use App\Models\BenefitCategory;
@@ -8,9 +9,12 @@ use App\Models\TierBenefit;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 new class extends Component
 {
+    use WithFileUploads;
+
     public $activeTab = 'sponsors'; // 'sponsors' | 'matrix'
 
     // Search & Filters (SPONSOR-02)
@@ -30,6 +34,10 @@ new class extends Component
     public $whatsapp = '';
     public $description = '';
     public $is_active = true;
+
+    // Logo Upload (SPONSOR-03)
+    public $logo;
+    public $existingLogoPath = null;
 
     public $createUserAccount = true;
     public $userEmail = '';
@@ -173,7 +181,7 @@ new class extends Component
 
     public function openCreateModal()
     {
-        $this->reset(['editingId', 'name', 'tier', 'website_url', 'contact_email', 'phone', 'whatsapp', 'description', 'userEmail', 'userPassword']);
+        $this->reset(['editingId', 'name', 'tier', 'website_url', 'contact_email', 'phone', 'whatsapp', 'description', 'userEmail', 'userPassword', 'logo', 'existingLogoPath']);
         $this->tier = 'gold';
         $this->is_active = true;
         $this->createUserAccount = true;
@@ -192,8 +200,16 @@ new class extends Component
         $this->whatsapp = $sponsor->whatsapp;
         $this->description = $sponsor->description;
         $this->is_active = (bool)$sponsor->is_active;
+        $this->existingLogoPath = $sponsor->logo_path;
+        $this->logo = null;
         $this->createUserAccount = false;
         $this->showModal = true;
+    }
+
+    public function removeLogo()
+    {
+        $this->logo = null;
+        $this->existingLogoPath = null;
     }
 
     public function save()
@@ -201,6 +217,11 @@ new class extends Component
         $this->validate([
             'name' => 'required|string|max:255',
             'tier' => 'required|in:kontribusi,bronze,silver,gold,platinum,diamond',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ], [
+            'logo.image' => 'Berkas harus berupa gambar valid (JPG, PNG, atau WEBP). Dokumen non-gambar seperti PDF tidak diizinkan.',
+            'logo.mimes' => 'Format file yang diperbolehkan hanya JPG, PNG, atau WEBP.',
+            'logo.max' => 'Ukuran berkas logo maksimal 2MB.',
         ]);
 
         $tierModel = SponsorTier::where('slug', $this->tier)->first();
@@ -220,6 +241,11 @@ new class extends Component
             $userId = $user->id;
         }
 
+        $logoPath = $this->existingLogoPath;
+        if ($this->logo) {
+            $logoPath = $this->logo->store('sponsors/logos', 'public');
+        }
+
         if ($this->editingId) {
             $sponsor = Sponsor::findOrFail($this->editingId);
             $sponsor->update([
@@ -227,6 +253,7 @@ new class extends Component
                 'tier' => $this->tier,
                 'tier_id' => $tierId,
                 'weight' => (int)$sov,
+                'logo_path' => $logoPath,
                 'website_url' => $this->website_url,
                 'contact_email' => $this->contact_email,
                 'phone' => $this->phone,
@@ -242,6 +269,7 @@ new class extends Component
                 'tier' => $this->tier,
                 'tier_id' => $tierId,
                 'weight' => (int)$sov,
+                'logo_path' => $logoPath,
                 'website_url' => $this->website_url,
                 'contact_email' => $this->contact_email,
                 'phone' => $this->phone,
@@ -955,6 +983,35 @@ new class extends Component
                     <div>
                         <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Nama Perusahaan / Sponsor *</label>
                         <input type="text" wire:model="name" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white focus:outline-blue-500">
+                    </div>
+
+                    <!-- Upload Logo Sponsor (SPONSOR-03) -->
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Logo Resmi Sponsor (JPG / PNG / WEBP, maks 2MB)</label>
+                        <div class="flex items-center gap-4 p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
+                            <!-- Thumbnail / Preview -->
+                            <div class="w-14 h-14 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative group">
+                                @if ($logo && method_exists($logo, 'isPreviewable') && $logo->isPreviewable())
+                                    <img src="{{ $logo->temporaryUrl() }}" alt="Preview" class="w-full h-full object-contain p-1">
+                                @elseif ($existingLogoPath)
+                                    <img src="{{ asset('storage/' . $existingLogoPath) }}" alt="Logo" class="w-full h-full object-contain p-1">
+                                @else
+                                    <span class="text-xs font-bold text-zinc-400 uppercase">{{ substr($name ?: 'SP', 0, 2) }}</span>
+                                @endif
+                            </div>
+
+                            <!-- Upload Input & Action -->
+                            <div class="flex-1 space-y-1">
+                                <input type="file" wire:model="logo" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-zinc-500 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-300 cursor-pointer">
+                                <div wire:loading wire:target="logo" class="text-[11px] text-blue-600 font-semibold">Mengunggah berkas...</div>
+                                @error('logo')
+                                    <span class="text-xs text-rose-500 font-medium block">{{ $message }}</span>
+                                @enderror
+                                @if ($logo || $existingLogoPath)
+                                    <button type="button" wire:click="removeLogo" class="text-[11px] text-rose-600 hover:underline block font-semibold">Hapus logo</button>
+                                @endif
+                            </div>
+                        </div>
                     </div>
 
                     <div>

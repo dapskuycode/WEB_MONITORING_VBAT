@@ -1,6 +1,7 @@
 <?php
 
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use App\Models\Campaign;
 use App\Models\CampaignLog;
 use App\Models\Sponsor;
@@ -10,12 +11,49 @@ use Carbon\Carbon;
 
 new class extends Component
 {
+    use WithFileUploads;
+
     public $sponsor;
+    public $logo;
+    public $showLogoModal = false;
+    public $logoSuccessMessage = '';
 
     public function mount()
     {
         $user = Auth::user();
         $this->sponsor = $user?->sponsor ?? Sponsor::first();
+    }
+
+    public function updatedLogo()
+    {
+        $this->validate([
+            'logo' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ], [
+            'logo.image' => 'Berkas harus berupa gambar valid (JPG, PNG, atau WEBP). Dokumen non-gambar seperti PDF tidak diizinkan.',
+            'logo.mimes' => 'Format file yang diperbolehkan hanya JPG, PNG, atau WEBP.',
+            'logo.max' => 'Ukuran berkas logo maksimal 2MB.',
+        ]);
+    }
+
+    public function saveLogo()
+    {
+        $this->validate([
+            'logo' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ], [
+            'logo.image' => 'Berkas harus berupa gambar valid (JPG, PNG, atau WEBP). Dokumen non-gambar seperti PDF tidak diizinkan.',
+            'logo.mimes' => 'Format file yang diperbolehkan hanya JPG, PNG, atau WEBP.',
+            'logo.max' => 'Ukuran berkas logo maksimal 2MB.',
+        ]);
+
+        if (!$this->sponsor) return;
+
+        $path = $this->logo->store('sponsors/logos', 'public');
+        $this->sponsor->update(['logo_path' => $path]);
+        $this->sponsor->refresh();
+
+        $this->reset('logo');
+        $this->showLogoModal = false;
+        $this->logoSuccessMessage = 'Logo resmi sponsor Anda berhasil diperbarui!';
     }
 
     public function with(): array
@@ -83,12 +121,35 @@ new class extends Component
 ?>
 
 <div class="space-y-6">
+    @if ($logoSuccessMessage)
+        <div class="p-4 rounded-xl bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-xs flex items-center justify-between shadow-lg">
+            <div class="flex items-center gap-2">
+                <flux:icon name="check-circle" class="w-4 h-4 text-emerald-400" />
+                <span>{{ $logoSuccessMessage }}</span>
+            </div>
+            <button wire:click="$set('logoSuccessMessage', '')" class="text-emerald-400 hover:text-white font-bold">✕</button>
+        </div>
+    @endif
+
     <!-- Header Sponsor -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
         <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/20 border border-blue-400/20">
-                {{ strtoupper(substr($sponsor?->name ?? 'SP', 0, 2)) }}
+            <!-- Logo with quick change trigger -->
+            <div class="relative group">
+                <div class="w-16 h-16 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-700/80 flex items-center justify-center overflow-hidden shadow-lg shadow-black/40">
+                    @if ($sponsor?->logo_path)
+                        <img src="{{ asset('storage/' . $sponsor->logo_path) }}" alt="{{ $sponsor->name }}" class="w-full h-full object-contain p-1.5">
+                    @else
+                        <div class="w-full h-full bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center text-white font-black text-xl">
+                            {{ strtoupper(substr($sponsor?->name ?? 'SP', 0, 2)) }}
+                        </div>
+                    @endif
+                </div>
+                <button type="button" wire:click="$set('showLogoModal', true)" title="Ganti Logo Resmi" class="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-md border-2 border-zinc-900 transition">
+                    <flux:icon name="camera" class="w-3 h-3" />
+                </button>
             </div>
+
             <div>
                 <div class="flex items-center gap-2">
                     <h1 class="text-2xl font-bold text-white tracking-tight">{{ $sponsor?->name ?? 'Portal Mitra Sponsor' }}</h1>
@@ -96,9 +157,13 @@ new class extends Component
                         TIER {{ strtoupper($sponsor?->tier ?? 'PARTNER') }}
                     </span>
                 </div>
-                <p class="text-xs text-zinc-400 mt-1">
-                    Dashboard analitik performa iklan & katalog produk khusus mitra {{ $sponsor?->name }}
-                </p>
+                <div class="flex items-center gap-3 mt-1 text-xs text-zinc-400">
+                    <span>Dashboard analitik performa iklan & katalog produk khusus mitra {{ $sponsor?->name }}</span>
+                    <button type="button" wire:click="$set('showLogoModal', true)" class="text-blue-400 hover:underline font-semibold flex items-center gap-1">
+                        <flux:icon name="arrow-up-tray" class="w-3 h-3" />
+                        <span>Upload Logo</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -312,4 +377,54 @@ new class extends Component
             </div>
         </div>
     </div>
+
+    <!-- MODAL GANTI LOGO SPONSOR (SPONSOR-03) -->
+    @if ($showLogoModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+                <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                    <div class="flex items-center gap-2">
+                        <flux:icon name="photo" class="w-5 h-5 text-blue-500" />
+                        <h2 class="text-base font-bold text-white">Unggah Logo Resmi Sponsor</h2>
+                    </div>
+                    <button wire:click="$set('showLogoModal', false)" class="text-zinc-400 hover:text-white font-bold">✕</button>
+                </div>
+
+                <div class="space-y-4">
+                    <p class="text-xs text-zinc-400">
+                        Logo ini akan ditampilkan di Beranda, Best Deal, katalog produk, dan kartu sponsor pada aplikasi ponsel.
+                    </p>
+
+                    <!-- Preview -->
+                    <div class="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-950/60">
+                        <div class="w-24 h-24 rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center overflow-hidden shadow-inner mb-3">
+                            @if ($logo && method_exists($logo, 'isPreviewable') && $logo->isPreviewable())
+                                <img src="{{ $logo->temporaryUrl() }}" alt="Preview Baru" class="w-full h-full object-contain p-2">
+                            @elseif ($sponsor?->logo_path)
+                                <img src="{{ asset('storage/' . $sponsor->logo_path) }}" alt="Logo Saat Ini" class="w-full h-full object-contain p-2">
+                            @else
+                                <span class="text-sm font-bold text-zinc-500 uppercase">{{ substr($sponsor?->name ?? 'SP', 0, 2) }}</span>
+                            @endif
+                        </div>
+
+                        <input type="file" wire:model="logo" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-zinc-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+                        <span class="text-[11px] text-zinc-500 mt-2">Format: JPG, PNG, atau WEBP (Maksimal 2MB)</span>
+                        <div wire:loading wire:target="logo" class="text-xs text-blue-400 font-semibold mt-1">Mengunggah berkas...</div>
+                        @error('logo')
+                            <span class="text-xs text-rose-500 font-medium mt-1">{{ $message }}</span>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-zinc-800">
+                    <button type="button" wire:click="$set('showLogoModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition">
+                        Batal
+                    </button>
+                    <button type="button" wire:click="saveLogo" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-sm transition disabled:opacity-50">
+                        Simpan Logo
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

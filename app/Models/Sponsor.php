@@ -42,6 +42,23 @@ class Sponsor extends Model
         'weight' => 'integer',
     ];
 
+    protected $appends = [
+        'logo_url',
+    ];
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        if (!$this->logo_path) {
+            return null;
+        }
+
+        if (str_starts_with($this->logo_path, 'http://') || str_starts_with($this->logo_path, 'https://')) {
+            return $this->logo_path;
+        }
+
+        return url('storage/' . ltrim($this->logo_path, '/'));
+    }
+
     /**
      * @return BelongsTo<User, $this>
      */

@@ -17,7 +17,7 @@ class LearningMaterialFactory extends Factory
 
         return [
             'lesson_id' => Lesson::factory(),
-            'unit_code' => strtoupper(fake()->bothify('UNIT-####')),
+            'unit_code' => 'UNIT-' . fake()->unique()->numberBetween(100000, 999999),
             'unit_title' => fake()->sentence(3),
             'material_type' => $type,
             'title' => fake()->sentence(5),

@@ -8,6 +8,8 @@ use App\Models\Sponsor;
 use App\Models\SponsorTier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -168,5 +170,94 @@ class SponsorApiTest extends TestCase
     {
         $response = $this->getJson('/api/v1/sponsors/99999');
         $response->assertNotFound();
+    }
+
+    #[Test]
+    public function test_admin_can_upload_sponsor_logo(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'super_admin']);
+        $tier = SponsorTier::first();
+        $sponsor = Sponsor::factory()->create(['tier_id' => $tier->id]);
+
+        $file = UploadedFile::fake()->image('logo.png', 400, 400);
+
+        $response = $this->actingAs($admin)->postJson("/api/v1/sponsors/{$sponsor->id}/logo", [
+            'logo' => $file,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure(['data' => ['logo_path', 'logo_url', 'logo']]);
+
+        $sponsor->refresh();
+        $this->assertNotNull($sponsor->logo_path);
+        Storage::disk('public')->assertExists($sponsor->logo_path);
+    }
+
+    #[Test]
+    public function test_sponsor_can_upload_own_logo(): void
+    {
+        Storage::fake('public');
+        $sponsorUser = User::factory()->create(['role' => 'sponsor']);
+        $tier = SponsorTier::first();
+        $sponsor = Sponsor::factory()->create([
+            'user_id' => $sponsorUser->id,
+            'tier_id' => $tier->id,
+        ]);
+
+        $file = UploadedFile::fake()->image('my_brand_logo.jpg', 300, 300);
+
+        $response = $this->actingAs($sponsorUser)->postJson("/api/v1/sponsors/{$sponsor->id}/logo", [
+            'logo' => $file,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $sponsor->refresh();
+        $this->assertNotNull($sponsor->logo_path);
+        Storage::disk('public')->assertExists($sponsor->logo_path);
+    }
+
+    #[Test]
+    public function test_sponsor_cannot_upload_logo_for_other_sponsor(): void
+    {
+        Storage::fake('public');
+        $sponsorUserA = User::factory()->create(['role' => 'sponsor']);
+        $sponsorUserB = User::factory()->create(['role' => 'sponsor']);
+        $tier = SponsorTier::first();
+
+        $sponsorB = Sponsor::factory()->create([
+            'user_id' => $sponsorUserB->id,
+            'tier_id' => $tier->id,
+        ]);
+
+        $file = UploadedFile::fake()->image('rogue_logo.png', 300, 300);
+
+        // Sponsor A tries to upload to Sponsor B
+        $response = $this->actingAs($sponsorUserA)->postJson("/api/v1/sponsors/{$sponsorB->id}/logo", [
+            'logo' => $file,
+        ]);
+
+        $response->assertForbidden();
+    }
+
+    #[Test]
+    public function test_upload_logo_rejects_non_image_file(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'super_admin']);
+        $tier = SponsorTier::first();
+        $sponsor = Sponsor::factory()->create(['tier_id' => $tier->id]);
+
+        $pdf = UploadedFile::fake()->create('document.pdf', 100, 'application/pdf');
+
+        $response = $this->actingAs($admin)->postJson("/api/v1/sponsors/{$sponsor->id}/logo", [
+            'logo' => $pdf,
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['logo']);
     }
 }

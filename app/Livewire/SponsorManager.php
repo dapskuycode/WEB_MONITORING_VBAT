@@ -38,8 +38,6 @@ class SponsorManager extends Component
     public $sponsorProvinceId = null;
     public $sponsorCityId = null;
     public $sponsorLogo = null;
-    public $sponsorCoBrandingHeader = null;
-    public $sponsorCoBrandingSplash = null;
 
     // Benefit override properties
     public $selectedBenefitCategoryId = null;
@@ -125,14 +123,6 @@ class SponsorManager extends Component
 
         if ($this->sponsorLogo) {
             $data['logo_path'] = $this->sponsorLogo->store('sponsors/logos', 'public');
-        }
-
-        if ($this->sponsorCoBrandingHeader) {
-            $data['co_branding_header_url'] = $this->sponsorCoBrandingHeader->store('sponsors/cobranding', 'public');
-        }
-
-        if ($this->sponsorCoBrandingSplash) {
-            $data['co_branding_splash_url'] = $this->sponsorCoBrandingSplash->store('sponsors/cobranding', 'public');
         }
 
         if ($this->selectedSponsorId) {
