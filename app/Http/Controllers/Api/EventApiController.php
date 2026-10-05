@@ -45,20 +45,87 @@ class EventApiController extends Controller
         ], 201);
     }
     /**
-     * Poin 2.4 & 4.3 Harga Dinamis & Event Diskon Aktif:
-     * Cek apakah ada event diskon aktif untuk Shop dan daftar produk terpilih.
+     * Poin 2.4 & 4.3 Harga Dinamis & Multi-Event Diskon Aktif (EVENT-02):
+     * Cek seluruh event diskon aktif untuk Shop & Home serta daftar produk terpilih.
      */
-    public function getActiveEvent(): JsonResponse
+    public function getActiveEvent(Request $request): JsonResponse
     {
-        $event = DiscountEvent::active()->with('products.sponsor')->latest()->first();
+        $events = DiscountEvent::active()
+            ->with('products.sponsor')
+            ->latest()
+            ->get();
 
-        if (! $event) {
+        if ($events->isEmpty()) {
             return response()->json([
                 'status' => 'success',
                 'has_active_event' => false,
+                'total_events' => 0,
+                'events' => [],
                 'data' => null,
             ]);
         }
+
+        $formattedEvents = $events->map(function ($event) {
+            $products = $event->products->map(function ($p) use ($event) {
+                $basePrice = (float) $p->price;
+                if ($event->discount_type === 'percentage') {
+                    $discountRate = (float) $event->discount_value;
+                    $discountPrice = round($basePrice * (1 - ($discountRate / 100)));
+                    $discountPercent = (int) round($discountRate);
+                } else {
+                    $discountPrice = max(0, $basePrice - (float) $event->discount_value);
+                    $discountPercent = $basePrice > 0 ? (int) round((($basePrice - $discountPrice) / $basePrice) * 100) : 0;
+                }
+
+                $image = $p->image_path;
+                if ($image && ! str_starts_with($image, 'http') && ! str_starts_with($image, 'assets/')) {
+                    $image = url('storage/'.$image);
+                }
+
+                return [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'price' => $basePrice,
+                    'discount_price' => $discountPrice,
+                    'discount_percentage' => $discountPercent,
+                    'image' => $image,
+                    'shopee_url' => $p->shopee_url,
+                    'tokopedia_url' => $p->tokopedia_url,
+                    'sponsor' => [
+                        'id' => $p->sponsor?->id,
+                        'name' => $p->sponsor?->name,
+                    ],
+                ];
+            });
+
+            return [
+                'id' => $event->id,
+                'name' => $event->name,
+                'type' => $event->discount_type,
+                'value' => (float) $event->discount_value,
+                'banner_text' => $event->banner_text,
+                'start_at' => $event->start_at?->toIso8601String(),
+                'end_at' => $event->end_at?->toIso8601String(),
+                'total_products' => $products->count(),
+                'products' => $products,
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'has_active_event' => true,
+            'total_events' => $formattedEvents->count(),
+            'events' => $formattedEvents,
+            'data' => $formattedEvents->first(),
+        ]);
+    }
+
+    /**
+     * Show detail of specific discount event.
+     */
+    public function show(DiscountEvent $event): JsonResponse
+    {
+        $event->load('products.sponsor');
 
         $products = $event->products->map(function ($p) use ($event) {
             $basePrice = (float) $p->price;
@@ -94,15 +161,15 @@ class EventApiController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'has_active_event' => true,
             'data' => [
                 'id' => $event->id,
                 'name' => $event->name,
                 'type' => $event->discount_type,
                 'value' => (float) $event->discount_value,
                 'banner_text' => $event->banner_text,
-                'start_at' => $event->start_at->toIso8601String(),
-                'end_at' => $event->end_at->toIso8601String(),
+                'start_at' => $event->start_at?->toIso8601String(),
+                'end_at' => $event->end_at?->toIso8601String(),
+                'is_active' => (bool) $event->is_active,
                 'total_products' => $products->count(),
                 'products' => $products,
             ],

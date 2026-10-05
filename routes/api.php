@@ -130,7 +130,9 @@ Route::prefix('v1')->group(function () {
     Route::get('/shop/best-deals', [CampaignApiController::class, 'getBestDeals']);
 
     // 2. Harga Dinamis & Event Diskon Global — Public read
+    Route::get('/shop/events', [EventApiController::class, 'getActiveEvent']);
     Route::get('/shop/events/active', [EventApiController::class, 'getActiveEvent']);
+    Route::get('/shop/events/{event}', [EventApiController::class, 'show']);
 
     // 8. Analytics Event Ingestion (Phase 5 — REQ-ANA-01) — Public (anonymous tracking)
     Route::post('/events', [EventApiController::class, 'ingestBatch']);

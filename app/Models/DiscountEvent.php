@@ -44,7 +44,29 @@ class DiscountEvent extends Model
         $now = now();
 
         return $query->where('is_active', true)
-            ->where('start_at', '<=', $now)
-            ->where('end_at', '>=', $now);
+            ->where(function ($q) use ($now) {
+                $q->whereNull('start_at')->orWhere('start_at', '<=', $now);
+            })
+            ->where(function ($q) use ($now) {
+                $q->whereNull('end_at')->orWhere('end_at', '>=', $now);
+            });
+    }
+
+    public function isOngoing(): bool
+    {
+        $now = now();
+        return (bool)$this->is_active 
+            && ($this->start_at === null || $this->start_at <= $now) 
+            && ($this->end_at === null || $this->end_at >= $now);
+    }
+
+    public function isScheduled(): bool
+    {
+        return (bool)$this->is_active && $this->start_at !== null && $this->start_at > now();
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->end_at !== null && $this->end_at < now();
     }
 }
