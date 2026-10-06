@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             LegacyDataSeeder::class,
             SponsorTierSeeder::class,
+            SponsorTierAccountsSeeder::class,
             BestDealAndCampaignSeeder::class,
             FeedConfigSeeder::class,
             GamificationSeeder::class,
