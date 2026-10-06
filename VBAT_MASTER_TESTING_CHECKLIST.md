@@ -107,6 +107,61 @@
 
 ---
 
+### 🎟️ 5.4 PENGUJIAN MODUL 2: EVENT & DISKON (EVENT-01 S/D EVENT-02)
+> **Halaman Uji Web:** `/admin/events` (Livewire: `discount-event-manager`)  
+> **Halaman Uji Mobile:** Tab Beranda & Tab Shop (`home_page.dart` & `shop_page.dart`)  
+> **API Terkait:** `GET /api/v1/shop/events/active`
+
+| ID | Fitur | Skenario & Langkah Pengujian | Hasil yang Diharapkan (Expected Result) | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **EVT-01** | **EVENT-01: Publish Mode "Aktifkan Sekarang"** | 1. Buka `/admin/events`, klik *"Buat Event Baru"*.<br>2. Pilih radio mode: **"Aktifkan Sekarang"**.<br>3. Perhatikan input Tanggal Mulai: otomatis terkunci/terisi waktu sekarang.<br>4. Masukkan Tanggal Selesai (misal 3 hari ke depan).<br>5. Simpan event. | 1. Event langsung dibuat dengan status badge **"Sedang Berjalan" (Hijau)**.<br>2. Tidak ada jeda tunda; event langsung masuk ke daftar event aktif saat ini. | [ ] |
+| **EVT-02** | **EVENT-01: Publish Mode "Pakai Jadwal Tanggal"** | 1. Klik *"Buat Event Baru"*.<br>2. Pilih radio mode: **"Pakai Jadwal Tanggal"**.<br>3. Input Tanggal Mulai menjadi aktif dan dapat diedit.<br>4. Masukkan Tanggal Mulai = besok, Tanggal Selesai = 7 hari lagi.<br>5. Simpan event. | 1. Event berstatus badge **"Terjadwal" (Biru)**.<br>2. Event belum tayang di aplikasi sampai tanggal/jam server mencapai waktu mulai.<br>3. Begitu waktu server tiba, status otomatis beralih menjadi aktif. | [ ] |
+| **EVT-03** | **EVENT-01: Validasi Tanggal Tidak Valid** | 1. Pilih mode "Pakai Jadwal Tanggal".<br>2. Masukkan Tanggal Selesai yang lebih awal dari Tanggal Mulai (misal Mulai 10 Okt, Selesai 8 Okt).<br>3. Klik Simpan. | Sistem menolak dengan validasi error: *"Tanggal selesai harus setelah tanggal mulai"*; data tidak tersimpan ke database. | [ ] |
+| **EVT-04** | **EVENT-01: Kurasi Produk Promo Event** | 1. Pada event yang aktif, klik tombol ikon box produk (*"Pilih Produk"*).<br>2. Centang beberapa produk sponsor.<br>3. Cek jumlah produk terpilih pada kolom tabel. | Produk terpilih otomatis tersimpan di tabel pivot `discount_event_products` dan mendapatkan potongan harga diskon event. | [ ] |
+| **EVT-05** | **EVENT-02: Kondisi 0 Event Aktif (Mobile)** | 1. Nonaktifkan seluruh event di web admin (atau biarkan kosong).<br>2. Buka Beranda dan Shop di aplikasi Flutter. | Komponen banner diskon event otomatis tersembunyi (*zero height*), tidak meninggalkan ruang kosong putih (*blank space*) atau error layout. | [ ] |
+| **EVT-06** | **EVENT-02: Kondisi 1 Event Aktif (Mobile)** | 1. Aktifkan tepat 1 event di web admin.<br>2. Buka Beranda & Shop. | Banner event tampil statis dan elegan dengan judul, teks promo, dan badge diskon tanpa bergeser berlebih. | [ ] |
+| **EVT-07** | **EVENT-02: Kondisi Multi-Event (2+ Event)** | 1. Aktifkan 2 atau 3 event diskon sekaligus di admin.<br>2. Buka Beranda & Shop di aplikasi. | Banner event otomatis bertransformasi menjadi **Carousel Slider Multi-Event** dengan animasi perpindahan otomatis setiap 4.5 detik. | [ ] |
+| **EVT-08** | **EVENT-02: Navigasi Swipe Manual & Dots Indicator** | 1. Lakukan gesture swipe jari ke kiri dan kanan pada carousel event.<br>2. Perhatikan indikator titik (*dot indicator*) di bagian bawah carousel. | 1. Banner merespon swipe manual dengan mulus.<br>2. Titik aktif (*active dot*) bergerak sinkron mengikuti slide event yang sedang ditampilkan. | [ ] |
+| **EVT-09** | **EVENT-02: Navigasi Klik Banner Event** | Klik salah satu banner event pada carousel di Beranda atau Shop. | Aplikasi langsung membuka halaman khusus `DiscountEventPage` yang memuat seluruh katalog produk khusus event tersebut beserta harga diskon resminya. | [ ] |
+
+---
+
+### 📱 5.5 PENGUJIAN MODUL 3: PERBAIKAN APLIKASI MOBILE (APP-01 S/D APP-02)
+> **Target Aplikasi:** Flutter Mobile App (`vbat-ponsel-main`)  
+> **Halaman Uji:** `home_page.dart`, `shop_page.dart`, `best_deals_page.dart`, `global_search_page.dart`
+
+| ID | Fitur | Skenario & Langkah Pengujian | Hasil yang Diharapkan (Expected Result) | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **APP-01** | **APP-01: Klik Kartu Produk Best Deal di Beranda** | Di halaman Beranda, cari seksi *"BEST DEAL"*, lalu tap salah satu kartu produk Best Deal. | Aplikasi **langsung membuka halaman `BestDealsPage`** (`/best-deals`), BUKAN berpindah ke tab Shop katalog umum. | [ ] |
+| **APP-02** | **APP-01: Klik Tombol "Lihat Semua" Best Deal** | Di header seksi Best Deal pada Beranda, klik tombol teks *"Lihat Semua"*. | Aplikasi mengarahkan navigasi ke `BestDealsPage` secara instan. | [ ] |
+| **APP-03** | **APP-01: Klik Badge Header "BEST DEAL"** | Klik chip badge berlatar oranye-merah bertuliskan *"BEST DEAL"* di Beranda. | Navigasi membuka halaman `BestDealsPage`. | [ ] |
+| **APP-04** | **APP-01: Konsistensi Deep Link & Back Navigation** | 1. Buka rute `/shop/best-deals` atau `/best-deals` via GoRouter.<br>2. Tekan tombol Back (kembali) di AppBar. | Pengguna kembali ke halaman sebelumnya (Beranda) secara mulus tanpa merusak state tab bawah (*Bottom Navigation Bar*). | [ ] |
+| **APP-05** | **APP-02: Eliminasi String Panjang "Sponsor Platinum"** | Periksa seluruh tampilan nama tier sponsor di slider promo, kartu mitra toko, dan badge kartu produk. | Teks panjang seperti `"Sponsor Platinum"` atau `"SPONSOR • PLATINUM"` **bersih total**; hanya menampilkan nama tier ringkas: **"Platinum"**, **"Gold"**, dst. | [ ] |
+| **APP-06** | **APP-02: Standardisasi Ikon & Warna 6 Tier** | Verifikasi ikon dan warna pada masing-masing tingkatan sponsor:<br>- 💎 Diamond: Cyan Blue (`#0096C7`), icon `diamond_rounded`<br>- 👑 Platinum: Royal Purple (`#6C5CE7`), icon `workspace_premium_rounded`<br>- 🥇 Gold: Deep Amber (`#E65100`), icon `military_tech_rounded`<br>- 🥈 Silver: Slate Silver (`#5A6B82`), icon `shield_rounded`<br>- 🥉 Bronze: Bronze Brown (`#8D6E63`), icon `verified_rounded`<br>- 🤝 Kontribusi: Sky Blue (`#0284C7`), icon `handshake_rounded` | Seluruh kartu mitra dan chip lencana memuat kombinasi warna serta ikon vektor resmi yang sesuai hierarki brand. | [ ] |
+| **APP-07** | **APP-02: Slider Promo Beranda (`HorizontalSponsorSlider`)** | Periksa banner slider promo di Beranda. | Badge di sudut kiri atas banner menampilkan chip solid dengan ikon tier resmi dan nama tier ringkas. | [ ] |
+| **APP-08** | **APP-02: Kartu Mitra Toko (`ShopPage`)** | Buka tab Shop, periksa deretan horizontal kartu mitra sponsor. | Masing-masing kartu mitra memuat badge chip tier terstandarisasi dengan ikon visual di samping nama tier. | [ ] |
+| **APP-09** | **APP-02: Dialog Detail Mitra Sponsor** | Klik salah satu logo/kartu sponsor di Beranda untuk membuka dialog detail. | Dialog menampilkan nama sponsor diikuti badge tier resmi berikon di bawahnya secara rapi. | [ ] |
+| **APP-10** | **APP-02: Hasil Pencarian Global (`GlobalSearchPage`)** | Buka halaman Pencarian Global, cari kata kunci sponsor/produk. | Kartu sponsor pada hasil pencarian menampilkan badge tier terstandarisasi. | [ ] |
+
+---
+
+### 🖥️ 5.6 PENGUJIAN MODUL 4: PERBAIKAN PANEL ADMIN (ADMIN-01 S/D ADMIN-02)
+> **Target Aplikasi:** Web Admin Laravel (`VBAT-WEB`)  
+> **Halaman Uji:** `/dashboard`, `/admin/sponsors`, `/admin/products`, `/admin/events`, `/admin/campaigns`, `/admin/best-deals`, `/admin/notifications`, `/admin/bulk-upload`, `/admin/users`
+
+| ID | Fitur | Skenario & Langkah Pengujian | Hasil yang Diharapkan (Expected Result) | Status |
+| :--- | :--- | :--- | :--- | :---: |
+| **ADM-11** | **ADMIN-01: Satu Judul Tunggal di Super Dashboard** | Login sebagai Super Admin, buka `/dashboard`. | 1. Hanya terdapat **satu judul tunggal**: *"Super Dashboard — Analitik & Metrik"* dengan ikon dan badge pulse *"Real-time Analytics"*.<br>2. Judul ganda lama (*"Dashboard Analitik Super Admin & Owner"*) telah hilang total. | [ ] |
+| **ADM-12** | **ADMIN-01: Hirarki Tata Letak KPI Cards Teratas** | Periksa susunan komponen di `/dashboard`. | 4 Kartu Metrik Utama (*Total Tayangan Iklan*, *Total Klik Sponsor*, *Rata-rata CTR*, *Interaksi Wishlist*) tersusun rapi langsung tepat di bawah header dengan whitespace lega. | [ ] |
+| **ADM-13** | **ADMIN-01: Eliminasi Judul Ganda di Semua Modul Admin** | Telusuri menu-menu admin:<br>- `/admin/sponsors`<br>- `/admin/products`<br>- `/admin/campaigns`<br>- `/admin/events`<br>- `/admin/best-deals`<br>- `/admin/notifications`<br>- `/admin/bulk-upload`<br>- `/admin/users` | Tidak ada halaman yang menampilkan judul ganda bertumpuk; setiap halaman memiliki satu header bersih yang memuat judul, deskripsi, dan tombol aksi (*action buttons*). | [ ] |
+| **ADM-14** | **ADMIN-02: Rasio Gender Dashboard Bersih dari "Lainnya"** | Di `/dashboard`, scroll ke seksi **"Demografi Pengguna" -> "Rasio Jenis Kelamin"**. | Panel rasio gender **hanya memuat 2 baris kategori**: **Laki-laki** (biru) dan **Perempuan** (merah muda). Baris *"Lainnya 0 (0%)"* **hilang total**. | [ ] |
+| **ADM-15** | **ADMIN-02: Form Profil Hanya 2 Pilihan Gender** | Di aplikasi Flutter, buka Akun -> Edit Profil (`edit_profile_page.dart`). | Dropdown *"Jenis Kelamin"* hanya menyediakan 2 pilihan: **Laki-laki** dan **Perempuan**. Tidak ada opsi "Lainnya" atau "Other". | [ ] |
+| **ADM-16** | **ADMIN-02: API Menolak Gender "other" (HTTP 422)** | Kirim request via Postman/cURL:<br>`POST /api/v1/user/demographics`<br>Payload: `{"gender": "other"}`. | Server merespon dengan **HTTP 422 Unprocessable Content** dan pesan validasi error pada kolom `gender`. | [ ] |
+| **ADM-17** | **ADMIN-02: API Normalisasi Gender Valid (HTTP 200)** | Kirim request:<br>1. `POST /api/v1/user/demographics` dengan `{"gender": "Laki-laki"}`.<br>2. Request kedua dengan `{"gender": "Perempuan"}`. | 1. Server merespon **HTTP 200 OK**.<br>2. Database menyimpan nilai normalisasi: `'male'` untuk Laki-laki dan `'female'` untuk Perempuan. | [ ] |
+| **ADM-18** | **ADMIN-02: Integritas Database Sanitasi** | Jalankan query database:<br>`SELECT COUNT(*) FROM users WHERE gender NOT IN ('male', 'female') AND gender IS NOT NULL;` | Menghasilkan nilai **0** (tidak ada baris pengguna dengan gender kotor atau "other"). | [ ] |
+
+---
+
 ## 🎓 BAGIAN 6: PENGUJIAN USER MOBILE (HOME, SHOP, LMS, QUIZ, ENTITLEMENT)
 
 | ID | Fitur | Skenario Pengujian | Hasil yang Diharapkan | Status |
