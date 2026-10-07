@@ -45,13 +45,16 @@ new class extends Component
         $this->discount_type = 'percentage';
         $this->discount_value = 10;
         $this->is_active = true;
-        $this->start_at = now()->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i');
-        $this->end_at = now()->setTimezone('Asia/Jakarta')->addDays(7)->format('Y-m-d\TH:i');
+        $now = now()->setTimezone('Asia/Jakarta');
+        $this->start_at = $now->format('Y-m-d\TH:i');
+        $this->end_at = $now->copy()->addDays(7)->format('Y-m-d\TH:i');
+        $this->resetValidation();
         $this->showModal = true;
     }
 
     public function editEvent($id)
     {
+        $this->resetValidation();
         $e = DiscountEvent::findOrFail($id);
         $this->editingId = $e->id;
         $this->name = $e->name;
@@ -62,14 +65,74 @@ new class extends Component
         $now = now();
         if ($e->start_at && $e->start_at > $now) {
             $this->publish_mode = 'scheduled';
+            $this->start_at = $e->start_at->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i');
         } else {
             $this->publish_mode = 'instant';
+            $this->start_at = now()->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i');
         }
 
-        $this->start_at = $e->start_at ? $e->start_at->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i') : now()->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i');
-        $this->end_at = $e->end_at ? $e->end_at->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i') : now()->setTimezone('Asia/Jakarta')->addDays(7)->format('Y-m-d\TH:i');
+        // Jika end_at sudah lampau atau sebelum start_at, otomatis majukan 7 hari ke depan agar tidak error validasi
+        if (!$e->end_at || $e->end_at <= $now) {
+            $this->end_at = now()->setTimezone('Asia/Jakarta')->addDays(7)->format('Y-m-d\TH:i');
+        } else {
+            $this->end_at = $e->end_at->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i');
+        }
+
         $this->is_active = (bool)$e->is_active;
         $this->showModal = true;
+    }
+
+    public function updatedPublishMode($val)
+    {
+        $this->resetValidation();
+        $now = now()->setTimezone('Asia/Jakarta');
+        if ($val === 'instant') {
+            $this->start_at = $now->format('Y-m-d\TH:i');
+            try {
+                if (empty($this->end_at) || \Illuminate\Support\Carbon::parse($this->end_at)->lte($now)) {
+                    $this->end_at = $now->copy()->addDays(7)->format('Y-m-d\TH:i');
+                }
+            } catch (\Exception $e) {
+                $this->end_at = $now->copy()->addDays(7)->format('Y-m-d\TH:i');
+            }
+        } else {
+            if (empty($this->start_at)) {
+                $this->start_at = $now->format('Y-m-d\TH:i');
+            }
+            try {
+                $start = \Illuminate\Support\Carbon::parse($this->start_at);
+                if (empty($this->end_at) || \Illuminate\Support\Carbon::parse($this->end_at)->lte($start)) {
+                    $this->end_at = $start->copy()->addDays(7)->format('Y-m-d\TH:i');
+                }
+            } catch (\Exception $e) {
+                $this->end_at = $now->copy()->addDays(7)->format('Y-m-d\TH:i');
+            }
+        }
+    }
+
+    public function updatedStartAt($val)
+    {
+        try {
+            $start = \Illuminate\Support\Carbon::parse($val);
+            if (!empty($this->end_at)) {
+                $end = \Illuminate\Support\Carbon::parse($this->end_at);
+                if ($end->lte($start)) {
+                    $this->end_at = $start->copy()->addDays(7)->format('Y-m-d\TH:i');
+                }
+            } else {
+                $this->end_at = $start->copy()->addDays(7)->format('Y-m-d\TH:i');
+            }
+        } catch (\Exception $e) {}
+    }
+
+    public function setEndDurationDays(int $days)
+    {
+        $base = ($this->publish_mode === 'scheduled' && !empty($this->start_at))
+            ? \Illuminate\Support\Carbon::parse($this->start_at)
+            : now()->setTimezone('Asia/Jakarta');
+
+        $this->end_at = $base->copy()->addDays($days)->format('Y-m-d\TH:i');
+        $this->resetValidation('end_at');
     }
 
     public function toggleStatus($id)
@@ -100,7 +163,18 @@ new class extends Component
             $isActive = true;
         }
 
-        $this->validate($rules);
+        $messages = [
+            'name.required' => 'Nama event wajib diisi.',
+            'discount_value.required' => 'Nilai diskon wajib diisi.',
+            'discount_value.min' => 'Nilai diskon minimal 1.',
+            'start_at.required' => 'Waktu mulai promo wajib ditentukan.',
+            'end_at.required' => 'Waktu berakhir promo wajib ditentukan.',
+            'end_at.after' => $this->publish_mode === 'instant'
+                ? 'Waktu berakhir harus lebih dari waktu saat ini.'
+                : 'Waktu berakhir promo harus setelah waktu mulai.',
+        ];
+
+        $this->validate($rules, $messages);
 
         $bannerText = $this->banner_text ?: ($this->discount_type === 'percentage'
             ? "DISKON SPESIAL {$this->discount_value}% PRODUK PILIHAN"
@@ -289,23 +363,33 @@ new class extends Component
     <!-- MODAL 1: Form Buat / Edit Event -->
     @if($showModal)
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-        <div class="bg-white dark:bg-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-zinc-200 dark:border-zinc-700 space-y-4">
-            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700 pb-3">
-                <h3 class="font-bold text-lg text-zinc-900 dark:text-white">
-                    {{ $editingId ? 'Edit Event Diskon' : 'Buat Event Diskon Baru' }}
-                </h3>
-                <button type="button" wire:click="$set('showModal', false)" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
+        <div class="bg-white dark:bg-zinc-800 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-zinc-200 dark:border-zinc-700/80 space-y-5">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700/80 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-white shadow-sm shadow-orange-500/30">
+                        <flux:icon name="sparkles" class="w-5 h-5" />
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg text-zinc-900 dark:text-white">
+                            {{ $editingId ? 'Edit Event Diskon' : 'Buat Event Diskon Baru' }}
+                        </h3>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400">Atur parameter promo & jadwal tayang event</p>
+                    </div>
+                </div>
+                <button type="button" wire:click="$set('showModal', false)" class="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:text-zinc-200 dark:hover:bg-zinc-700/60 transition">
                     <flux:icon name="x-mark" class="w-5 h-5" />
                 </button>
             </div>
 
+            <!-- Modal Body -->
             <form wire:submit.prevent="save" class="space-y-4">
                 <flux:input label="Nama Event Diskon *" wire:model="name" placeholder="Contoh: FLASH SALE SPESIAL VBAT" required />
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Tipe Diskon *</label>
-                        <select wire:model="discount_type" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+                        <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Tipe Diskon *</label>
+                        <select wire:model.live="discount_type" class="w-full h-10 px-3.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition">
                             <option value="percentage">Persentase (%)</option>
                             <option value="fixed_nominal">Potongan Nominal (Rp)</option>
                         </select>
@@ -319,7 +403,7 @@ new class extends Component
                 <div>
                     <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-2">Pilihan Mode Publikasi *</label>
                     <div class="grid grid-cols-2 gap-3">
-                        <label class="cursor-pointer border rounded-2xl p-3 transition flex flex-col gap-1 {{ $publish_mode === 'instant' ? 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/30 text-amber-950 dark:text-amber-200 ring-2 ring-amber-500/20' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400' }}">
+                        <label class="cursor-pointer border rounded-2xl p-3.5 transition flex flex-col gap-1 {{ $publish_mode === 'instant' ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30 text-amber-950 dark:text-amber-200 ring-2 ring-amber-500/20' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400' }}">
                             <div class="flex items-center justify-between">
                                 <span class="font-extrabold text-xs flex items-center gap-1.5">
                                     <flux:icon name="bolt" class="w-3.5 h-3.5 text-amber-500" />
@@ -332,7 +416,7 @@ new class extends Component
                             </span>
                         </label>
 
-                        <label class="cursor-pointer border rounded-2xl p-3 transition flex flex-col gap-1 {{ $publish_mode === 'scheduled' ? 'border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/30 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400' }}">
+                        <label class="cursor-pointer border rounded-2xl p-3.5 transition flex flex-col gap-1 {{ $publish_mode === 'scheduled' ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400' }}">
                             <div class="flex items-center justify-between">
                                 <span class="font-extrabold text-xs flex items-center gap-1.5">
                                     <flux:icon name="calendar-days" class="w-3.5 h-3.5 text-indigo-500" />
@@ -347,31 +431,49 @@ new class extends Component
                     </div>
                 </div>
 
-                <!-- Input Tanggal Berdasarkan Mode Terpilih (EVENT-01) -->
-                @if ($publish_mode === 'instant')
-                    <div class="space-y-2">
-                        <flux:input type="datetime-local" label="Masa Berakhir Promo *" wire:model="end_at" required />
-                        <div class="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                            <flux:icon name="check-circle" class="w-4 h-4 shrink-0 text-amber-600" />
-                            <span>Event akan langsung tayang aktif dan berakhir pada tanggal di atas.</span>
+                <!-- Input Tanggal & Pintasan Durasi (EVENT-01) -->
+                <div class="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-700/80 space-y-3">
+                    @if ($publish_mode === 'instant')
+                        <div class="space-y-1.5">
+                            <flux:input type="datetime-local" label="Masa Berakhir Promo *" wire:model="end_at" required />
+                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400">Event akan langsung aktif dan otomatis berakhir pada tanggal & jam di atas.</p>
                         </div>
-                    </div>
-                @else
-                    <div class="space-y-2">
-                        <div class="grid grid-cols-2 gap-4">
-                            <flux:input type="datetime-local" label="Waktu Mulai *" wire:model="start_at" required />
-                            <flux:input type="datetime-local" label="Waktu Berakhir *" wire:model="end_at" required />
+                    @else
+                        <div class="space-y-2">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <flux:input type="datetime-local" label="Waktu Mulai *" wire:model.live="start_at" required />
+                                <flux:input type="datetime-local" label="Waktu Berakhir *" wire:model="end_at" required />
+                            </div>
+                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400">Event berstatus Terjadwal dan otomatis aktif pada waktu mulai.</p>
                         </div>
-                        <div class="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/60 text-xs text-indigo-800 dark:text-indigo-300 flex items-center gap-2">
-                            <flux:icon name="clock" class="w-4 h-4 shrink-0 text-indigo-600" />
-                            <span>Event tersimpan dalam status terjadwal dan otomatis aktif pada waktu mulai (WIB).</span>
-                        </div>
-                    </div>
-                @endif
+                    @endif
 
-                <div class="flex items-center justify-end gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-700">
+                    <!-- Pintasan Cepat Durasi Promo -->
+                    <div class="pt-2.5 border-t border-zinc-200/60 dark:border-zinc-700/60 flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-xs font-semibold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
+                            <flux:icon name="clock" class="w-3.5 h-3.5 text-zinc-400" />
+                            Pilih Durasi Cepat:
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" wire:click="setEndDurationDays(3)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 shadow-xs transition cursor-pointer">
+                                +3 Hari
+                            </button>
+                            <button type="button" wire:click="setEndDurationDays(7)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 shadow-xs transition cursor-pointer">
+                                +7 Hari
+                            </button>
+                            <button type="button" wire:click="setEndDurationDays(14)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 shadow-xs transition cursor-pointer">
+                                +14 Hari
+                            </button>
+                            <button type="button" wire:click="setEndDurationDays(30)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 shadow-xs transition cursor-pointer">
+                                +30 Hari
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-700/80">
                     <flux:button type="button" wire:click="$set('showModal', false)">Batal</flux:button>
-                    <flux:button type="submit" variant="primary">Simpan Event</flux:button>
+                    <flux:button type="submit" variant="primary" icon="check">Simpan Event</flux:button>
                 </div>
             </form>
         </div>
