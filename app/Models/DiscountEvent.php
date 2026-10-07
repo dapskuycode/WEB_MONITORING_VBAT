@@ -42,10 +42,11 @@ class DiscountEvent extends Model
     public function scopeActive(Builder $query): Builder
     {
         $now = now();
+        $startThreshold = $now->copy()->addMinutes(1);
 
         return $query->where('is_active', true)
-            ->where(function ($q) use ($now) {
-                $q->whereNull('start_at')->orWhere('start_at', '<=', $now);
+            ->where(function ($q) use ($startThreshold) {
+                $q->whereNull('start_at')->orWhere('start_at', '<=', $startThreshold);
             })
             ->where(function ($q) use ($now) {
                 $q->whereNull('end_at')->orWhere('end_at', '>=', $now);
@@ -56,13 +57,13 @@ class DiscountEvent extends Model
     {
         $now = now();
         return (bool)$this->is_active 
-            && ($this->start_at === null || $this->start_at <= $now) 
+            && ($this->start_at === null || $this->start_at <= $now->copy()->addMinutes(1)) 
             && ($this->end_at === null || $this->end_at >= $now);
     }
 
     public function isScheduled(): bool
     {
-        return (bool)$this->is_active && $this->start_at !== null && $this->start_at > now();
+        return (bool)$this->is_active && $this->start_at !== null && $this->start_at > now()->copy()->addMinutes(1);
     }
 
     public function isExpired(): bool

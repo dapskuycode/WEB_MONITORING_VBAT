@@ -154,7 +154,7 @@ new class extends Component
 
         if ($this->publish_mode === 'instant') {
             $rules['end_at'] = 'required|date|after:now';
-            $startTime = now()->setTimezone('Asia/Jakarta');
+            $startTime = now()->subMinutes(1);
             $isActive = true;
         } else {
             $rules['start_at'] = 'required|date';
