@@ -90,6 +90,7 @@ Route::prefix('v1')->group(function () {
 
     // 1. Sponsor & Product — Public read
     Route::get('/sponsors/tiers', [SponsorApiController::class, 'listTiers']);
+    Route::get('/sponsors/partners', [SponsorApiController::class, 'showcase']);
     Route::get('/sponsors', [SponsorApiController::class, 'index']);
     Route::get('/sponsors/{sponsor}', [SponsorApiController::class, 'show']);
     Route::get('/sponsors/{sponsor}/storefront', [SponsorApiController::class, 'storefront']);

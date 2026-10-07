@@ -73,6 +73,84 @@ class SponsorApiController extends Controller
     }
 
     /**
+     * List active sponsors with their products formatted specifically for the Flutter Brand & Partner Showcase.
+     * GET /api/v1/sponsors/partners
+     */
+    public function showcase(): JsonResponse
+    {
+        $sponsors = Sponsor::with([
+                'sponsorTier',
+                'products' => function ($q) {
+                    $q->where('is_active', true)->orderBy('order')->take(8);
+                }
+            ])
+            ->where('is_active', true)
+            ->orderByDesc('weight')
+            ->orderBy('id')
+            ->get();
+
+        $data = $sponsors->map(function ($sponsor) {
+            $tierSlug = strtolower($sponsor->tier ?? 'partner');
+            $tierName = strtoupper($tierSlug);
+            $tier = $sponsor->sponsorTier;
+
+            $colorHex = match ($tierSlug) {
+                'diamond' => '#00B4D8',
+                'platinum' => '#6C5CE7',
+                'gold' => '#FD761A',
+                'silver' => '#718096',
+                'bronze' => '#A0522D',
+                default => '#3182CE',
+            };
+
+            $logo = $sponsor->logo_path;
+            if ($logo) {
+                if (str_starts_with($logo, 'http') || str_starts_with($logo, 'assets/')) {
+                    // Keep URL or asset path as is
+                } else {
+                    $logo = Storage::disk('public')->url($logo);
+                }
+            } else {
+                $logo = 'assets/images/logo_braderparts.png';
+            }
+
+            return [
+                'id' => $sponsor->id,
+                'name' => $sponsor->name,
+                'short_name' => explode(' ', $sponsor->name)[0] ?? $sponsor->name,
+                'tier' => $tierName,
+                'tier_label' => $tier?->badge_label ?? ($tierName . ' SPONSOR'),
+                'color' => $colorHex,
+                'verified' => true,
+                'logo' => $logo,
+                'description' => $sponsor->description ?? '',
+                'website_url' => $sponsor->website_url ?? 'https://shopee.co.id',
+                'products' => $sponsor->products->map(function ($p) {
+                    $pImage = $p->image_path;
+                    if ($pImage && !str_starts_with($pImage, 'http') && !str_starts_with($pImage, 'assets/')) {
+                        $pImage = Storage::disk('public')->url($pImage);
+                    }
+                    return [
+                        'id' => $p->id,
+                        'name' => $p->name,
+                        'price' => (float)$p->price,
+                        'category' => $p->category ?? 'Sparepart',
+                        'image' => $pImage ?: 'assets/images/product_1.png',
+                        'rating' => (string)($p->rating ?? '4.9'),
+                        'sold' => (string)($p->sold_count ?? '150+') . '+',
+                        'link' => $p->shopee_url ?: ($p->tokopedia_url ?: ($p->website_url ?: 'https://shopee.co.id')),
+                    ];
+                })->values(),
+            ];
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $data,
+        ]);
+    }
+
+    /**
      * Get a single sponsor with full details including benefits.
      *
      * GET /api/v1/sponsors/{id}
