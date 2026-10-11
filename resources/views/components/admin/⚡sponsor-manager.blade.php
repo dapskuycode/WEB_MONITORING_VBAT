@@ -72,6 +72,8 @@ new class extends Component
     public $tierBadgeColor = '#1B4F9B';
     public $tierSortOrder = 0;
     public $tierMessage = '';
+    public $tierIconFile;
+    public $tierIconPreviewUrl;
 
     public function mount()
     {
@@ -90,12 +92,16 @@ new class extends Component
             $this->tierBadgeLabel = $tier->badge_label;
             $this->tierBadgeColor = $tier->badge_color ?? '#1B4F9B';
             $this->tierSortOrder = $tier->sort_order;
+            $this->tierIconPreviewUrl = $tier->icon_url
+                ? \Illuminate\Support\Facades\Storage::disk('public')->url($tier->icon_url)
+                : null;
         } else {
-            $this->reset(['tierName', 'tierBadgeLabel', 'tierSortOrder']);
+            $this->reset(['tierName', 'tierBadgeLabel', 'tierSortOrder', 'tierIconFile', 'tierIconPreviewUrl']);
             $this->tierBadgeColor = '#1B4F9B';
             $this->tierSortOrder = (int) SponsorTier::max('sort_order') + 10;
         }
 
+        $this->reset('tierIconFile');
         $this->showTierModal = true;
     }
 
@@ -107,14 +113,25 @@ new class extends Component
             'tierBadgeLabel' => 'nullable|string|max:60',
             'tierBadgeColor' => 'nullable|string|max:20',
             'tierSortOrder' => 'required|integer|min:0',
+            'tierIconFile' => 'nullable|file|mimes:png,jpg,jpeg,webp,svg|max:2048',
+        ], [
+            'tierIconFile.mimes' => 'Ikon harus berformat PNG, JPG, WEBP, atau SVG.',
+            'tierIconFile.max' => 'Ukuran ikon maksimal 2 MB.',
         ]);
 
+        $iconPath = null;
+        if ($this->tierIconFile) {
+            $iconPath = $this->tierIconFile->store('sponsor-tiers/icons', 'public');
+        }
+
         if ($this->tierEditingId) {
-            SponsorTier::findOrFail($this->tierEditingId)->update([
+            $tier = SponsorTier::findOrFail($this->tierEditingId);
+            $tier->update([
                 'name' => $this->tierName,
                 'badge_label' => $this->tierBadgeLabel ?? '',
                 'badge_color' => $this->tierBadgeColor,
                 'sort_order' => $this->tierSortOrder,
+                'icon_url' => $iconPath ?: $tier->icon_url,
             ]);
             $this->tierMessage = 'Tier berhasil diperbarui.';
         } else {
@@ -129,12 +146,31 @@ new class extends Component
                 'badge_label' => $this->tierBadgeLabel ?? '',
                 'badge_color' => $this->tierBadgeColor,
                 'sort_order' => $this->tierSortOrder,
+                'icon_url' => $iconPath,
                 'is_active' => true,
             ]);
             $this->tierMessage = 'Tier baru berhasil ditambahkan.';
         }
 
         $this->showTierModal = false;
+        $this->reset(['tierIconFile', 'tierIconPreviewUrl']);
+        $this->loadMatrix();
+    }
+
+    /**
+     * Hapus ikon tier sehingga kembali memakai ikon bawaan aplikasi.
+     */
+    public function removeTierIcon()
+    {
+        if (! $this->tierEditingId) {
+            $this->reset(['tierIconFile', 'tierIconPreviewUrl']);
+
+            return;
+        }
+
+        SponsorTier::findOrFail($this->tierEditingId)->update(['icon_url' => null]);
+        $this->reset(['tierIconFile', 'tierIconPreviewUrl']);
+        $this->tierMessage = 'Ikon tier dihapus. Tier kembali memakai ikon bawaan aplikasi.';
         $this->loadMatrix();
     }
 
@@ -1375,6 +1411,38 @@ new class extends Component
                             <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Urutan</label>
                             <input type="number" wire:model="tierSortOrder" min="0" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
                             <span class="text-[11px] text-zinc-400 mt-1 block">Angka kecil tampil lebih dulu.</span>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 space-y-2">
+                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300">Ikon Tier</label>
+                        <p class="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                            Ikon yang diunggah di sini langsung dipakai aplikasi, tanpa perlu memperbarui aplikasi.
+                            Format PNG, JPG, WEBP, atau SVG. Ukuran disarankan 128 x 128 piksel dengan latar transparan.
+                            Kosongkan bila tier memakai ikon bawaan aplikasi.
+                        </p>
+                        <div class="flex items-center gap-3">
+                            @if ($tierIconFile)
+                                <div class="w-12 h-12 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white flex items-center justify-center overflow-hidden shrink-0">
+                                    <img src="{{ $tierIconFile->temporaryUrl() }}" alt="Pratinjau Ikon" class="w-full h-full object-contain p-1">
+                                </div>
+                            @elseif ($tierIconPreviewUrl)
+                                <div class="w-12 h-12 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white flex items-center justify-center overflow-hidden shrink-0">
+                                    <img src="{{ $tierIconPreviewUrl }}" alt="Ikon Tersimpan" class="w-full h-full object-contain p-1">
+                                </div>
+                            @else
+                                <div class="w-12 h-12 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 bg-white flex items-center justify-center shrink-0 text-[10px] text-zinc-400 text-center leading-tight">
+                                    Ikon<br>bawaan
+                                </div>
+                            @endif
+                            <div class="flex-1 min-w-0 space-y-1">
+                                <input type="file" wire:model="tierIconFile" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="w-full text-[11px] text-zinc-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[11px] file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+                                @error('tierIconFile') <span class="text-xs text-rose-500 block">{{ $message }}</span> @enderror
+                                <div wire:loading wire:target="tierIconFile" class="text-[11px] text-blue-600">Mengunggah ikon...</div>
+                                @if ($tierIconPreviewUrl && ! $tierIconFile)
+                                    <button type="button" wire:click="removeTierIcon" class="text-[11px] text-rose-600 hover:underline font-semibold">Hapus ikon, pakai bawaan</button>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>

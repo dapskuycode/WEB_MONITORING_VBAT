@@ -165,17 +165,50 @@ new class extends Component
                 <span class="text-zinc-400">Jika terdapat lebih dari 1 sponsor aktif pada periode yang sama, pop up akan berbentuk slider otomatis.</span>
             </div>
         </div>
-        <div class="flex items-center justify-between gap-3">
-            <div class="flex items-start gap-3 min-w-0">
-                <div class="p-2 rounded-lg bg-blue-950/60 text-blue-400 border border-blue-900/50 shrink-0">
-                    <flux:icon name="photo" class="w-4 h-4" />
+        <div class="md:col-span-3 p-4 rounded-xl bg-blue-950/40 border border-blue-900/60 space-y-2">
+            <div class="flex items-center gap-2">
+                <flux:icon name="photo" class="w-4 h-4 text-blue-400" />
+                <span class="font-bold text-white text-sm">Ketentuan Desain Poster Iklan (Wajib Dibaca)</span>
+            </div>
+            <p class="text-zinc-300 text-[11px] leading-relaxed">
+                Aplikasi menampilkan <strong class="text-white font-semibold">gambar Anda apa adanya, tanpa judul atau keterangan tambahan di bawahnya</strong>.
+                Jadi seluruh tulisan harus sudah tercetak di dalam gambar.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+                <div class="flex gap-2">
+                    <span class="text-blue-400 font-bold shrink-0">Ukuran</span>
+                    <span class="text-zinc-300">1200 x 1600 piksel (rasio 3:4, berdiri). Ini ukuran tepat yang dipakai aplikasi.</span>
                 </div>
-                <div>
-                    <span class="font-bold text-white block">Format Visual & Ukuran</span>
-                    <span class="text-zinc-400 text-[11px] leading-tight block mt-0.5">Rasio portrait modal (4:5 / 3:4 / 1:1), JPG/PNG/MP4 maks 20 MB.</span>
+                <div class="flex gap-2">
+                    <span class="text-blue-400 font-bold shrink-0">Format</span>
+                    <span class="text-zinc-300">JPG atau PNG. Untuk video: MP4, maksimal 20 MB.</span>
+                </div>
+                <div class="flex gap-2">
+                    <span class="text-blue-400 font-bold shrink-0">Teks</span>
+                    <span class="text-zinc-300">Nama brand, isi promo, dan ajakan (contoh "Belanja Sekarang") ditulis di dalam gambar.</span>
+                </div>
+                <div class="flex gap-2">
+                    <span class="text-blue-400 font-bold shrink-0">Ukuran huruf</span>
+                    <span class="text-zinc-300">Tulisan terpenting minimal 60 piksel agar terbaca di layar ponsel.</span>
+                </div>
+                <div class="flex gap-2">
+                    <span class="text-blue-400 font-bold shrink-0">Bagian aman</span>
+                    <span class="text-zinc-300">Sisakan jarak 80 piksel di setiap tepi. Bagian ini dipakai untuk tombol tutup.</span>
+                </div>
+                <div class="flex gap-2">
+                    <span class="text-blue-400 font-bold shrink-0">Gambar lain</span>
+                    <span class="text-zinc-300">Ukuran lain tetap tampil rapi karena aplikasi memotong gambar ke tengah. Yang terpotong hanya tepinya.</span>
                 </div>
             </div>
-            <button type="button" 
+            <div class="flex justify-end pt-1">
+                <button type="button" 
+                    wire:click="$set('showPreviewModal', true)" 
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 hover:text-blue-300 border border-blue-500/30 font-semibold text-xs transition duration-150 shadow-sm cursor-pointer active:scale-95">
+                    <flux:icon name="eye" class="w-3.5 h-3.5" />
+                    <span>Lihat Contoh Tampilan</span>
+                </button>
+            </div>
+        </div>
                 wire:click="$set('showPreviewModal', true)" 
                 class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 hover:text-blue-300 border border-blue-500/30 font-semibold text-xs transition duration-150 shadow-sm cursor-pointer active:scale-95">
                 <flux:icon name="eye" class="w-3.5 h-3.5" />
@@ -288,7 +321,31 @@ new class extends Component
             <form wire:submit.prevent="submit" class="space-y-4">
                 <flux:input label="Judul Pop Up Iklan" wire:model="title" placeholder="Contoh: Mega Flash Sale Ramadhan Sparepart" required />
 
-                <flux:input label="Target Link URL / Marketplace" wire:model="target_url" placeholder="https://tokopedia.com/toko-sponsor" required />
+                <div class="space-y-2">
+                    <flux:input label="Tujuan Saat Iklan Diklik" wire:model="target_url" placeholder="https://shopee.co.id/produk-anda" required />
+                    <div class="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-2 text-[11px]">
+                        <p class="text-zinc-400">
+                            Isi salah satu dari dua pilihan berikut. Iklan hanya punya dua tombol: <strong class="text-white">X untuk menutup</strong> dan <strong class="text-white">klik gambar untuk menuju tujuan</strong>.
+                        </p>
+                        <div class="space-y-1">
+                            <p class="text-zinc-300 font-semibold">1. Tautan luar (ke luar aplikasi)</p>
+                            <p class="text-zinc-400">Tulis alamat lengkap, contoh: <code class="text-blue-400">https://shopee.co.id/nama-produk-anda</code></p>
+                        </div>
+                        <div class="space-y-1 pt-1">
+                            <p class="text-zinc-300 font-semibold">2. Halaman di dalam aplikasi VBAT</p>
+                            <p class="text-zinc-400">Tulis kode tujuan berikut:</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5 text-zinc-400">
+                                <span><code class="text-blue-400">vbat://event</code> — halaman Event Diskon</span>
+                                <span><code class="text-blue-400">vbat://best-deals</code> — halaman Best Deal</span>
+                                <span><code class="text-blue-400">vbat://product/12</code> — produk nomor 12</span>
+                                <span><code class="text-blue-400">vbat://sponsor/5</code> — halaman mitra nomor 5</span>
+                                <span><code class="text-blue-400">vbat://shop</code> — tab Shop</span>
+                                <span><code class="text-blue-400">vbat://home</code> — tab Beranda</span>
+                            </div>
+                            <p class="text-zinc-500 pt-0.5">Angka 12 dan 5 diganti dengan nomor produk atau mitra yang dituju.</p>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="p-3 rounded-xl bg-rose-950/30 border border-rose-900/50 space-y-3">
                     <div class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
@@ -306,7 +363,7 @@ new class extends Component
                     <label class="block text-xs font-semibold text-zinc-300 mb-1">Tipe Media Visual</label>
                     <div class="grid grid-cols-2 gap-2">
                         <button type="button" wire:click="$set('media_type', 'image')" class="p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 {{ $media_type === 'image' ? 'border-rose-500 bg-rose-950/50 text-rose-300' : 'border-zinc-700 bg-zinc-800 text-zinc-400' }}">
-                            <flux:icon name="photo" class="w-4 h-4" /> Gambar Dialog Pop Up (4:5 / 1:1)
+                            <flux:icon name="photo" class="w-4 h-4" /> Gambar / Poster (1200 x 1600 px)
                         </button>
                         <button type="button" wire:click="$set('media_type', 'video')" class="p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 {{ $media_type === 'video' ? 'border-rose-500 bg-rose-950/50 text-rose-300' : 'border-zinc-700 bg-zinc-800 text-zinc-400' }}">
                             <flux:icon name="video-camera" class="w-4 h-4" /> Video MP4 (Maks 20MB)
@@ -316,7 +373,7 @@ new class extends Component
 
                 <div>
                     <div class="flex items-center justify-between mb-1">
-                        <label class="block text-xs font-semibold text-zinc-300">Upload File Visual Pop Up (Maks 20 MB)</label>
+                        <label class="block text-xs font-semibold text-zinc-300">Unggah Poster Iklan (1200 x 1600 px, maks 20 MB)</label>
                         <button type="button" wire:click="$set('showPreviewModal', true)" class="text-[11px] text-rose-400 hover:text-rose-300 flex items-center gap-1 font-medium transition cursor-pointer">
                             <flux:icon name="eye" class="w-3.5 h-3.5" />
                             <span>Preview Contoh</span>
@@ -348,7 +405,7 @@ new class extends Component
                 </div>
                 @endif
 
-                <flux:textarea label="Catatan / Deskripsi Singkat" wire:model="description" placeholder="Keterangan singkat pop up..." rows="2" />
+                <flux:textarea label="Catatan untuk Admin VBAT (tidak tampil di aplikasi)" wire:model="description" placeholder="Keterangan singkat untuk admin..." rows="2" />
 
                 <div class="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
                     <button type="button" wire:click="$set('showModal', false)" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition">Batal</button>
@@ -388,10 +445,12 @@ new class extends Component
                 <div class="p-3 rounded-xl bg-rose-950/30 border border-rose-900/40 text-left text-xs text-rose-300 space-y-1">
                     <div class="font-bold flex items-center gap-1.5 text-rose-400">
                         <flux:icon name="information-circle" class="w-4 h-4 shrink-0" />
-                        <span>Panduan Rasio Modal Pop Up (4:5 / 3:4 / 1:1)</span>
+                        <span>Panduan Poster Pop Up (1200 x 1600 piksel)</span>
                     </div>
                     <p class="text-[11px] text-zinc-400 leading-relaxed">
                         Area yang dikelilingi <strong class="text-rose-400 font-semibold">kotak merah</strong> di atas menunjukkan dialog modal pop up selamat datang yang akan muncul saat pengguna membuka aplikasi.
+                        <br><br>
+                        Aplikasi hanya menampilkan gambar, tanpa judul maupun keterangan tambahan di bawahnya. Pastikan nama brand, isi promo, dan ajakan sudah tercetak di dalam gambar. Di bawah kartu hanya ada tombol <strong class="text-white">X</strong> untuk menutup.
                     </p>
                 </div>
             </div>

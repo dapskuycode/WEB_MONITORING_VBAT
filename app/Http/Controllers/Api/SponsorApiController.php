@@ -94,14 +94,14 @@ class SponsorApiController extends Controller
 
             $colorHex = $tier?->badge_color
                 ?: match (strtolower($sponsor->tier ?? '')) {
-                    'diamond' => '#00B4D8',
-                    'platinum' => '#6C5CE7',
-                    'gold' => '#FD761A',
-                    'silver' => '#718096',
-                    'bronze' => '#A0522D',
-                    'kontribusi' => '#0284C7',
-                    'free' => '#64748B',
-                    default => '#3182CE',
+                    'diamond' => '#00B8D9',
+                    'platinum' => '#7C5CE0',
+                    'gold' => '#E0A81B',
+                    'silver' => '#8A97A8',
+                    'bronze' => '#C2814A',
+                    'kontribusi' => '#5B8FA8',
+                    'free' => '#9CA3AF',
+                    default => '#1B4F9B',
                 };
 
             $logo = $sponsor->logo_path;
