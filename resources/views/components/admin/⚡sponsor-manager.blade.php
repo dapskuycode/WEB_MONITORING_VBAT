@@ -167,7 +167,12 @@ new class extends Component
     public function loadMatrix()
     {
         $tiers = SponsorTier::orderBy('sort_order')->get();
-        $categories = BenefitCategory::orderBy('sort_order')->get();
+        // BEN-02: outbound marketplace dikeluarkan dari matriks. Semua tier
+        // mendapatkannya, jadi tidak perlu dijadikan baris yang bisa diubah.
+        // Nilai di database tetap dipertahankan.
+        $categories = BenefitCategory::orderBy('sort_order')
+            ->where('slug', '!=', 'outbound_marketplace')
+            ->get();
         $tierBenefits = TierBenefit::all();
 
         $this->matrixTiers = $tiers->map(fn($t) => [
@@ -180,12 +185,31 @@ new class extends Component
             'sort_order' => $t->sort_order,
         ])->toArray();
 
+        // BEN-03: setiap baris diberi kelompok supaya Admin awam langsung
+        // memahami urutan dan hubungan antar benefit.
+        $groupMap = [
+            'kuota_produk' => 'Etalase Produk',
+            'storefront_khusus' => 'Etalase Produk',
+            'best_deal_slot' => 'Best Deal',
+            'best_deal_durasi' => 'Best Deal',
+            'best_deal_prioritas' => 'Best Deal',
+            'hero_slider' => 'Banner',
+            'hero_posisi' => 'Banner',
+            'popup_cta' => 'Banner',
+            'infeed_banner' => 'Banner',
+            'infeed_jarak' => 'Banner',
+            'share_of_voice' => 'Frekuensi Tayang',
+            'push_broadcast' => 'Komunikasi',
+            'badge' => 'Identitas',
+        ];
+
         $this->matrixCategories = $categories->map(fn($c) => [
             'id' => $c->id,
             'slug' => $c->slug,
             'name' => $c->name,
             'description' => $c->description,
             'value_type' => $c->value_type,
+            'group' => $groupMap[$c->slug] ?? 'Lainnya',
         ])->toArray();
 
         $matrixData = [];
@@ -843,9 +867,24 @@ new class extends Component
 
                         <!-- Table Body: 14 Benefit Rows -->
                         <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
+                            @php $lastGroup = null; @endphp
                             @foreach ($matrixCategories as $cat)
                                 @php
                                     $catSlug = $cat['slug'];
+                                    $catGroup = $cat['group'] ?? 'Lainnya';
+                                @endphp
+
+                                {{-- BEN-03: judul kelompok supaya Admin awam mudah membaca --}}
+                                @if ($catGroup !== $lastGroup)
+                                    @php $lastGroup = $catGroup; @endphp
+                                    <tr class="bg-blue-50/70 dark:bg-blue-950/30">
+                                        <td colspan="{{ count($matrixTiers) + 2 }}" class="py-2 px-4 text-[11px] font-black uppercase tracking-wider text-blue-700 dark:text-blue-300 border-y border-blue-100 dark:border-blue-900">
+                                            {{ $catGroup }}
+                                        </td>
+                                    </tr>
+                                @endif
+
+                                @php
                                     $allowUnlimited = in_array($catSlug, ['kuota_produk', 'best_deal_slot', 'push_broadcast']);
                                 @endphp
                                 <tr class="hover:bg-zinc-50/70 dark:hover:bg-zinc-800/30 transition">
