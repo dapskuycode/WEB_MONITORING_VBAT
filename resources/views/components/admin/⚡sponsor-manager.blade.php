@@ -29,6 +29,7 @@ new class extends Component
     public $name = '';
     public $tier = 'gold';
     public $website_url = '';
+    public $marketplace_url = '';
     public $contact_email = '';
     public $phone = '';
     public $whatsapp = '';
@@ -38,6 +39,10 @@ new class extends Component
     // Logo Upload (SPONSOR-03)
     public $logo;
     public $existingLogoPath = null;
+
+    // Gambar Header (WR-02)
+    public $headerImage;
+    public $existingHeaderImagePath = null;
 
     public $createUserAccount = true;
     public $userEmail = '';
@@ -59,8 +64,103 @@ new class extends Component
     public $resetDiff = [];
     public $saveSuccessMessage = '';
 
+    // TIER-01: pengelolaan tier (nama, label badge, warna, urutan).
+    public $showTierModal = false;
+    public $tierEditingId = null;
+    public $tierName = '';
+    public $tierBadgeLabel = '';
+    public $tierBadgeColor = '#1B4F9B';
+    public $tierSortOrder = 0;
+    public $tierMessage = '';
+
     public function mount()
     {
+        $this->loadMatrix();
+    }
+
+    /** TIER-01: buka form tier untuk tambah atau ubah. */
+    public function openTierModal($tierId = null)
+    {
+        $this->tierEditingId = $tierId;
+        $this->tierMessage = '';
+
+        if ($tierId) {
+            $tier = SponsorTier::findOrFail($tierId);
+            $this->tierName = $tier->name;
+            $this->tierBadgeLabel = $tier->badge_label;
+            $this->tierBadgeColor = $tier->badge_color ?? '#1B4F9B';
+            $this->tierSortOrder = $tier->sort_order;
+        } else {
+            $this->reset(['tierName', 'tierBadgeLabel', 'tierSortOrder']);
+            $this->tierBadgeColor = '#1B4F9B';
+            $this->tierSortOrder = (int) SponsorTier::max('sort_order') + 10;
+        }
+
+        $this->showTierModal = true;
+    }
+
+    /** TIER-01: simpan tier baru atau perubahan tier. */
+    public function saveTier()
+    {
+        $this->validate([
+            'tierName' => 'required|string|max:60',
+            'tierBadgeLabel' => 'nullable|string|max:60',
+            'tierBadgeColor' => 'nullable|string|max:20',
+            'tierSortOrder' => 'required|integer|min:0',
+        ]);
+
+        if ($this->tierEditingId) {
+            SponsorTier::findOrFail($this->tierEditingId)->update([
+                'name' => $this->tierName,
+                'badge_label' => $this->tierBadgeLabel ?? '',
+                'badge_color' => $this->tierBadgeColor,
+                'sort_order' => $this->tierSortOrder,
+            ]);
+            $this->tierMessage = 'Tier berhasil diperbarui.';
+        } else {
+            $slug = \Illuminate\Support\Str::slug($this->tierName);
+            if (SponsorTier::where('slug', $slug)->exists()) {
+                $this->addError('tierName', 'Nama tier ini sudah dipakai. Gunakan nama lain.');
+                return;
+            }
+            SponsorTier::create([
+                'slug' => $slug,
+                'name' => $this->tierName,
+                'badge_label' => $this->tierBadgeLabel ?? '',
+                'badge_color' => $this->tierBadgeColor,
+                'sort_order' => $this->tierSortOrder,
+                'is_active' => true,
+            ]);
+            $this->tierMessage = 'Tier baru berhasil ditambahkan.';
+        }
+
+        $this->showTierModal = false;
+        $this->loadMatrix();
+    }
+
+    /**
+     * TIER-01: hapus tier.
+     *
+     * Tier TIDAK boleh dihapus selama masih ada sponsor di dalamnya. Admin harus
+     * memindahkan sponsor ke tier lain (misalnya Free) lebih dulu.
+     */
+    public function deleteTier($tierId)
+    {
+        $tier = SponsorTier::findOrFail($tierId);
+
+        if ($tier->slug === 'free') {
+            $this->tierMessage = 'Tier Free tidak dapat dihapus karena menjadi tempat penampung sponsor.';
+            return;
+        }
+
+        $jumlah = Sponsor::where('tier_id', $tier->id)->count();
+        if ($jumlah > 0) {
+            $this->tierMessage = "Tier {$tier->name} tidak dapat dihapus karena masih ada {$jumlah} sponsor. Pindahkan sponsor tersebut ke tier lain terlebih dahulu.";
+            return;
+        }
+
+        $tier->delete();
+        $this->tierMessage = "Tier {$tier->name} berhasil dihapus.";
         $this->loadMatrix();
     }
 
@@ -75,6 +175,9 @@ new class extends Component
             'slug' => $t->slug,
             'name' => $t->name,
             'badge_label' => $t->badge_label,
+            // TIER-01: warna ikut dikirim supaya Admin dapat mengubahnya.
+            'badge_color' => $t->badge_color ?? '#1B4F9B',
+            'sort_order' => $t->sort_order,
         ])->toArray();
 
         $this->matrixCategories = $categories->map(fn($c) => [
@@ -181,7 +284,7 @@ new class extends Component
 
     public function openCreateModal()
     {
-        $this->reset(['editingId', 'name', 'tier', 'website_url', 'contact_email', 'phone', 'whatsapp', 'description', 'userEmail', 'userPassword', 'logo', 'existingLogoPath']);
+        $this->reset(['editingId', 'name', 'tier', 'website_url', 'marketplace_url', 'contact_email', 'phone', 'whatsapp', 'description', 'userEmail', 'userPassword', 'logo', 'existingLogoPath', 'headerImage', 'existingHeaderImagePath']);
         $this->tier = 'gold';
         $this->is_active = true;
         $this->createUserAccount = true;
@@ -195,6 +298,7 @@ new class extends Component
         $this->name = $sponsor->name;
         $this->tier = strtolower($sponsor->tier ?? 'gold');
         $this->website_url = $sponsor->website_url;
+        $this->marketplace_url = $sponsor->marketplace_url;
         $this->contact_email = $sponsor->contact_email;
         $this->phone = $sponsor->phone;
         $this->whatsapp = $sponsor->whatsapp;
@@ -202,6 +306,8 @@ new class extends Component
         $this->is_active = (bool)$sponsor->is_active;
         $this->existingLogoPath = $sponsor->logo_path;
         $this->logo = null;
+        $this->existingHeaderImagePath = $sponsor->header_image_url;
+        $this->headerImage = null;
         $this->createUserAccount = false;
         $this->showModal = true;
     }
@@ -212,16 +318,29 @@ new class extends Component
         $this->existingLogoPath = null;
     }
 
+    /** WR-02: hapus gambar header sponsor. */
+    public function removeHeaderImage()
+    {
+        $this->headerImage = null;
+        $this->existingHeaderImagePath = null;
+    }
+
     public function save()
     {
         $this->validate([
             'name' => 'required|string|max:255',
             'tier' => 'required|in:kontribusi,bronze,silver,gold,platinum,diamond',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'headerImage' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
+            'marketplace_url' => 'nullable|url',
         ], [
             'logo.image' => 'Berkas harus berupa gambar valid (JPG, PNG, atau WEBP). Dokumen non-gambar seperti PDF tidak diizinkan.',
             'logo.mimes' => 'Format file yang diperbolehkan hanya JPG, PNG, atau WEBP.',
             'logo.max' => 'Ukuran berkas logo maksimal 2MB.',
+            'headerImage.image' => 'Gambar header harus berupa berkas gambar.',
+            'headerImage.mimes' => 'Format gambar header hanya JPG, PNG, atau WEBP.',
+            'headerImage.max' => 'Ukuran gambar header maksimal 4MB.',
+            'marketplace_url.url' => 'Format tautan marketplace tidak valid.',
         ]);
 
         $tierModel = SponsorTier::where('slug', $this->tier)->first();
@@ -246,6 +365,12 @@ new class extends Component
             $logoPath = $this->logo->store('sponsors/logos', 'public');
         }
 
+        // WR-02: gambar header sponsor.
+        $headerPath = $this->existingHeaderImagePath;
+        if ($this->headerImage) {
+            $headerPath = $this->headerImage->store('sponsors/headers', 'public');
+        }
+
         if ($this->editingId) {
             $sponsor = Sponsor::findOrFail($this->editingId);
             $sponsor->update([
@@ -254,7 +379,10 @@ new class extends Component
                 'tier_id' => $tierId,
                 'weight' => (int)$sov,
                 'logo_path' => $logoPath,
+                'header_image_url' => $headerPath,
+                // WM-01: Website dan Marketplace diisi terpisah.
                 'website_url' => $this->website_url,
+                'marketplace_url' => $this->marketplace_url,
                 'contact_email' => $this->contact_email,
                 'phone' => $this->phone,
                 'whatsapp' => $this->whatsapp,
@@ -270,7 +398,10 @@ new class extends Component
                 'tier_id' => $tierId,
                 'weight' => (int)$sov,
                 'logo_path' => $logoPath,
+                'header_image_url' => $headerPath,
+                // WM-01: Website dan Marketplace diisi terpisah.
                 'website_url' => $this->website_url,
+                'marketplace_url' => $this->marketplace_url,
                 'contact_email' => $this->contact_email,
                 'phone' => $this->phone,
                 'whatsapp' => $this->whatsapp,
@@ -458,6 +589,9 @@ new class extends Component
             </p>
         </div>
         @if ($activeTab === 'sponsors')
+            <button wire:click="openTierModal" class="px-4 py-2.5 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-600 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition" title="Tambah, ubah nama, warna, dan urutan tier">
+                Kelola Tier
+            </button>
             <button wire:click="openCreateModal" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Tambah Sponsor Baru
@@ -781,9 +915,15 @@ new class extends Component
                                                     </div>
 
                                                     @if ($allowUnlimited)
-                                                        <label class="inline-flex items-center gap-1 cursor-pointer select-none">
+                                                        <!-- BEN-05: teks "Tidak terbatas" hanya tampil saat dicentang,
+                                                             supaya tidak berulang di setiap sel. -->
+                                                        <label class="inline-flex items-center gap-1 cursor-pointer select-none" title="Tandai tidak terbatas">
                                                             <input type="checkbox" wire:click="toggleUnlimited('{{ $catSlug }}', '{{ $tSlug }}')" {{ $isUnlimited ? 'checked' : '' }} class="w-3 h-3 rounded text-purple-600 border-zinc-300 dark:border-zinc-600">
-                                                            <span class="text-[9px] font-semibold text-zinc-500">∞ Bebas</span>
+                                                            @if ($isUnlimited)
+                                                                <span class="text-[9px] font-semibold text-purple-600 dark:text-purple-300">Tidak terbatas</span>
+                                                            @else
+                                                                <span class="text-[9px] font-semibold text-zinc-400">∞</span>
+                                                            @endif
                                                         </label>
                                                     @endif
                                                 </div>
@@ -797,6 +937,37 @@ new class extends Component
                 </div>
 
                 <!-- Footer Action Bar: Reset All & Save All -->
+                <!-- TIER-01: kartu pengelolaan tier -->
+                <div class="p-4 border-t border-zinc-200 dark:border-zinc-800 space-y-3">
+                    @if ($tierMessage)
+                        <div class="px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs font-semibold text-amber-800 dark:text-amber-200">
+                            {{ $tierMessage }}
+                        </div>
+                    @endif
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-zinc-800 dark:text-zinc-100">Daftar Tier</h3>
+                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400">Nama, label badge, warna, dan urutan tier dapat diubah. Tier tidak dapat dihapus selama masih ada sponsor di dalamnya.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach ($matrixTiers as $t)
+                            <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
+                                <span class="w-3 h-3 rounded-full shrink-0" style="background-color: {{ $t['badge_color'] ?? '#1B4F9B' }}"></span>
+                                <span class="text-xs font-bold text-zinc-800 dark:text-zinc-100">{{ $t['name'] }}</span>
+                                <span class="text-[10px] text-zinc-400">{{ $t['badge_label'] }}</span>
+                                <button type="button" wire:click="openTierModal({{ $t['id'] }})" class="text-[11px] font-semibold text-blue-600 hover:underline">Ubah</button>
+                                @if (($t['slug'] ?? '') !== 'free')
+                                    <button type="button" wire:click="deleteTier({{ $t['id'] }})" wire:confirm="Hapus tier {{ $t['name'] }}? Tier tidak akan terhapus bila masih ada sponsor di dalamnya." class="text-[11px] font-semibold text-rose-600 hover:underline">Hapus</button>
+                                @endif
+                            </div>
+                        @endforeach
+                        <button type="button" wire:click="openTierModal" class="px-3 py-1.5 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-600 text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800">
+                            + Tambah Tier
+                        </button>
+                    </div>
+                </div>
+
                 <div class="p-4 bg-zinc-50 dark:bg-zinc-800/60 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3">
                     <button type="button" wire:click="promptResetAll" class="px-4 py-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 border border-zinc-300 dark:border-zinc-600 rounded-xl transition flex items-center gap-1.5 shadow-sm">
                         <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
@@ -1014,15 +1185,44 @@ new class extends Component
                         </div>
                     </div>
 
+                    <!-- Gambar Header Sponsor (WR-02) -->
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Gambar Header Halaman Sponsor (opsional, maks 4MB)</label>
+                        <div class="flex items-center gap-4 p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
+                            <div class="w-20 h-12 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                                @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
+                                    <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
+                                @elseif ($existingHeaderImagePath)
+                                    <img src="{{ asset('storage/' . $existingHeaderImagePath) }}" alt="Header" class="w-full h-full object-cover">
+                                @else
+                                    <span class="text-[10px] font-bold text-zinc-400">BELUM ADA</span>
+                                @endif
+                            </div>
+                            <div class="flex-1 space-y-1">
+                                <input type="file" wire:model="headerImage" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-zinc-500 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-300 cursor-pointer">
+                                <div wire:loading wire:target="headerImage" class="text-[11px] text-blue-600 font-semibold">Mengunggah berkas...</div>
+                                @error('headerImage')
+                                    <span class="text-xs text-rose-500 font-medium block">{{ $message }}</span>
+                                @enderror
+                                @if ($existingHeaderImagePath)
+                                    <button type="button" wire:click="removeHeaderImage" class="text-[11px] text-rose-600 hover:underline block font-semibold">Hapus gambar header</button>
+                                @endif
+                            </div>
+                        </div>
+                        <span class="text-[11px] text-zinc-400 mt-1 block">Bila dikosongkan, halaman sponsor memakai warna aplikasi.</span>
+                    </div>
+
                     <div>
                         <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Tier Sponsor *</label>
                         <select wire:model="tier" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white font-medium">
-                            <option value="diamond">👑 Diamond (Prioritas #1 - Bebas Kuota)</option>
-                            <option value="platinum">⭐ Platinum (Top 3)</option>
-                            <option value="gold">🥇 Gold (Top 5)</option>
-                            <option value="silver">🥈 Silver (Official)</option>
-                            <option value="bronze">🥉 Bronze (Partner)</option>
-                            <option value="kontribusi">🤝 Kontribusi (Kontributor)</option>
+                            <!-- BEN-06: cukup nama tier, tanpa istilah internal. -->
+                            <option value="free">Free</option>
+                            <option value="kontribusi">Kontribusi</option>
+                            <option value="bronze">Bronze</option>
+                            <option value="silver">Silver</option>
+                            <option value="gold">Gold</option>
+                            <option value="platinum">Platinum</option>
+                            <option value="diamond">Diamond</option>
                         </select>
                         <span class="text-[11px] text-zinc-400 mt-0.5 block">*Bobot tayang dan kuota produk otomatis mengikuti benefit tier yang dipilih.</span>
                     </div>
@@ -1033,9 +1233,21 @@ new class extends Component
                             <input type="text" wire:model="whatsapp" placeholder="62812345678" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Website / Marketplace URL</label>
-                            <input type="url" wire:model="website_url" placeholder="https://shopee.co.id/..." class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
+                            <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Website Resmi Sponsor</label>
+                            <input type="url" wire:model="website_url" placeholder="https://website-toko.com" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
+                            @error('website_url')
+                                <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span>
+                            @enderror
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Tautan Marketplace (Shopee / Tokopedia)</label>
+                        <input type="url" wire:model="marketplace_url" placeholder="https://shopee.co.id/nama-toko" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
+                        @error('marketplace_url')
+                            <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span>
+                        @enderror
+                        <span class="text-[11px] text-zinc-400 mt-1 block">Website dan Marketplace diisi terpisah. Tombol di aplikasi hanya muncul untuk tautan yang terisi.</span>
                     </div>
 
                     <div>
@@ -1090,3 +1302,48 @@ new class extends Component
         </div>
     @endif
 </div>
+
+    <!-- MODAL KELOLA TIER (TIER-01) -->
+    @if ($showTierModal)
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+                <div class="flex items-center justify-between border-b pb-3 dark:border-zinc-800">
+                    <h2 class="text-lg font-bold text-zinc-900 dark:text-white">
+                        {{ $tierEditingId ? 'Ubah Tier' : 'Tambah Tier Baru' }}
+                    </h2>
+                    <button wire:click="$set('showTierModal', false)" class="text-zinc-400 hover:text-zinc-600 font-bold">✕</button>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Nama Tier *</label>
+                        <input type="text" wire:model="tierName" placeholder="Contoh: Silver" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
+                        @error('tierName') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Label Badge</label>
+                        <input type="text" wire:model="tierBadgeLabel" placeholder="Contoh: Silver Official" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
+                        <span class="text-[11px] text-zinc-400 mt-1 block">Tulisan yang tampil pada kartu produk. Kosongkan bila tier tidak memiliki badge.</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Warna Tier</label>
+                            <input type="color" wire:model="tierBadgeColor" class="w-full h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Urutan</label>
+                            <input type="number" wire:model="tierSortOrder" min="0" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
+                            <span class="text-[11px] text-zinc-400 mt-1 block">Angka kecil tampil lebih dulu.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t dark:border-zinc-800">
+                    <button wire:click="$set('showTierModal', false)" class="px-4 py-2 text-sm font-semibold rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">Batal</button>
+                    <button wire:click="saveTier" class="px-4 py-2 text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm">Simpan Tier</button>
+                </div>
+            </div>
+        </div>
+    @endif

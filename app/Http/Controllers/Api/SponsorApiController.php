@@ -90,18 +90,19 @@ class SponsorApiController extends Controller
             ->get();
 
         $data = $sponsors->map(function ($sponsor) {
-            $tierSlug = strtolower($sponsor->tier ?? 'partner');
-            $tierName = strtoupper($tierSlug);
             $tier = $sponsor->sponsorTier;
 
-            $colorHex = match ($tierSlug) {
-                'diamond' => '#00B4D8',
-                'platinum' => '#6C5CE7',
-                'gold' => '#FD761A',
-                'silver' => '#718096',
-                'bronze' => '#A0522D',
-                default => '#3182CE',
-            };
+            $colorHex = $tier?->badge_color
+                ?: match (strtolower($sponsor->tier ?? '')) {
+                    'diamond' => '#00B4D8',
+                    'platinum' => '#6C5CE7',
+                    'gold' => '#FD761A',
+                    'silver' => '#718096',
+                    'bronze' => '#A0522D',
+                    'kontribusi' => '#0284C7',
+                    'free' => '#64748B',
+                    default => '#3182CE',
+                };
 
             $logo = $sponsor->logo_path;
             if ($logo) {
@@ -111,34 +112,49 @@ class SponsorApiController extends Controller
                     $logo = Storage::disk('public')->url($logo);
                 }
             } else {
-                $logo = 'assets/images/logo_braderparts.png';
+                // CW-09: tidak ada jalur logo contoh. Bila kosong, biarkan kosong
+                // supaya aplikasi menampilkan ikon bawaan.
+                $logo = '';
+            }
+
+            $headerImage = $sponsor->header_image_url;
+            if ($headerImage && ! str_starts_with($headerImage, 'http') && ! str_starts_with($headerImage, 'assets/')) {
+                $headerImage = Storage::disk('public')->url($headerImage);
             }
 
             return [
                 'id' => $sponsor->id,
                 'name' => $sponsor->name,
                 'short_name' => explode(' ', $sponsor->name)[0] ?? $sponsor->name,
-                'tier' => $tierName,
-                'tier_label' => $tier?->badge_label ?? ($tierName . ' SPONSOR'),
-                'color' => $colorHex,
+                'tier' => strtoupper($sponsor->tier ?? ''),
+                // APP-02: label badge dipakai apa adanya dari database. Aplikasi
+                // membersihkan awalan "Sponsor" sebelum ditampilkan.
+                'tier_label' => $tier?->badge_label ?: ($sponsor->tier ?? ''),
+                // WR-01: warna tier hanya untuk badge/label, bukan latar halaman.
+                'tier_color' => $colorHex,
                 'verified' => true,
                 'logo' => $logo,
+                'header_image_url' => $headerImage,
                 'description' => $sponsor->description ?? '',
-                'website_url' => $sponsor->website_url ?? 'https://shopee.co.id',
+                // WM-01: Website dan Marketplace dikirim terpisah. Yang kosong
+                // tidak ditampilkan oleh aplikasi.
+                'website_url' => $sponsor->website_url ?? '',
+                'marketplace_url' => $sponsor->marketplace_url ?? '',
                 'products' => $sponsor->products->map(function ($p) {
                     $pImage = $p->image_path;
-                    if ($pImage && !str_starts_with($pImage, 'http') && !str_starts_with($pImage, 'assets/')) {
+                    if ($pImage && ! str_starts_with($pImage, 'http') && ! str_starts_with($pImage, 'assets/')) {
                         $pImage = Storage::disk('public')->url($pImage);
                     }
                     return [
                         'id' => $p->id,
                         'name' => $p->name,
-                        'price' => (float)$p->price,
-                        'category' => $p->category ?? 'Sparepart',
-                        'image' => $pImage ?: 'assets/images/product_1.png',
-                        'rating' => (string)($p->rating ?? '4.9'),
-                        'sold' => (string)($p->sold_count ?? '150+') . '+',
-                        'link' => $p->shopee_url ?: ($p->tokopedia_url ?: ($p->website_url ?: 'https://shopee.co.id')),
+                        'price' => (float) $p->price,
+                        'category' => $p->category ?? '',
+                        // CW-09: tidak ada gambar contoh bila produk belum punya.
+                        'image' => $pImage ?: '',
+                        'rating' => (string) ($p->rating ?? ''),
+                        'sold' => $p->sold_count ? ((string) $p->sold_count) : '',
+                        'link' => $p->shopee_url ?: ($p->tokopedia_url ?: ''),
                     ];
                 })->values(),
             ];

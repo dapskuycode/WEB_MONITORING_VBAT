@@ -15,14 +15,16 @@ class SponsorTierSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Create 6 Tiers
+        // 1. Create Tiers — Free adalah tier paling bawah (TIER-02).
+        //    Free tidak memiliki badge; badge adalah hak tier berbayar.
         $tiers = [
-            ['slug' => 'kontribusi', 'name' => 'Kontribusi', 'badge_label' => 'Kontributor', 'sort_order' => 10],
-            ['slug' => 'bronze', 'name' => 'Bronze', 'badge_label' => 'Bronze Partner', 'sort_order' => 20],
-            ['slug' => 'silver', 'name' => 'Silver', 'badge_label' => 'Silver Official', 'sort_order' => 30],
-            ['slug' => 'gold', 'name' => 'Gold', 'badge_label' => 'Gold Brand', 'sort_order' => 40],
-            ['slug' => 'platinum', 'name' => 'Platinum', 'badge_label' => 'Platinum Premier', 'sort_order' => 50],
-            ['slug' => 'diamond', 'name' => 'Diamond', 'badge_label' => 'Diamond Title Partner', 'sort_order' => 60],
+            ['slug' => 'free', 'name' => 'Free', 'badge_label' => '', 'badge_color' => '#64748B', 'sort_order' => 5],
+            ['slug' => 'kontribusi', 'name' => 'Kontribusi', 'badge_label' => 'Kontributor', 'badge_color' => '#0284C7', 'sort_order' => 10],
+            ['slug' => 'bronze', 'name' => 'Bronze', 'badge_label' => 'Bronze Partner', 'badge_color' => '#A0522D', 'sort_order' => 20],
+            ['slug' => 'silver', 'name' => 'Silver', 'badge_label' => 'Silver Official', 'badge_color' => '#718096', 'sort_order' => 30],
+            ['slug' => 'gold', 'name' => 'Gold', 'badge_label' => 'Gold Brand', 'badge_color' => '#FD761A', 'sort_order' => 40],
+            ['slug' => 'platinum', 'name' => 'Platinum', 'badge_label' => 'Platinum Premier', 'badge_color' => '#6C5CE7', 'sort_order' => 50],
+            ['slug' => 'diamond', 'name' => 'Diamond', 'badge_label' => 'Diamond Title Partner', 'badge_color' => '#00B4D8', 'sort_order' => 60],
         ];
 
         $tierModels = [];
@@ -33,7 +35,7 @@ class SponsorTierSeeder extends Seeder
             );
         }
 
-        // 2. Create 14 Benefit Categories
+        // 2. Create 14 Benefit Categories (BEN-01: kategori lama dihapus oleh migration cleanup)
         $categories = [
             [
                 'slug' => 'kuota_produk',
