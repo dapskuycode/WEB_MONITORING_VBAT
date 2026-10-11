@@ -18,10 +18,78 @@ new class extends Component
     public $showLogoModal = false;
     public $logoSuccessMessage = '';
 
+    // WM-02: profil sponsor dapat diubah oleh sponsor untuk akunnya sendiri.
+    public $description = '';
+    public $website_url = '';
+    public $marketplace_url = '';
+    public $showProfileModal = false;
+
+    // WR-02: gambar header halaman sponsor.
+    public $headerImage;
+    public $showHeaderModal = false;
+    public $headerSuccessMessage = '';
+
     public function mount()
     {
         $user = Auth::user();
         $this->sponsor = $user?->sponsor ?? Sponsor::first();
+
+        if ($this->sponsor) {
+            $this->description = $this->sponsor->description ?? '';
+            $this->website_url = $this->sponsor->website_url ?? '';
+            $this->marketplace_url = $this->sponsor->marketplace_url ?? '';
+        }
+    }
+
+    /** WM-02: simpan profil sponsor (deskripsi, website, marketplace). */
+    public function saveProfile()
+    {
+        if (! $this->sponsor) {
+            return;
+        }
+
+        $this->validate([
+            'description' => 'nullable|string|max:1000',
+            'website_url' => 'nullable|url',
+            'marketplace_url' => 'nullable|url',
+        ], [
+            'website_url.url' => 'Format tautan website tidak valid.',
+            'marketplace_url.url' => 'Format tautan marketplace tidak valid.',
+        ]);
+
+        $this->sponsor->update([
+            'description' => $this->description,
+            'website_url' => $this->website_url,
+            'marketplace_url' => $this->marketplace_url,
+        ]);
+        $this->sponsor->refresh();
+
+        $this->showProfileModal = false;
+        $this->logoSuccessMessage = 'Profil sponsor berhasil diperbarui!';
+    }
+
+    /** WR-02: unggah gambar header halaman sponsor. */
+    public function saveHeaderImage()
+    {
+        $this->validate([
+            'headerImage' => 'required|image|mimes:jpeg,png,jpg,webp|max:4096',
+        ], [
+            'headerImage.image' => 'Berkas harus berupa gambar valid (JPG, PNG, atau WEBP).',
+            'headerImage.mimes' => 'Format gambar header hanya JPG, PNG, atau WEBP.',
+            'headerImage.max' => 'Ukuran gambar header maksimal 4MB.',
+        ]);
+
+        if (! $this->sponsor) {
+            return;
+        }
+
+        $path = $this->headerImage->store('sponsors/headers', 'public');
+        $this->sponsor->update(['header_image_url' => $path]);
+        $this->sponsor->refresh();
+
+        $this->reset('headerImage');
+        $this->showHeaderModal = false;
+        $this->headerSuccessMessage = 'Gambar header berhasil diperbarui!';
     }
 
     public function updatedLogo()
@@ -159,6 +227,12 @@ new class extends Component
                 </div>
                 <div class="flex items-center gap-3 mt-1 text-xs text-zinc-400">
                     <span>Dashboard analitik performa iklan & katalog produk khusus mitra {{ $sponsor?->name }}</span>
+                    <button type="button" wire:click="$set('showProfileModal', true)" class="text-blue-400 hover:underline font-semibold flex items-center gap-1">
+                        Ubah Profil
+                    </button>
+                    <button type="button" wire:click="$set('showHeaderModal', true)" class="text-blue-400 hover:underline font-semibold flex items-center gap-1">
+                        Gambar Header
+                    </button>
                     <button type="button" wire:click="$set('showLogoModal', true)" class="text-blue-400 hover:underline font-semibold flex items-center gap-1">
                         <flux:icon name="arrow-up-tray" class="w-3 h-3" />
                         <span>Upload Logo</span>
@@ -423,6 +497,78 @@ new class extends Component
                     <button type="button" wire:click="saveLogo" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-sm transition disabled:opacity-50">
                         Simpan Logo
                     </button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- WM-02: modal ubah profil sponsor --}}
+    @if ($showProfileModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+                <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                    <h2 class="text-base font-bold text-white">Ubah Profil Sponsor</h2>
+                    <button wire:click="$set('showProfileModal', false)" class="text-zinc-400 hover:text-white font-bold">✕</button>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-300 mb-1">Deskripsi Singkat</label>
+                        <textarea wire:model="description" rows="3" class="w-full px-3 py-2 text-sm rounded-xl bg-zinc-950 border border-zinc-700 text-white" placeholder="Ceritakan singkat tentang toko Anda"></textarea>
+                        @error('description') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-300 mb-1">Website Resmi</label>
+                        <input type="url" wire:model="website_url" class="w-full px-3 py-2 text-sm rounded-xl bg-zinc-950 border border-zinc-700 text-white" placeholder="https://website-toko.com">
+                        @error('website_url') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-300 mb-1">Tautan Marketplace (Shopee / Tokopedia)</label>
+                        <input type="url" wire:model="marketplace_url" class="w-full px-3 py-2 text-sm rounded-xl bg-zinc-950 border border-zinc-700 text-white" placeholder="https://shopee.co.id/nama-toko">
+                        @error('marketplace_url') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                        <span class="text-[11px] text-zinc-500 mt-1 block">Tombol di aplikasi hanya muncul untuk tautan yang terisi.</span>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-zinc-800">
+                    <button type="button" wire:click="$set('showProfileModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition">Batal</button>
+                    <button type="button" wire:click="saveProfile" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-sm transition disabled:opacity-50">Simpan Profil</button>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- WR-02: modal unggah gambar header --}}
+    @if ($showHeaderModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+                <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                    <h2 class="text-base font-bold text-white">Gambar Header Halaman Sponsor</h2>
+                    <button wire:click="$set('showHeaderModal', false)" class="text-zinc-400 hover:text-white font-bold">✕</button>
+                </div>
+
+                <p class="text-xs text-zinc-400">
+                    Gambar ini menjadi latar bagian atas halaman sponsor Anda. Bila dikosongkan, halaman memakai warna aplikasi.
+                </p>
+
+                <div class="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-950/60">
+                    <div class="w-full h-20 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center overflow-hidden mb-3">
+                        @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
+                            <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
+                        @elseif ($sponsor?->header_image_url)
+                            <img src="{{ asset('storage/' . $sponsor->header_image_url) }}" alt="Header Saat Ini" class="w-full h-full object-cover">
+                        @else
+                            <span class="text-xs font-bold text-zinc-500">BELUM ADA GAMBAR</span>
+                        @endif
+                    </div>
+                    <input type="file" wire:model="headerImage" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-zinc-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+                    <span class="text-[11px] text-zinc-500 mt-2">Format: JPG, PNG, atau WEBP (Maksimal 4MB)</span>
+                    @error('headerImage') <span class="text-xs text-rose-500 font-medium mt-1">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-zinc-800">
+                    <button type="button" wire:click="$set('showHeaderModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition">Batal</button>
+                    <button type="button" wire:click="saveHeaderImage" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-sm transition disabled:opacity-50">Simpan Gambar Header</button>
                 </div>
             </div>
         </div>
