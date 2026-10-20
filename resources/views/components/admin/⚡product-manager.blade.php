@@ -180,25 +180,7 @@ new class extends Component
 ?>
 
 <div class="space-y-6 text-[#212121]">
-    <!-- Page Header: Title + Description + Primary Action Button -->
-    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-2">
-        <div>
-            <h1 class="text-xl font-bold text-[#212121] dark:text-zinc-100">Manajemen & Upload Produk Part Mitra</h1>
-            <p class="text-sm text-[#828282] mt-1">Kelola katalog produk spare part dari semua mitra sponsor resmi VBAT</p>
-        </div>
-        <button 
-            type="button"
-            wire:click="openCreateModal" 
-            class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors cursor-pointer shrink-0"
-        >
-            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            <span>Upload Produk Baru</span>
-        </button>
-    </div>
-
-    <!-- Search & Filter Bar: Clean utility bar (search + sponsor filter only) -->
+    <!-- Search & Filter Bar with Upload Button -->
     <div class="p-3.5 sm:p-4 bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-3">
         <!-- Search Input with Magnifying Glass -->
         <div class="relative flex-1">
@@ -215,8 +197,8 @@ new class extends Component
             >
         </div>
 
-        <!-- Filter Sponsor -->
-        <div class="shrink-0">
+        <!-- Filter Sponsor + Upload Button -->
+        <div class="flex items-center gap-2.5 shrink-0">
             <select 
                 wire:model.live="sponsorFilter" 
                 class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
@@ -226,6 +208,17 @@ new class extends Component
                     <option value="{{ $sp->id }}">{{ $sp->name }}</option>
                 @endforeach
             </select>
+
+            <button 
+                type="button"
+                wire:click="openCreateModal" 
+                class="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer"
+            >
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span>Upload Produk Baru</span>
+            </button>
         </div>
     </div>
 
