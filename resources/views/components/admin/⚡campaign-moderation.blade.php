@@ -202,20 +202,23 @@ new class extends Component
                                 <p class="text-xs text-[#828282] mt-0.5">{{ $camp->created_at->format('d/m/Y') }}</p>
                             </td>
 
-                            <!-- Column 4: Status Badge -->
+                            <!-- Column 4: Status Icon -->
                             <td class="px-5 py-4">
                                 @if ($camp->status === 'pending')
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                        Pending
-                                    </span>
+                                    <div class="flex items-center gap-1.5">
+                                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span class="text-xs font-semibold text-amber-600">Pending</span>
+                                    </div>
                                 @elseif ($camp->status === 'approved')
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                        Disetujui
-                                    </span>
+                                    <div class="flex items-center gap-1.5">
+                                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span class="text-xs font-semibold text-emerald-600">Disetujui</span>
+                                    </div>
                                 @else
-                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                        Ditolak
-                                    </span>
+                                    <div class="flex items-center gap-1.5">
+                                        <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l-2-2m0 0l-2-2m2 2l2-2m-2 2l-2 2m8-8a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span class="text-xs font-semibold text-rose-600">Ditolak</span>
+                                    </div>
                                 @endif
                             </td>
 
