@@ -41,11 +41,12 @@ new class extends Component
 
     public function loadData()
     {
-        $this->sponsors = Sponsor::orderByRaw("CASE WHEN LOWER(slug) = 'quantum' OR LOWER(name) = 'quantum' THEN 0 ELSE 1 END")
+        $this->sponsors = Sponsor::with('sponsorTier')
+            ->orderByRaw("CASE WHEN LOWER(slug) = 'quantum' OR LOWER(name) = 'quantum' THEN 0 ELSE 1 END")
             ->orderBy('name')
             ->get();
 
-        $query = SponsorProduct::with('sponsor')->latest();
+        $query = SponsorProduct::with(['sponsor.sponsorTier'])->latest();
 
         if (!empty($this->search)) {
             $query->where(function($q) {
@@ -178,35 +179,49 @@ new class extends Component
 };
 ?>
 
-<div class="space-y-6">
-    <!-- Header Page -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-700 pb-5">
+<div class="space-y-6 text-[#212121]">
+    <!-- Page Header: Title + Description + Primary Action Button -->
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 pb-2">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-                <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                Manajemen & Upload Produk Part Mitra
-            </h1>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                Kelola katalog suku cadang & peralatan teknisi ponsel, upload foto produk, atur diskon, dan hubungkan tautan marketplace resmi mitra sponsor.
-            </p>
+            <h1 class="text-xl font-bold text-[#212121] dark:text-zinc-100">Manajemen & Upload Produk Part Mitra</h1>
+            <p class="text-sm text-[#828282] mt-1">Kelola katalog produk spare part dari semua mitra sponsor resmi VBAT</p>
         </div>
-        <button wire:click="openCreateModal" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition cursor-pointer">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Upload Produk Baru
+        <button 
+            type="button"
+            wire:click="openCreateModal" 
+            class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors cursor-pointer shrink-0"
+        >
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            <span>Upload Produk Baru</span>
         </button>
     </div>
 
-    <!-- Filter & Pencarian -->
-    <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div class="relative w-full sm:w-80">
-            <input wire:model.live.debounce.300ms="search" type="text" placeholder="Cari nama part, deskripsi..." class="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white">
-            <svg class="w-4 h-4 text-zinc-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    <!-- Search & Filter Bar: Clean utility bar (search + sponsor filter only) -->
+    <div class="p-3.5 sm:p-4 bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <!-- Search Input with Magnifying Glass -->
+        <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+            </div>
+            <input 
+                type="text" 
+                wire:model.live.debounce.250ms="search" 
+                placeholder="Cari nama part..." 
+                class="w-full pl-10 pr-4 py-2 text-sm text-[#212121] dark:text-zinc-100 placeholder-slate-400 bg-slate-50/70 dark:bg-zinc-800/60 rounded-lg border border-slate-200 dark:border-zinc-700 focus:outline-none focus:bg-white dark:focus:bg-zinc-800 focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all"
+            >
         </div>
 
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-            <label class="text-xs font-medium text-zinc-500 dark:text-zinc-400 whitespace-nowrap">Filter Sponsor:</label>
-            <select wire:model.live="sponsorFilter" class="w-full sm:w-56 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white">
-                <option value="">Semua Mitra Sponsor</option>
+        <!-- Filter Sponsor -->
+        <div class="shrink-0">
+            <select 
+                wire:model.live="sponsorFilter" 
+                class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
+            >
+                <option value="">Filter Sponsor: Semua Mitra Sponsor</option>
                 @foreach($sponsors as $sp)
                     <option value="{{ $sp->id }}">{{ $sp->name }}</option>
                 @endforeach
@@ -214,117 +229,169 @@ new class extends Component
         </div>
     </div>
 
-    <!-- Tabel Produk -->
-    <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+    <!-- Data Table - Clean Enterprise Content Card (border-radius: 12px, soft enterprise shadow) -->
+    <div class="bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm table-fixed">
-                <thead class="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 font-semibold border-b border-zinc-200 dark:border-zinc-800">
-                    <tr>
-                        <th class="px-5 py-3.5 w-5/12">Produk Part</th>
-                        <th class="px-5 py-3.5 w-2/12">Mitra Sponsor</th>
-                        <th class="px-5 py-3.5 w-2/12">Harga & Diskon</th>
-                        <th class="px-5 py-3.5 w-2/12">Marketplace</th>
-                        <th class="px-5 py-3.5 w-20 text-center">Status</th>
-                        <th class="px-5 py-3.5 w-20 text-right">Aksi</th>
+            <table class="w-full text-left text-xs">
+                <thead>
+                    <tr class="border-b border-slate-200/80 dark:border-zinc-800 bg-[#F8F9FA] dark:bg-zinc-800/40 text-[11px] font-bold text-[#828282] uppercase tracking-wider">
+                        <th class="px-5 py-3.5">Produk Part</th>
+                        <th class="px-5 py-3.5">Mitra Sponsor</th>
+                        <th class="px-5 py-3.5">Harga & Diskon</th>
+                        <th class="px-5 py-3.5">Marketplace</th>
+                        <th class="px-5 py-3.5 text-center">Status</th>
+                        <th class="px-5 py-3.5 text-right">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800">
+                <tbody class="divide-y divide-slate-100 dark:divide-zinc-800/60">
                     @forelse($products as $prod)
                     @php
                         $displayImg = $prod->image_path;
                         if ($displayImg && !str_starts_with($displayImg, 'http') && !str_starts_with($displayImg, 'assets/')) {
                             $displayImg = asset('storage/' . $displayImg);
                         }
+                        $tierName = strtolower($prod->sponsor?->sponsorTier?->slug ?? $prod->sponsor?->tier ?? 'kontribusi');
+                        $tierLabel = strtoupper($prod->sponsor?->sponsorTier?->name ?? $prod->sponsor?->tier ?? 'KONTRIBUSI');
                     @endphp
-                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition">
-                        <td class="px-5 py-4 w-5/12">
+                    <tr class="hover:bg-slate-50/70 dark:hover:bg-zinc-800/30 transition-colors">
+                        <!-- Column 1: Produk Part (Thumbnail + ONLY Product Name) -->
+                        <td class="px-5 py-3.5">
                             <div class="flex items-center gap-3">
-                                <div style="width: 52px; height: 52px; min-width: 52px; max-width: 52px; min-height: 52px; max-height: 52px;" class="rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shrink-0 flex items-center justify-center">
-                                    @if($displayImg && str_starts_with($displayImg, 'http'))
-                                        <img src="{{ $displayImg }}" alt="{{ $prod->name }}" style="width: 52px; height: 52px; min-width: 52px; max-width: 52px; min-height: 52px; max-height: 52px; object-fit: cover; display: block;" class="rounded-lg">
+                                <div class="w-10 h-10 rounded-[8px] overflow-hidden bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shrink-0 flex items-center justify-center">
+                                    @if($displayImg)
+                                        <img src="{{ $displayImg }}" alt="{{ $prod->name }}" class="w-full h-full object-cover">
                                     @else
-                                        <div class="flex flex-col items-center justify-center text-zinc-400 text-xs p-1 text-center">
-                                            <svg class="w-6 h-6 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        <div class="w-full h-full flex items-center justify-center text-slate-400">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+                                            </svg>
                                         </div>
                                     @endif
                                 </div>
-                                <div class="min-w-0 flex-1">
-                                    <div class="font-bold text-zinc-900 dark:text-white truncate" title="{{ $prod->name }}">{{ $prod->name }}</div>
-                                    <div class="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5" title="{{ $prod->description }}">{{ $prod->description ?: 'Tanpa deskripsi' }}</div>
-                                    <div class="flex items-center gap-2 mt-1 flex-wrap">
-                                        <span class="text-[10px] text-zinc-400 font-mono truncate max-w-[120px]">Slug: {{ $prod->slug }}</span>
-                                        @if($prod->is_featured)
-                                            <span class="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-[10px] font-bold">★ Unggulan</span>
-                                        @endif
-                                    </div>
+                                <span class="font-semibold text-[#212121] dark:text-zinc-100 line-clamp-1" title="{{ $prod->name }}">
+                                    {{ $prod->name }}
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- Column 2: Mitra Sponsor (Sponsor Name + Pastel Badge for Tier) -->
+                        <td class="px-5 py-3.5">
+                            <div>
+                                <span class="font-medium text-[#212121] dark:text-zinc-200 block truncate max-w-[180px]">
+                                    {{ $prod->sponsor?->name ?? 'Tanpa Sponsor' }}
+                                </span>
+                                <span class="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full tracking-wider
+                                    @if($tierName === 'diamond' || $tierName === 'platinum') bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300
+                                    @elseif($tierName === 'gold') bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300
+                                    @elseif($tierName === 'silver') bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300
+                                    @elseif($tierName === 'bronze') bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300
+                                    @else bg-blue-50 text-[#1a68f0] dark:bg-blue-950/40 dark:text-blue-300 @endif">
+                                    {{ $tierLabel }}
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- Column 3: Harga & Diskon (Promo price bold, strikethrough original + clean discount badge) -->
+                        <td class="px-5 py-3.5 whitespace-nowrap">
+                            @if($prod->discount_price && $prod->discount_price < $prod->price)
+                                @php
+                                    $pct = round((($prod->price - $prod->discount_price) / $prod->price) * 100);
+                                @endphp
+                                <div class="font-bold text-[#212121] dark:text-zinc-100">
+                                    Rp {{ number_format($prod->discount_price, 0, ',', '.') }}
                                 </div>
-                            </div>
-                        </td>
-                        <td class="px-5 py-4 w-2/12">
-                            <span class="font-medium text-zinc-800 dark:text-zinc-200 block truncate" title="{{ $prod->sponsor?->name }}">{{ $prod->sponsor?->name ?? 'Tanpa Sponsor' }}</span>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider inline-block mt-1
-                                @if(($prod->sponsor?->tier ?? '') === 'platinum') bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300
-                                @elseif(($prod->sponsor?->tier ?? '') === 'gold') bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
-                                @else bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 @endif">
-                                {{ $prod->sponsor?->tier ?? 'PARTNER' }}
-                            </span>
-                        </td>
-                        <td class="px-5 py-4 w-2/12">
-                            <div class="font-semibold text-zinc-900 dark:text-white whitespace-nowrap">
-                                Rp{{ number_format($prod->price, 0, ',', '.') }}
-                            </div>
-                            @if($prod->discount_price)
-                                <div class="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1 mt-0.5 whitespace-nowrap">
-                                    <span>Promo: Rp{{ number_format($prod->discount_price, 0, ',', '.') }}</span>
-                                    <span class="px-1 rounded bg-emerald-100 dark:bg-emerald-900/40 text-[10px] font-bold">
-                                        -{{ round((($prod->price - $prod->discount_price) / $prod->price) * 100) }}%
+                                <div class="flex items-center gap-1.5 mt-0.5 text-[11px]">
+                                    <span class="line-through text-[#828282]">
+                                        Rp {{ number_format($prod->price, 0, ',', '.') }}
                                     </span>
+                                    <span class="px-1.5 py-0.2 rounded-md bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 font-bold text-[10px]">
+                                        -{{ $pct }}%
+                                    </span>
+                                </div>
+                            @else
+                                <div class="font-bold text-[#212121] dark:text-zinc-100">
+                                    Rp {{ number_format($prod->price, 0, ',', '.') }}
                                 </div>
                             @endif
                         </td>
-                        <td class="px-5 py-4 w-2/12">
-                            <div class="flex items-center gap-1.5 flex-wrap">
+
+                        <!-- Column 4: Marketplace (Subtle pill-shaped badges) -->
+                        <td class="px-5 py-3.5 whitespace-nowrap">
+                            <div class="flex items-center gap-1.5">
                                 @if($prod->shopee_url)
-                                    <a href="{{ $prod->shopee_url }}" target="_blank" class="px-2 py-1 rounded-md bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 text-xs font-semibold hover:underline flex items-center gap-1 shrink-0" title="Buka Shopee">
+                                    <a href="{{ $prod->shopee_url }}" 
+                                       target="_blank" 
+                                       rel="noopener noreferrer"
+                                       class="inline-flex items-center px-2.5 py-0.5 rounded-full border border-orange-200 bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800 text-[11px] font-medium hover:bg-orange-100 transition-colors"
+                                       title="Buka Toko Shopee">
                                         Shopee
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                     </a>
                                 @endif
+
                                 @if($prod->tokopedia_url)
-                                    <a href="{{ $prod->tokopedia_url }}" target="_blank" class="px-2 py-1 rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 text-xs font-semibold hover:underline flex items-center gap-1 shrink-0" title="Buka Tokopedia">
+                                    <a href="{{ $prod->tokopedia_url }}" 
+                                       target="_blank" 
+                                       rel="noopener noreferrer"
+                                       class="inline-flex items-center px-2.5 py-0.5 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 text-[11px] font-medium hover:bg-emerald-100 transition-colors"
+                                       title="Buka Toko Tokopedia">
                                         Tokopedia
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                     </a>
                                 @endif
+
                                 @if(!$prod->shopee_url && !$prod->tokopedia_url)
-                                    <span class="text-xs text-zinc-400">-</span>
+                                    <span class="text-[11px] text-[#828282] italic">-</span>
                                 @endif
                             </div>
                         </td>
-                        <td class="px-5 py-4 w-20 text-center whitespace-nowrap">
-                            <button wire:click="toggleStatus({{ $prod->id }})" class="cursor-pointer">
-                                @if($prod->is_active)
-                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">Aktif</span>
-                                @else
-                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">Nonaktif</span>
-                                @endif
+
+                        <!-- Column 5: Status (Pastel green badge, dark green text for Aktif, identical to Sponsor Manager) -->
+                        <td class="px-5 py-3.5 text-center whitespace-nowrap">
+                            <button wire:click="toggleStatus({{ $prod->id }})" 
+                                    type="button"
+                                    class="px-2.5 py-1 text-xs font-semibold rounded-full border transition-colors inline-flex items-center gap-1.5 cursor-pointer {{ $prod->is_active ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700' }}"
+                                    title="Klik untuk ubah status">
+                                <span class="w-1.5 h-1.5 rounded-full {{ $prod->is_active ? 'bg-emerald-600' : 'bg-slate-400' }}"></span>
+                                <span>{{ $prod->is_active ? 'Aktif' : 'Nonaktif' }}</span>
                             </button>
                         </td>
-                        <td class="px-5 py-4 w-20 text-right whitespace-nowrap">
-                            <div class="flex items-center justify-end gap-2">
-                                <button wire:click="editProduct({{ $prod->id }})" class="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition cursor-pointer" title="Edit Produk">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+
+                        <!-- Column 6: Aksi (Clean, consistent minimal action buttons identical to Sponsor Manager) -->
+                        <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <!-- Edit Button -->
+                                <button wire:click="editProduct({{ $prod->id }})" 
+                                        type="button"
+                                        class="p-1.5 text-slate-400 hover:text-[#1a68f0] hover:bg-blue-50 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer" 
+                                        title="Edit Produk">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/>
+                                    </svg>
                                 </button>
-                                <button wire:confirm="Hapus produk ini dari katalog?" wire:click="deleteProduct({{ $prod->id }})" class="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition cursor-pointer" title="Hapus Produk">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                <!-- Delete Button -->
+                                <button wire:confirm="Hapus produk ini dari katalog part?" 
+                                        wire:click="deleteProduct({{ $prod->id }})" 
+                                        type="button"
+                                        class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-zinc-800 rounded-lg transition-colors cursor-pointer" 
+                                        title="Hapus Produk">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
+                                    </svg>
                                 </button>
                             </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-5 py-12 text-center text-zinc-500 dark:text-zinc-400">
-                            Belum ada produk part yang diupload. Klik "Upload Produk Baru" di atas.
+                        <td colspan="6" class="px-5 py-16 text-center text-slate-400">
+                            <div class="max-w-xs mx-auto space-y-2">
+                                <div class="w-12 h-12 rounded-full bg-slate-50 dark:bg-zinc-800 flex items-center justify-center mx-auto text-slate-400">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/>
+                                    </svg>
+                                </div>
+                                <p class="text-sm font-semibold text-[#212121] dark:text-zinc-100">Belum ada produk part</p>
+                                <p class="text-xs text-slate-400">Data katalog part tidak ditemukan atau belum ditambahkan oleh mitra sponsor.</p>
+                            </div>
                         </td>
                     </tr>
                     @endforelse
@@ -333,133 +400,187 @@ new class extends Component
         </div>
     </div>
 
-    <!-- Modal Form Create / Edit Produk -->
+    <!-- Modal Form Create / Edit Produk (Enterprise Light Mode Dialog) -->
     @if($showModal)
-    <div class="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-zinc-900 rounded-2xl max-w-2xl w-full border border-zinc-200 dark:border-zinc-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
-                <h3 class="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                    {{ $editingId ? 'Edit Data Produk Part' : 'Upload Produk Part Baru' }}
-                </h3>
-                <button wire:click="$set('showModal', false)" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    <div class="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 transition-all"
+         x-data
+         @keydown.escape.window="$wire.set('showModal', false)">
+        <div class="bg-white rounded-[16px] max-w-xl w-full border border-[#E0E0E0] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-[#212121] animate-in fade-in zoom-in-95 duration-150">
+            
+            <!-- 1. Sticky Header -->
+            <div class="sticky top-0 z-10 bg-white px-6 py-4 flex items-center justify-between border-b border-[#E0E0E0]">
+                <div>
+                    <h2 class="text-base font-bold text-[#212121]">
+                        {{ $editingId ? 'Edit Data Produk Part' : 'Upload Produk Part Baru' }}
+                    </h2>
+                    <p class="text-xs text-[#828282] mt-0.5">Lengkapi spesifikasi, harga promo, dan link marketplace resmi</p>
+                </div>
+                <button type="button" 
+                        wire:click="$set('showModal', false)" 
+                        class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-zinc-100 transition-colors">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
                 </button>
             </div>
 
-            <form wire:submit.prevent="save" class="p-6 space-y-4">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- 2. Scrollable Body -->
+            <form wire:submit.prevent="save" id="productForm" class="flex-1 overflow-y-auto p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                        <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Mitra Sponsor *</label>
-                        <select wire:model="sponsor_id" class="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white">
-                            <option value="">-- Pilih Mitra Sponsor / Toko --</option>
-                            @foreach($sponsors as $sp)
-                                <option value="{{ $sp->id }}">
-                                    {{ $sp->name }} @if(strtolower($sp->slug) === 'quantum' || strtolower($sp->name) === 'quantum') ★ (Toko Resmi Admin - Quantum) @else ({{ strtoupper($sp->tier) }}) @endif
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('sponsor_id') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Mitra Sponsor <span class="text-rose-500">*</span></label>
+                        <div class="relative">
+                            <select wire:model="sponsor_id" 
+                                    class="w-full appearance-none pl-3.5 pr-9 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all cursor-pointer">
+                                <option value="">-- Pilih Mitra Sponsor --</option>
+                                @foreach($sponsors as $sp)
+                                    <option value="{{ $sp->id }}">
+                                        {{ $sp->name }} @if(strtolower($sp->slug) === 'quantum' || strtolower($sp->name) === 'quantum') ★ (Toko Resmi Quantum) @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#828282]">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
+                                </svg>
+                            </div>
+                        </div>
+                        @error('sponsor_id') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Nama Produk Part *</label>
-                        <input wire:model="name" type="text" placeholder="Contoh: Solder Listrik T12 Digital Auto Sleep" class="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white">
-                        @error('name') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Nama Produk Part <span class="text-rose-500">*</span></label>
+                        <input wire:model="name" 
+                               type="text" 
+                               placeholder="Contoh: Solder Listrik T12 Digital" 
+                               class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                        @error('name') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Deskripsi Produk</label>
-                    <textarea wire:model="description" rows="2" placeholder="Spesifikasi atau keunggulan part..." class="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white"></textarea>
-                    @error('description') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
+                    <label class="block text-xs font-semibold text-[#212121] mb-1.5">Deskripsi Produk Part</label>
+                    <textarea wire:model="description" 
+                              rows="2" 
+                              placeholder="Spesifikasi atau keunggulan part..." 
+                              class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all resize-none"></textarea>
+                    @error('description') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                        <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Harga Normal (Rp) *</label>
-                        <input wire:model="price" type="number" placeholder="Contoh: 389000" class="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white">
-                        @error('price') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Harga Promo / Diskon (Opsional)</label>
-                        <input wire:model="discount_price" type="number" placeholder="Contoh: 330000" class="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white">
-                        @error('discount_price') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
-                    </div>
-                </div>
-
-                <!-- Bagian Foto Produk (Bisa Upload File atau Input URL) -->
-                <div class="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 space-y-3">
-                    <label class="block text-xs font-bold text-zinc-900 dark:text-white">Foto Produk Part</label>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <span class="text-xs text-zinc-500 block mb-1">Opsi A: Upload File (PNG/JPG/WebP max 3MB)</span>
-                            <input wire:model="imageFile" type="file" accept="image/*" class="w-full text-xs text-zinc-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                            @error('imageFile') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
-                        </div>
-
-                        <div>
-                            <span class="text-xs text-zinc-500 block mb-1">Opsi B: Atau Input Link URL Foto Langsung</span>
-                            <input wire:model="image_url" type="text" placeholder="https://images.unsplash.com/..." class="w-full px-3 py-1.5 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white">
-                            @error('image_url') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
-                        </div>
-                    </div>
-
-                    <!-- Image Preview -->
-                    @if($imageFile)
-                        <div class="flex items-center gap-2 pt-2">
-                            <span class="text-xs text-emerald-600 font-medium">Preview File yang akan diupload:</span>
-                            <img src="{{ $imageFile->temporaryUrl() }}" class="w-12 h-12 object-cover rounded-lg border border-zinc-200">
-                        </div>
-                    @elseif($image_url)
-                        <div class="flex items-center gap-2 pt-2">
-                            <span class="text-xs text-blue-600 font-medium">Preview URL:</span>
-                            <img src="{{ $image_url }}" class="w-12 h-12 object-cover rounded-lg border border-zinc-200">
-                        </div>
-                    @elseif($existing_image)
-                        <div class="flex items-center gap-2 pt-2">
-                            <span class="text-xs text-zinc-500">Gambar Saat Ini:</span>
-                            <img src="{{ str_starts_with($existing_image, 'http') ? $existing_image : asset('storage/' . $existing_image) }}" class="w-12 h-12 object-cover rounded-lg border border-zinc-200">
-                        </div>
-                    @endif
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Tautan Shopee Produk</label>
-                        <input wire:model="shopee_url" type="url" placeholder="https://shopee.co.id/..." class="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white">
-                        @error('shopee_url') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Harga Normal (Rp) <span class="text-rose-500">*</span></label>
+                        <input wire:model="price" 
+                               type="number" 
+                               placeholder="389000" 
+                               class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                        @error('price') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1">Tautan Tokopedia Produk</label>
-                        <input wire:model="tokopedia_url" type="url" placeholder="https://tokopedia.com/..." class="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none dark:text-white">
-                        @error('tokopedia_url') <span class="text-xs text-red-500">{{ $message }}</span> @enderror
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Harga Promo / Diskon (Opsional)</label>
+                        <input wire:model="discount_price" 
+                               type="number" 
+                               placeholder="330000" 
+                               class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                        @error('discount_price') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
-                <div class="flex items-center gap-6 pt-2">
-                    <label class="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer">
-                        <input wire:model="is_active" type="checkbox" class="w-4 h-4 text-blue-600 rounded">
-                        <span>Aktifkan di Katalog Mobile</span>
+                <!-- Foto Produk Part: Modern Drag-and-Drop Upload Zone -->
+                <div>
+                    <label class="block text-xs font-semibold text-[#212121] mb-1.5">Foto Produk Part</label>
+                    <div class="relative rounded-xl border-2 border-dashed border-[#E0E0E0] hover:border-[#1a68f0]/60 bg-[#F8F9FA] hover:bg-[#EBF3FE]/30 p-4 transition-all">
+                        <input wire:model="imageFile" 
+                               type="file" 
+                               accept="image/png,image/jpeg,image/jpg,image/webp" 
+                               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                        
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 rounded-lg bg-white border border-[#E0E0E0] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
+                                @if($imageFile)
+                                    <img src="{{ $imageFile->temporaryUrl() }}" class="w-full h-full object-cover">
+                                @elseif($existing_image)
+                                    <img src="{{ str_starts_with($existing_image, 'http') ? $existing_image : asset('storage/' . $existing_image) }}" class="w-full h-full object-cover">
+                                @else
+                                    <div class="w-full h-full flex flex-col items-center justify-center text-[#1a68f0] bg-[#EBF3FE]/60">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+                                        </svg>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5 text-xs font-semibold text-[#1a68f0]">
+                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 0 1-.88-7.903A5 5 0 1 1 15.9 6L16 6a5 5 0 0 1 1 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <span>Klik atau seret file foto part ke sini</span>
+                                </div>
+                                <p class="text-[11px] text-[#828282] mt-0.5">JPG, PNG, atau WEBP (maks. 3MB)</p>
+                                <div wire:loading wire:target="imageFile" class="text-[11px] text-[#1a68f0] font-medium mt-1">Mengunggah foto...</div>
+                            </div>
+                        </div>
+                    </div>
+                    @error('imageFile') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Tautan Shopee Produk</label>
+                        <input wire:model="shopee_url" 
+                               type="url" 
+                               placeholder="https://shopee.co.id/..." 
+                               class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                        @error('shopee_url') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Tautan Tokopedia Produk</label>
+                        <input wire:model="tokopedia_url" 
+                               type="url" 
+                               placeholder="https://tokopedia.com/..." 
+                               class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                        @error('tokopedia_url') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <div class="p-3.5 rounded-xl border border-[#E0E0E0] bg-[#F8F9FA] flex items-center justify-between">
+                    <div>
+                        <label for="prod-is-active" class="text-xs font-semibold text-[#212121] cursor-pointer block">
+                            Status Aktif Katalog
+                        </label>
+                        <span class="text-[11px] text-[#828282] block mt-0.5">Produk dapat ditemukan dan dibeli teknisi di aplikasi mobile</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="prod-is-active" wire:model="is_active" class="sr-only peer">
+                        <div class="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a68f0]"></div>
                     </label>
-
-                    <label class="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer">
-                        <input wire:model="is_featured" type="checkbox" class="w-4 h-4 text-amber-500 rounded">
-                        <span>Tandai Sebagai Produk Unggulan</span>
-                    </label>
-                </div>
-
-                <div class="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                    <button type="button" wire:click="$set('showModal', false)" class="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition">
-                        Batal
-                    </button>
-                    <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition">
-                        {{ $editingId ? 'Simpan Perubahan' : 'Upload Produk' }}
-                    </button>
                 </div>
             </form>
+
+            <!-- 3. Sticky Footer -->
+            <div class="sticky bottom-0 z-10 bg-white px-6 py-4 flex items-center justify-end gap-3 border-t border-[#E0E0E0]">
+                <button type="button" 
+                        wire:click="$set('showModal', false)" 
+                        class="px-5 py-2 text-xs font-semibold rounded-xl border border-[#E0E0E0] bg-white text-[#212121] hover:bg-zinc-50 hover:border-zinc-300 transition-colors">
+                    Batal
+                </button>
+                <button type="submit" 
+                        form="productForm"
+                        wire:loading.attr="disabled"
+                        class="px-5 py-2 text-xs font-semibold rounded-xl bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                    <span wire:loading.remove wire:target="save">{{ $editingId ? 'Simpan Perubahan' : 'Upload Produk' }}</span>
+                    <span wire:loading wire:target="save" class="flex items-center gap-1.5">
+                        <svg class="animate-spin -ml-0.5 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        Menyimpan...
+                    </span>
+                </button>
+            </div>
         </div>
     </div>
     @endif

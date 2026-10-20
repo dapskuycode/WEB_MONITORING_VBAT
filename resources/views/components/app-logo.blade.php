@@ -2,16 +2,10 @@
     'sidebar' => false,
 ])
 
-@if($sidebar)
-    <flux:sidebar.brand :name="config('app.name', 'Laravel')" {{ $attributes }}>
-        <x-slot name="logo" class="flex aspect-square size-8 items-center justify-center rounded-md bg-accent-content text-accent-foreground">
-            <x-app-logo-icon class="size-5 fill-current text-white dark:text-black" />
-        </x-slot>
-    </flux:sidebar.brand>
-@else
-    <flux:brand :name="config('app.name', 'Laravel')" {{ $attributes }}>
-        <x-slot name="logo" class="flex aspect-square size-8 items-center justify-center rounded-md bg-accent-content text-accent-foreground">
-            <x-app-logo-icon class="size-5 fill-current text-white dark:text-black" />
-        </x-slot>
-    </flux:brand>
-@endif
+<a href="{{ $attributes->get('href', route('dashboard')) }}" {{ $attributes->merge(['class' => 'flex items-center gap-2.5 select-none focus:outline-none']) }}>
+    <img src="{{ asset('assets/images/vbat_logo_simple.png') }}" alt="VBAT" class="h-8 w-auto object-contain shrink-0" />
+    <div class="flex items-center gap-1 leading-none">
+        <span class="text-xl font-extrabold text-[#1a68f0] tracking-tight">VBAT</span>
+        <span class="text-xl font-extrabold text-[#212121] dark:text-white tracking-tight">Ponsel</span>
+    </div>
+</a>

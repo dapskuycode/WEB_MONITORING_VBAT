@@ -601,86 +601,105 @@ new class extends Component
 ?>
 
 <div class="space-y-6">
-    <!-- Header Page -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-700 pb-5">
-        <div>
-            <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-                <svg class="w-7 h-7 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                Manajemen Sponsor
-            </h1>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                Kelola kartu mitra sponsor, pantau kuota terpakai bulan ini, dan atur matriks benefit 6 tier.
-            </p>
-        </div>
-        @if ($activeTab === 'sponsors')
-            <button wire:click="openTierModal" class="px-4 py-2.5 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-300 dark:border-zinc-600 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition" title="Tambah, ubah nama, warna, dan urutan tier">
-                Kelola Tier
+    <!-- Unified Action/Tab Bar: 4 Inline Items -->
+    <div class="border-b border-slate-200 dark:border-zinc-800 -mt-2">
+        <nav class="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
+            <!-- 1. DAFTAR SPONSOR (Active tab) -->
+            <button 
+                type="button"
+                wire:click="$set('activeTab', 'sponsors')" 
+                class="inline-flex items-center gap-2 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer {{ $activeTab === 'sponsors' ? 'border-[#1a68f0] text-[#1a68f0] dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200' }}"
+            >
+                <span>DAFTAR SPONSOR</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-full font-semibold {{ $activeTab === 'sponsors' ? 'bg-blue-50 text-[#1a68f0] dark:bg-blue-950/50 dark:text-blue-300' : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400' }}">
+                    {{ count($this->sponsors) }}
+                </span>
             </button>
-            <button wire:click="openCreateModal" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Tambah Sponsor Baru
+
+            <!-- 2. KELOLA BENEFIT -->
+            <button 
+                type="button"
+                wire:click="$set('activeTab', 'matrix')" 
+                class="inline-flex items-center gap-2 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer {{ $activeTab === 'matrix' ? 'border-[#1a68f0] text-[#1a68f0] dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200' }}"
+            >
+                <span>KELOLA BENEFIT</span>
             </button>
-        @endif
+
+            <!-- 3. TAMBAH TIER (Inactive secondary button tab) -->
+            <button 
+                type="button"
+                wire:click="openTierModal" 
+                class="inline-flex items-center gap-1.5 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                title="Tambah atau kelola tingkatan tier sponsor"
+            >
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span>TAMBAH TIER</span>
+            </button>
+
+            <!-- 4. TAMBAH SPONSOR BARU (Inactive secondary button tab) -->
+            <button 
+                type="button"
+                wire:click="openCreateModal" 
+                class="inline-flex items-center gap-1.5 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                title="Daftarkan mitra sponsor baru"
+            >
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                </svg>
+                <span>TAMBAH SPONSOR BARU</span>
+            </button>
+        </nav>
     </div>
 
-    <!-- Alert Notifikasi Simpan / Aksi -->
-    @if ($saveSuccessMessage)
-        <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-sm flex items-center justify-between">
-            <div class="flex items-center gap-2 font-medium">
-                <svg class="w-5 h-5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                {{ $saveSuccessMessage }}
-            </div>
-            <button wire:click="$set('saveSuccessMessage', '')" class="text-emerald-600 hover:text-emerald-800 text-xs font-bold">✕ Tutup</button>
-        </div>
-    @endif
-
-    <!-- Tabs Navigasi Utama -->
-    <div class="flex border-b border-zinc-200 dark:border-zinc-800 gap-3">
-        <button wire:click="$set('activeTab', 'sponsors')" class="pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 {{ $activeTab === 'sponsors' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-            Daftar Sponsor (SPONSOR-02)
-            <span class="ml-1 text-xs px-2 py-0.5 rounded-full {{ $activeTab === 'sponsors' ? 'bg-blue-100 text-blue-800' : 'bg-zinc-100 text-zinc-600' }}">{{ count($this->sponsors) }}</span>
-        </button>
-
-        <button wire:click="$set('activeTab', 'matrix')" class="pb-3 px-4 text-sm font-bold border-b-2 transition flex items-center gap-2 {{ $activeTab === 'matrix' ? 'border-blue-600 text-blue-600 dark:text-blue-400' : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400' }}">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
-            Benefit per Tier (SPONSOR-01)
-            <span class="ml-1 text-xs px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 font-semibold">6 Tier × 14 Benefit</span>
-        </button>
-    </div>
-
-    <!-- TAB 1: DAFTAR SPONSOR (SPONSOR-02 CARDS & FILTERS) -->
+    <!-- TAB 1: DAFTAR SPONSOR (Cards & Filters) -->
     @if ($activeTab === 'sponsors')
-        <div class="space-y-4">
-            <!-- Filter & Search Toolbar -->
-            <div class="p-4 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <!-- Search Input -->
+        <div class="space-y-6">
+            <!-- Search & Filter: Clean, full-width white bar -->
+            <div class="p-3.5 sm:p-4 bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <!-- Search Input with Magnifying Glass -->
                 <div class="relative flex-1">
-                    <svg class="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input type="text" wire:model.live.debounce.250ms="search" placeholder="Cari nama sponsor, email, atau no. telepon..." class="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white focus:outline-blue-500">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                        </svg>
+                    </div>
+                    <input 
+                        type="text" 
+                        wire:model.live.debounce.250ms="search" 
+                        placeholder="Cari nama sponsor..." 
+                        class="w-full pl-10 pr-4 py-2 text-sm text-[#212121] dark:text-zinc-100 placeholder-slate-400 bg-slate-50/70 dark:bg-zinc-800/60 rounded-lg border border-slate-200 dark:border-zinc-700 focus:outline-none focus:bg-white dark:focus:bg-zinc-800 focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all"
+                    >
                 </div>
 
-                <!-- Filters -->
-                <div class="flex items-center gap-2 shrink-0">
-                    <select wire:model.live="filterTier" class="px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white font-medium">
+                <!-- Two Clean Dropdown Filters ("Semua Tier", "Semua Status") -->
+                <div class="flex items-center gap-2.5 shrink-0">
+                    <select 
+                        wire:model.live="filterTier" 
+                        class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
+                    >
                         <option value="">Semua Tier</option>
-                        <option value="diamond">👑 Diamond</option>
-                        <option value="platinum">⭐ Platinum</option>
-                        <option value="gold">🥇 Gold</option>
-                        <option value="silver">🥈 Silver</option>
-                        <option value="bronze">🥉 Bronze</option>
-                        <option value="kontribusi">🤝 Kontribusi</option>
+                        <option value="diamond">Diamond</option>
+                        <option value="platinum">Platinum</option>
+                        <option value="gold">Gold</option>
+                        <option value="silver">Silver</option>
+                        <option value="bronze">Bronze</option>
+                        <option value="kontribusi">Kontribusi</option>
                     </select>
 
-                    <select wire:model.live="filterStatus" class="px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white font-medium">
+                    <select 
+                        wire:model.live="filterStatus" 
+                        class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
+                    >
                         <option value="">Semua Status</option>
-                        <option value="1">🟢 Aktif Saja</option>
-                        <option value="0">🔴 Nonaktif Saja</option>
+                        <option value="1">Aktif Saja</option>
+                        <option value="0">Nonaktif Saja</option>
                     </select>
                 </div>
             </div>
 
-            <!-- Kartu Sponsor (Card Grid) -->
+            <!-- Sponsor Cards Grid: Clean white cards with very soft, subtle drop shadows (border-radius: 12px) -->
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                 @forelse ($this->sponsors as $sponsor)
                     @php
@@ -690,74 +709,75 @@ new class extends Component
                         $isUnlimited = is_null($maxQuota);
                         $quotaPercent = (!$isUnlimited && $maxQuota > 0) ? min(100, round(($usedCount / $maxQuota) * 100)) : 0;
                         $isOverQuota = (!$isUnlimited && $usedCount >= $maxQuota);
-
-                        $tierBadgeStyle = match($tSlug) {
-                            'diamond' => 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 border-cyan-300',
-                            'platinum' => 'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-300 border-purple-300',
-                            'gold' => 'bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border-amber-300',
-                            'silver' => 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-300',
-                            'bronze' => 'bg-orange-50 dark:bg-orange-950/40 text-orange-900 dark:text-orange-300 border-orange-300',
-                            default => 'bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border-blue-300',
-                        };
                     @endphp
 
-                    <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-4">
-                        <!-- Top: Logo, Nama, Website & Status Toggle -->
+                    <div class="bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/70 dark:border-zinc-800 p-5 shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] hover:shadow-[0_8px_24px_-6px_rgba(20,40,90,0.08)] transition-all duration-200 flex flex-col justify-between space-y-4">
+                        <!-- Card Header: Sponsor Avatar/Logo, Sponsor Name (Dark text), Clean Status Badge -->
                         <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center gap-3">
-                                <!-- Logo Thumbnail -->
-                                <div class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0">
+                            <div class="flex items-center gap-3.5 min-w-0">
+                                <!-- Sponsor Avatar/Logo -->
+                                <div class="w-12 h-12 rounded-[10px] bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0">
                                     @if ($sponsor->logo_path)
                                         <img src="{{ asset('storage/' . $sponsor->logo_path) }}" alt="{{ $sponsor->name }}" class="w-full h-full object-cover">
                                     @else
-                                        <span class="font-black text-sm text-zinc-500 uppercase">{{ substr($sponsor->name, 0, 2) }}</span>
+                                        <span class="font-bold text-sm text-[#1a68f0] uppercase tracking-wider">{{ substr($sponsor->name, 0, 2) }}</span>
                                     @endif
                                 </div>
 
-                                <div>
-                                    <h3 class="font-bold text-zinc-900 dark:text-white text-base leading-snug line-clamp-1">
+                                <div class="min-w-0 flex-1">
+                                    <!-- Sponsor Name (Dark text) -->
+                                    <h3 class="font-bold text-[#212121] dark:text-zinc-100 text-base leading-snug truncate" title="{{ $sponsor->name }}">
                                         {{ $sponsor->name }}
                                     </h3>
                                     @if ($sponsor->website_url)
-                                        <a href="{{ $sponsor->website_url }}" target="_blank" class="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5 truncate max-w-[160px]">
-                                            <span>Kunjungi Toko</span>
+                                        <a href="{{ $sponsor->website_url }}" target="_blank" class="text-xs text-[#1a68f0] hover:underline flex items-center gap-1 mt-0.5 truncate max-w-[170px]">
+                                            <span>{{ parse_url($sponsor->website_url, PHP_URL_HOST) ?? $sponsor->website_url }}</span>
                                             <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                         </a>
                                     @else
-                                        <span class="text-xs text-zinc-400">Belum ada link toko</span>
+                                        <p class="text-xs text-[#828282] mt-0.5">Mitra Sponsor</p>
                                     @endif
                                 </div>
                             </div>
 
-                            <!-- Status Toggle -->
-                            <button type="button" wire:click="toggleStatus({{ $sponsor->id }})" title="Klik untuk mengaktifkan / menonaktifkan sponsor" class="px-2.5 py-1 text-[11px] font-bold rounded-full border transition flex items-center gap-1.5 shrink-0 {{ $sponsor->is_active ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300' : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-300' }}">
-                                <span class="w-2 h-2 rounded-full {{ $sponsor->is_active ? 'bg-emerald-500' : 'bg-rose-500' }}"></span>
-                                {{ $sponsor->is_active ? 'Aktif' : 'Nonaktif' }}
+                            <!-- Clean Status Badge: pastel green background, dark green text for 'Aktif' -->
+                            <button 
+                                type="button" 
+                                wire:click="toggleStatus({{ $sponsor->id }})" 
+                                title="Klik untuk ubah status aktif/nonaktif" 
+                                class="px-2.5 py-1 text-xs font-semibold rounded-full border transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer {{ $sponsor->is_active ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700' }}"
+                            >
+                                <span class="w-1.5 h-1.5 rounded-full {{ $sponsor->is_active ? 'bg-emerald-600' : 'bg-slate-400' }}"></span>
+                                <span>{{ $sponsor->is_active ? 'Aktif' : 'Nonaktif' }}</span>
                             </button>
                         </div>
 
-                        <!-- Mid 1: Quick Tier Switcher (Single click without leaving page) -->
+                        <!-- Tier Dropdown: A clean, minimal select input showing current tier without heavy borders -->
                         <div class="space-y-1">
-                            <label class="block text-[11px] font-bold text-zinc-500 uppercase tracking-wider">Tiering Sponsor</label>
+                            <label class="block text-[11px] font-semibold text-[#828282] uppercase tracking-wider">Tier Sponsor</label>
                             <div class="relative">
-                                <select wire:change="changeTier({{ $sponsor->id }}, $event.target.value)" class="w-full pl-3 pr-8 py-1.5 text-xs font-bold rounded-xl border {{ $tierBadgeStyle }} bg-white dark:bg-zinc-800 cursor-pointer focus:ring-blue-500 focus:outline-none">
-                                    <option value="diamond" {{ $tSlug === 'diamond' ? 'selected' : '' }}>👑 Diamond (Prioritas #1)</option>
-                                    <option value="platinum" {{ $tSlug === 'platinum' ? 'selected' : '' }}>⭐ Platinum (Top 3)</option>
-                                    <option value="gold" {{ $tSlug === 'gold' ? 'selected' : '' }}>🥇 Gold (Top 5)</option>
-                                    <option value="silver" {{ $tSlug === 'silver' ? 'selected' : '' }}>🥈 Silver (Official)</option>
-                                    <option value="bronze" {{ $tSlug === 'bronze' ? 'selected' : '' }}>🥉 Bronze (Partner)</option>
-                                    <option value="kontribusi" {{ $tSlug === 'kontribusi' ? 'selected' : '' }}>🤝 Kontribusi (Kontributor)</option>
+                                <select 
+                                    wire:change="changeTier({{ $sponsor->id }}, $event.target.value)" 
+                                    class="w-full pl-3 pr-8 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-zinc-700/80 bg-slate-50/60 dark:bg-zinc-800/60 text-[#212121] dark:text-zinc-200 cursor-pointer focus:outline-none focus:border-[#1a68f0] focus:bg-white dark:focus:bg-zinc-800 transition"
+                                >
+                                    <option value="diamond" {{ $tSlug === 'diamond' ? 'selected' : '' }}>Diamond</option>
+                                    <option value="platinum" {{ $tSlug === 'platinum' ? 'selected' : '' }}>Platinum</option>
+                                    <option value="gold" {{ $tSlug === 'gold' ? 'selected' : '' }}>Gold</option>
+                                    <option value="silver" {{ $tSlug === 'silver' ? 'selected' : '' }}>Silver</option>
+                                    <option value="bronze" {{ $tSlug === 'bronze' ? 'selected' : '' }}>Bronze</option>
+                                    <option value="kontribusi" {{ $tSlug === 'kontribusi' ? 'selected' : '' }}>Kontribusi</option>
                                 </select>
                             </div>
                         </div>
 
-                        <!-- Mid 2: Indikator Kuota Terpakai Bulan Ini -->
-                        <div class="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 space-y-2 text-xs">
-                            <div class="flex items-center justify-between">
-                                <span class="text-zinc-600 dark:text-zinc-400 font-medium">Pemakaian Kuota Bulan Ini:</span>
-                                <span class="font-bold {{ $isOverQuota ? 'text-rose-600' : 'text-zinc-900 dark:text-white' }}">
+                        <!-- Quota Progress: A thin, elegant progress bar showing 'Pemakaian Kuota Bulan Ini' -->
+                        <!-- Use primary blue for the fill, light gray for the track (no neon pink or purple) -->
+                        <div class="p-3.5 rounded-xl bg-[#F8F9FA] dark:bg-zinc-800/40 border border-slate-100 dark:border-zinc-800/80 space-y-2">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-[#828282] font-medium">Pemakaian Kuota Bulan Ini</span>
+                                <span class="font-bold text-[#212121] dark:text-zinc-100">
                                     @if ($isUnlimited)
-                                        Terpakai {{ $usedCount }} dari <span class="text-purple-600 font-black">∞ Bebas</span>
+                                        Terpakai {{ $usedCount }} dari <span class="text-[#1a68f0] font-bold">Tak Terbatas</span>
                                     @else
                                         Terpakai {{ $usedCount }} dari {{ $maxQuota }}
                                     @endif
@@ -765,46 +785,63 @@ new class extends Component
                             </div>
 
                             @if (!$isUnlimited && $maxQuota > 0)
-                                <div class="w-full bg-zinc-200 dark:bg-zinc-700 rounded-full h-2 overflow-hidden">
-                                    <div class="h-2 rounded-full transition-all duration-300 {{ $isOverQuota ? 'bg-rose-500' : ($quotaPercent > 80 ? 'bg-amber-500' : 'bg-blue-600') }}" style="width: {{ $quotaPercent }}%"></div>
+                                <div class="w-full bg-slate-200 dark:bg-zinc-700 rounded-full h-1.5 overflow-hidden">
+                                    <div class="h-1.5 rounded-full bg-[#1a68f0] transition-all duration-300" style="width: {{ $quotaPercent }}%"></div>
                                 </div>
                             @elseif ($isUnlimited)
-                                <div class="w-full bg-purple-100 dark:bg-purple-900/30 rounded-full h-2 overflow-hidden">
-                                    <div class="h-2 rounded-full bg-purple-500 w-full"></div>
+                                <div class="w-full bg-blue-100 dark:bg-blue-950/40 rounded-full h-1.5 overflow-hidden">
+                                    <div class="h-1.5 rounded-full bg-[#1a68f0] w-full"></div>
                                 </div>
                             @endif
 
-                            <div class="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400 pt-1 border-t border-zinc-200 dark:border-zinc-700/60">
+                            <!-- Details: 'Akun Portal: email@domain.com' in subtle gray text -->
+                            <div class="flex items-center justify-between text-xs text-[#828282] pt-1.5 border-t border-slate-200/60 dark:border-zinc-700/60">
                                 <span>Akun Portal:</span>
                                 @if ($sponsor->user)
-                                    <span class="font-semibold text-emerald-600 truncate max-w-[150px]">{{ $sponsor->user->email }}</span>
+                                    <span class="font-medium text-[#212121] dark:text-zinc-300 truncate max-w-[170px]" title="{{ $sponsor->user->email }}">{{ $sponsor->user->email }}</span>
                                 @else
-                                    <span class="italic text-zinc-400">Belum ada akun</span>
+                                    <span class="italic text-slate-400">Belum ada akun</span>
                                 @endif
                             </div>
                         </div>
 
-                        <!-- Bottom: Action Buttons -->
-                        <div class="flex items-center justify-between pt-2 border-t border-zinc-200 dark:border-zinc-800 text-xs">
-                            <div class="flex items-center gap-1.5">
-                                <button type="button" wire:click="openDetailModal({{ $sponsor->id }})" class="px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        <!-- Actions (Bottom of card): Clean, minimal buttons for 'Detail' and 'Edit' (outline or light gray fill), and simple trash can icon for delete -->
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-zinc-800/80">
+                            <div class="flex items-center gap-2">
+                                <button 
+                                    type="button" 
+                                    wire:click="openDetailModal({{ $sponsor->id }})" 
+                                    class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-200 dark:hover:bg-zinc-700 transition cursor-pointer"
+                                >
                                     Detail
                                 </button>
-                                <button type="button" wire:click="editSponsor({{ $sponsor->id }})" class="px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-semibold hover:bg-blue-100 transition">
+                                <button 
+                                    type="button" 
+                                    wire:click="editSponsor({{ $sponsor->id }})" 
+                                    class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 transition cursor-pointer"
+                                >
                                     Edit
                                 </button>
                             </div>
 
-                            <button type="button" wire:click="deleteSponsor({{ $sponsor->id }})" wire:confirm="Yakin ingin menghapus mitra sponsor '{{ $sponsor->name }}'?" class="p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-zinc-800 rounded-lg transition" title="Hapus sponsor">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <button 
+                                type="button" 
+                                wire:click="deleteSponsor({{ $sponsor->id }})" 
+                                wire:confirm="Yakin ingin menghapus mitra sponsor '{{ $sponsor->name }}'?" 
+                                class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-zinc-800 rounded-lg transition cursor-pointer" 
+                                title="Hapus sponsor"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                </svg>
                             </button>
                         </div>
                     </div>
                 @empty
-                    <div class="col-span-full py-12 text-center bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 text-zinc-500">
-                        <svg class="w-12 h-12 text-zinc-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        Tidak ada mitra sponsor yang cocok dengan kriteria pencarian / filter.
+                    <div class="col-span-full py-16 text-center bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 text-slate-400">
+                        <svg class="w-12 h-12 text-slate-300 dark:text-zinc-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                        <p class="text-sm font-medium text-slate-600 dark:text-zinc-300">Tidak ada mitra sponsor yang ditemukan</p>
+                        <p class="text-xs text-slate-400 mt-1">Coba sesuaikan kata kunci pencarian atau filter tier & status.</p>
                     </div>
                 @endforelse
             </div>
@@ -1178,150 +1215,281 @@ new class extends Component
         </div>
     @endif
 
-    <!-- MODAL FORM TAMBAH / EDIT SPONSOR (Tanpa start_date / end_date & tanpa manual weight) -->
+    <!-- MODAL FORM TAMBAH / EDIT SPONSOR -->
     @if ($showModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-            <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-                <div class="flex items-center justify-between border-b pb-3 dark:border-zinc-800">
-                    <h2 class="text-lg font-bold text-zinc-900 dark:text-white">
-                        {{ $editingId ? 'Edit Mitra Sponsor' : 'Tambah Mitra Sponsor Baru' }}
-                    </h2>
-                    <button wire:click="$set('showModal', false)" class="text-zinc-400 hover:text-zinc-600 font-bold">✕</button>
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-all"
+             x-data
+             @keydown.escape.window="$wire.set('showModal', false)">
+            <div class="bg-white rounded-[16px] w-full max-w-[600px] shadow-2xl border border-[#E0E0E0] flex flex-col max-h-[90vh] overflow-hidden text-[#212121] animate-in fade-in zoom-in-95 duration-150">
+                
+                <!-- 1. Sticky Header (Fixed at top) -->
+                <div class="sticky top-0 z-10 bg-white px-6 py-4 flex items-center justify-between border-b border-[#E0E0E0]">
+                    <div>
+                        <h2 class="text-base font-bold text-[#212121]">
+                            {{ $editingId ? 'Edit Mitra Sponsor' : 'Tambah Mitra Sponsor Baru' }}
+                        </h2>
+                        <p class="text-xs text-[#828282] mt-0.5">Kelola data identitas dan pengaturan akun mitra sponsor</p>
+                    </div>
+                    <button type="button"
+                            wire:click="$set('showModal', false)" 
+                            class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-zinc-100 transition-colors"
+                            title="Tutup Modal">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
                 </div>
 
-                <div class="space-y-3">
+                <!-- 2. Scrollable Body (Form Content with 24px padding) -->
+                <div class="flex-1 overflow-y-auto p-6 space-y-5">
+                    <!-- Nama Perusahaan / Sponsor -->
                     <div>
-                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Nama Perusahaan / Sponsor *</label>
-                        <input type="text" wire:model="name" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white focus:outline-blue-500">
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">
+                            Nama Perusahaan / Sponsor <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="text" 
+                               wire:model="name" 
+                               placeholder="Contoh: PT VBAT Mobile Solusindo"
+                               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                        @error('name')
+                            <span class="text-xs text-rose-500 mt-1 block font-medium">{{ $message }}</span>
+                        @enderror
                     </div>
 
-                    <!-- Upload Logo Sponsor (SPONSOR-03) -->
+                    <!-- Upload Logo Sponsor Zone -->
                     <div>
-                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Logo Resmi Sponsor (JPG / PNG / WEBP, maks 2MB)</label>
-                        <div class="flex items-center gap-4 p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
-                            <!-- Thumbnail / Preview -->
-                            <div class="w-14 h-14 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0 shadow-sm relative group">
-                                @if ($logo && method_exists($logo, 'isPreviewable') && $logo->isPreviewable())
-                                    <img src="{{ $logo->temporaryUrl() }}" alt="Preview" class="w-full h-full object-contain p-1">
-                                @elseif ($existingLogoPath)
-                                    <img src="{{ asset('storage/' . $existingLogoPath) }}" alt="Logo" class="w-full h-full object-contain p-1">
-                                @else
-                                    <span class="text-xs font-bold text-zinc-400 uppercase">{{ substr($name ?: 'SP', 0, 2) }}</span>
-                                @endif
-                            </div>
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">
+                            Logo Resmi Sponsor
+                        </label>
+                        <div class="relative rounded-xl border-2 border-dashed border-[#E0E0E0] hover:border-[#1a68f0]/60 bg-[#F8F9FA] hover:bg-[#EBF3FE]/30 p-4 transition-all">
+                            <input type="file" 
+                                   wire:model="logo" 
+                                   accept="image/png,image/jpeg,image/jpg,image/webp" 
+                                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            
+                            <div class="flex items-center gap-4">
+                                <!-- Preview Thumbnail -->
+                                <div class="w-16 h-16 rounded-xl bg-white border border-[#E0E0E0] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
+                                    @if ($logo && method_exists($logo, 'isPreviewable') && $logo->isPreviewable())
+                                        <img src="{{ $logo->temporaryUrl() }}" alt="Preview" class="w-full h-full object-contain p-1.5">
+                                    @elseif ($existingLogoPath)
+                                        <img src="{{ asset('storage/' . $existingLogoPath) }}" alt="Logo" class="w-full h-full object-contain p-1.5">
+                                    @else
+                                        <div class="w-full h-full flex flex-col items-center justify-center text-[#1a68f0] bg-[#EBF3FE]/60">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
+                                    @endif
+                                </div>
 
-                            <!-- Upload Input & Action -->
-                            <div class="flex-1 space-y-1">
-                                <input type="file" wire:model="logo" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-zinc-500 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-300 cursor-pointer">
-                                <div wire:loading wire:target="logo" class="text-[11px] text-blue-600 font-semibold">Mengunggah berkas...</div>
-                                @error('logo')
-                                    <span class="text-xs text-rose-500 font-medium block">{{ $message }}</span>
-                                @enderror
-                                @if ($logo || $existingLogoPath)
-                                    <button type="button" wire:click="removeLogo" class="text-[11px] text-rose-600 hover:underline block font-semibold">Hapus logo</button>
-                                @endif
+                                <!-- Text & Instructions -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-1.5 text-xs font-semibold text-[#1a68f0]">
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                        </svg>
+                                        <span>Klik atau seret file ke sini</span>
+                                    </div>
+                                    <p class="text-[11px] text-[#828282] mt-0.5">Format: JPG, PNG, atau WEBP (maks. 2MB)</p>
+                                    <div wire:loading wire:target="logo" class="text-[11px] text-[#1a68f0] font-medium mt-1">Mengunggah logo...</div>
+                                    @if ($logo || $existingLogoPath)
+                                        <button type="button" 
+                                                wire:click.stop="removeLogo" 
+                                                class="relative z-20 text-[11px] text-rose-600 hover:text-rose-700 font-semibold mt-1 inline-block">
+                                            Hapus logo terpilih
+                                        </button>
+                                    @endif
+                                </div>
                             </div>
                         </div>
+                        @error('logo')
+                            <span class="text-xs text-rose-500 font-medium mt-1 block">{{ $message }}</span>
+                        @enderror
                     </div>
 
-                    <!-- Gambar Header Sponsor (WR-02) -->
+                    <!-- Gambar Header Halaman Sponsor (Upload Zone) -->
                     <div>
-                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Gambar Header Halaman Sponsor (opsional, maks 4MB)</label>
-                        <div class="flex items-center gap-4 p-3 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50">
-                            <div class="w-20 h-12 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                                @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
-                                    <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
-                                @elseif ($existingHeaderImagePath)
-                                    <img src="{{ asset('storage/' . $existingHeaderImagePath) }}" alt="Header" class="w-full h-full object-cover">
-                                @else
-                                    <span class="text-[10px] font-bold text-zinc-400">BELUM ADA</span>
-                                @endif
-                            </div>
-                            <div class="flex-1 space-y-1">
-                                <input type="file" wire:model="headerImage" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-zinc-500 file:mr-2.5 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-300 cursor-pointer">
-                                <div wire:loading wire:target="headerImage" class="text-[11px] text-blue-600 font-semibold">Mengunggah berkas...</div>
-                                @error('headerImage')
-                                    <span class="text-xs text-rose-500 font-medium block">{{ $message }}</span>
-                                @enderror
-                                @if ($existingHeaderImagePath)
-                                    <button type="button" wire:click="removeHeaderImage" class="text-[11px] text-rose-600 hover:underline block font-semibold">Hapus gambar header</button>
-                                @endif
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">
+                            Gambar Header Halaman Sponsor <span class="text-[11px] font-normal text-[#828282]">(Opsional)</span>
+                        </label>
+                        <div class="relative rounded-xl border-2 border-dashed border-[#E0E0E0] hover:border-[#1a68f0]/60 bg-[#F8F9FA] hover:bg-[#EBF3FE]/30 p-4 transition-all">
+                            <input type="file" 
+                                   wire:model="headerImage" 
+                                   accept="image/png,image/jpeg,image/jpg,image/webp" 
+                                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                            
+                            <div class="flex items-center gap-4">
+                                <div class="w-20 h-14 rounded-lg bg-white border border-[#E0E0E0] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
+                                    @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
+                                        <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
+                                    @elseif ($existingHeaderImagePath)
+                                        <img src="{{ asset('storage/' . $existingHeaderImagePath) }}" alt="Header" class="w-full h-full object-cover">
+                                    @else
+                                        <div class="w-full h-full flex flex-col items-center justify-center text-[#828282] bg-zinc-100">
+                                            <svg class="w-5 h-5 text-[#828282]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-1.5 text-xs font-semibold text-[#1a68f0]">
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                        </svg>
+                                        <span>Klik atau seret gambar header</span>
+                                    </div>
+                                    <p class="text-[11px] text-[#828282] mt-0.5">JPG, PNG, atau WEBP (maks. 4MB). Bila kosong memakai default tema.</p>
+                                    <div wire:loading wire:target="headerImage" class="text-[11px] text-[#1a68f0] font-medium mt-1">Mengunggah header...</div>
+                                    @if ($headerImage || $existingHeaderImagePath)
+                                        <button type="button" 
+                                                wire:click.stop="removeHeaderImage" 
+                                                class="relative z-20 text-[11px] text-rose-600 hover:text-rose-700 font-semibold mt-1 inline-block">
+                                            Hapus gambar header
+                                        </button>
+                                    @endif
+                                </div>
                             </div>
                         </div>
-                        <span class="text-[11px] text-zinc-400 mt-1 block">Bila dikosongkan, halaman sponsor memakai warna aplikasi.</span>
+                        @error('headerImage')
+                            <span class="text-xs text-rose-500 font-medium mt-1 block">{{ $message }}</span>
+                        @enderror
                     </div>
 
+                    <!-- Tier Sponsor (Modern Custom Styled Select) -->
                     <div>
-                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Tier Sponsor *</label>
-                        <select wire:model="tier" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white font-medium">
-                            <!-- BEN-06: cukup nama tier, tanpa istilah internal. -->
-                            <option value="free">Free</option>
-                            <option value="kontribusi">Kontribusi</option>
-                            <option value="bronze">Bronze</option>
-                            <option value="silver">Silver</option>
-                            <option value="gold">Gold</option>
-                            <option value="platinum">Platinum</option>
-                            <option value="diamond">Diamond</option>
-                        </select>
-                        <span class="text-[11px] text-zinc-400 mt-0.5 block">*Bobot tayang dan kuota produk otomatis mengikuti benefit tier yang dipilih.</span>
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">
+                            Tier Sponsor <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <select wire:model="tier" 
+                                    class="w-full appearance-none px-3.5 py-2.5 pr-10 text-xs font-medium rounded-xl border border-[#E0E0E0] bg-white text-[#212121] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all cursor-pointer">
+                                <option value="free">Free - Basic Exposure</option>
+                                <option value="kontribusi">Kontribusi - Partner</option>
+                                <option value="bronze">Bronze - Featured</option>
+                                <option value="silver">Silver - Premium Partner</option>
+                                <option value="gold">Gold - Priority Sponsor</option>
+                                <option value="platinum">Platinum - Exclusive Partner</option>
+                                <option value="diamond">Diamond - Main Partner</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#828282]">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-[#828282] mt-1">Bobot tayang dan kuota produk otomatis disesuaikan dengan paket benefit tier.</p>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <!-- 2-Column Grid: WhatsApp Order & Website Resmi -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
-                            <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">WhatsApp Order</label>
-                            <input type="text" wire:model="whatsapp" placeholder="62812345678" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
+                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">WhatsApp Order</label>
+                            <div class="relative">
+                                <input type="text" 
+                                       wire:model="whatsapp" 
+                                       placeholder="628123456789" 
+                                       class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                            </div>
+                            <span class="text-[11px] text-[#828282] mt-1 block">Gunakan kode negara (62...)</span>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Website Resmi Sponsor</label>
-                            <input type="url" wire:model="website_url" placeholder="https://website-toko.com" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
+                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">Website Resmi</label>
+                            <input type="url" 
+                                   wire:model="website_url" 
+                                   placeholder="https://perusahaan.com" 
+                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                             @error('website_url')
-                                <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span>
+                                <span class="text-xs text-rose-500 mt-1 block font-medium">{{ $message }}</span>
                             @enderror
                         </div>
                     </div>
 
+                    <!-- 2-Column Grid: Tautan Marketplace & Email Kontak -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">Tautan Marketplace</label>
+                            <input type="url" 
+                                   wire:model="marketplace_url" 
+                                   placeholder="https://shopee.co.id/toko" 
+                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                            @error('marketplace_url')
+                                <span class="text-xs text-rose-500 mt-1 block font-medium">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">Email Kontak</label>
+                            <input type="email" 
+                                   wire:model="contact_email" 
+                                   placeholder="sponsor@perusahaan.com" 
+                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                            @error('contact_email')
+                                <span class="text-xs text-rose-500 mt-1 block font-medium">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <!-- Deskripsi Singkat -->
                     <div>
-                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Tautan Marketplace (Shopee / Tokopedia)</label>
-                        <input type="url" wire:model="marketplace_url" placeholder="https://shopee.co.id/nama-toko" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
-                        @error('marketplace_url')
-                            <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span>
-                        @enderror
-                        <span class="text-[11px] text-zinc-400 mt-1 block">Website dan Marketplace diisi terpisah. Tombol di aplikasi hanya muncul untuk tautan yang terisi.</span>
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Deskripsi Singkat</label>
+                        <textarea wire:model="description" 
+                                  rows="2" 
+                                  placeholder="Tuliskan profil singkat sponsor atau keterangan kemitraan..." 
+                                  class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all resize-none"></textarea>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Email Kontak</label>
-                        <input type="email" wire:model="contact_email" placeholder="contact@sponsor.com" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Deskripsi Singkat</label>
-                        <textarea wire:model="description" rows="2" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white"></textarea>
-                    </div>
-
-                    <div class="pt-1">
-                        <label class="flex items-center gap-2 text-xs font-bold text-zinc-900 dark:text-white cursor-pointer">
-                            <input type="checkbox" wire:model="is_active" class="rounded text-blue-600">
-                            Status Akun Aktif (Dapat tayang di aplikasi)
-                        </label>
-                        <span class="text-[11px] text-zinc-400 ml-5 block">Ketika kontrak berakhir, cukup nonaktifkan status ini.</span>
-                    </div>
-
-                    @if (!$editingId)
-                        <div class="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 space-y-2">
-                            <label class="flex items-center gap-2 text-xs font-bold text-zinc-900 dark:text-white cursor-pointer">
-                                <input type="checkbox" wire:model.live="createUserAccount" class="rounded text-blue-600">
-                                Sekaligus Terbitkan Akun Login Portal Sponsor
+                    <!-- Status Akun Aktif -->
+                    <div class="p-3.5 rounded-xl border border-[#E0E0E0] bg-[#F8F9FA] flex items-center justify-between">
+                        <div>
+                            <label for="sponsor-is-active" class="text-xs font-semibold text-[#212121] cursor-pointer block">
+                                Status Akun Aktif
                             </label>
+                            <span class="text-[11px] text-[#828282] block mt-0.5">Sponsor dapat tampil dan menayangkan produk di platform</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="sponsor-is-active" wire:model="is_active" class="sr-only peer">
+                            <div class="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a68f0]"></div>
+                        </label>
+                    </div>
+
+                    <!-- Terbitkan Akun Login Baru -->
+                    @if (!$editingId)
+                        <div class="p-4 rounded-xl border border-[#E0E0E0] bg-[#F8F9FA] space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <label for="create-user-acc" class="text-xs font-semibold text-[#212121] cursor-pointer block">
+                                        Terbitkan Akun Login Portal
+                                    </label>
+                                    <span class="text-[11px] text-[#828282] block mt-0.5">Buat kredensial login otomatis untuk akses mitra sponsor</span>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="create-user-acc" wire:model.live="createUserAccount" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a68f0]"></div>
+                                </label>
+                            </div>
+
                             @if ($createUserAccount)
-                                <div class="grid grid-cols-2 gap-2 pt-2">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#E0E0E0]">
                                     <div>
-                                        <label class="block text-[11px] text-zinc-500 mb-0.5">Email Login</label>
-                                        <input type="email" wire:model="userEmail" placeholder="sponsor@toko.com" class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+                                        <label class="block text-[11px] font-semibold text-[#212121] mb-1">Email Login Portal</label>
+                                        <input type="email" 
+                                               wire:model="userEmail" 
+                                               placeholder="sponsor@perusahaan.com" 
+                                               class="w-full px-3 py-2 text-xs rounded-lg border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0]">
+                                        @error('userEmail')
+                                            <span class="text-[11px] text-rose-500 mt-1 block">{{ $message }}</span>
+                                        @enderror
                                     </div>
                                     <div>
-                                        <label class="block text-[11px] text-zinc-500 mb-0.5">Password</label>
-                                        <input type="password" wire:model="userPassword" placeholder="******" class="w-full px-2.5 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+                                        <label class="block text-[11px] font-semibold text-[#212121] mb-1">Password Awal</label>
+                                        <input type="password" 
+                                               wire:model="userPassword" 
+                                               placeholder="Min. 8 karakter" 
+                                               class="w-full px-3 py-2 text-xs rounded-lg border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0]">
+                                        @error('userPassword')
+                                            <span class="text-[11px] text-rose-500 mt-1 block">{{ $message }}</span>
+                                        @enderror
                                     </div>
                                 </div>
                             @endif
@@ -1329,12 +1497,27 @@ new class extends Component
                     @endif
                 </div>
 
-                <div class="flex justify-end gap-2 pt-3 border-t dark:border-zinc-800">
-                    <button wire:click="$set('showModal', false)" class="px-4 py-2 text-sm font-semibold rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                <!-- 3. Sticky Footer (Fixed at bottom) -->
+                <div class="sticky bottom-0 z-10 bg-white px-6 py-4 flex items-center justify-end gap-3 border-t border-[#E0E0E0]">
+                    <!-- Secondary Button: Batal (Ghost / Outline style) -->
+                    <button type="button" 
+                            wire:click="$set('showModal', false)" 
+                            class="px-5 py-2 text-xs font-semibold rounded-xl border border-[#E0E0E0] bg-white text-[#212121] hover:bg-zinc-50 hover:border-zinc-300 transition-colors">
                         Batal
                     </button>
-                    <button wire:click="save" class="px-4 py-2 text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm">
-                        Simpan Data
+                    <!-- Primary Button: Simpan (Solid VBAT Blue) -->
+                    <button type="button" 
+                            wire:click="save" 
+                            wire:loading.attr="disabled"
+                            class="px-5 py-2 text-xs font-semibold rounded-xl bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                        <span wire:loading.remove wire:target="save">Simpan</span>
+                        <span wire:loading wire:target="save" class="flex items-center gap-1.5">
+                            <svg class="animate-spin -ml-0.5 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            Menyimpan...
+                        </span>
                     </button>
                 </div>
             </div>
@@ -1344,44 +1527,90 @@ new class extends Component
 
     <!-- MODAL KELOLA TIER (TIER-01) -->
     @if ($showTierModal)
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-                <div class="flex items-center justify-between border-b pb-3 dark:border-zinc-800">
-                    <h2 class="text-lg font-bold text-zinc-900 dark:text-white">
-                        {{ $tierEditingId ? 'Ubah Tier' : 'Tambah Tier Baru' }}
-                    </h2>
-                    <button wire:click="$set('showTierModal', false)" class="text-zinc-400 hover:text-zinc-600 font-bold">✕</button>
+        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all"
+             x-data
+             @keydown.escape.window="$wire.set('showTierModal', false)">
+            <div class="bg-white rounded-[16px] w-full max-w-[480px] shadow-2xl border border-[#E0E0E0] flex flex-col max-h-[90vh] overflow-hidden text-[#212121] animate-in fade-in zoom-in-95 duration-150">
+                <!-- Sticky Header -->
+                <div class="sticky top-0 z-10 bg-white px-6 py-4 flex items-center justify-between border-b border-[#E0E0E0]">
+                    <div>
+                        <h2 class="text-base font-bold text-[#212121]">
+                            {{ $tierEditingId ? 'Ubah Tier Sponsor' : 'Tambah Tier Baru' }}
+                        </h2>
+                        <p class="text-xs text-[#828282] mt-0.5">Atur identitas tier sponsor dan urutan penampilan</p>
+                    </div>
+                    <button type="button" 
+                            wire:click="$set('showTierModal', false)" 
+                            class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-zinc-100 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
                 </div>
 
-                <div class="space-y-3">
+                <!-- Scrollable Body -->
+                <div class="flex-1 overflow-y-auto p-6 space-y-4">
                     <div>
-                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Nama Tier *</label>
-                        <input type="text" wire:model="tierName" placeholder="Contoh: Silver" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
-                        @error('tierName') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Nama Tier <span class="text-rose-500">*</span></label>
+                        <input type="text" 
+                               wire:model="tierName" 
+                               placeholder="Contoh: Silver, Gold, Platinum" 
+                               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                        @error('tierName') <span class="text-xs text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Label Badge</label>
-                        <input type="text" wire:model="tierBadgeLabel" placeholder="Contoh: Silver Official" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
-                        <span class="text-[11px] text-zinc-400 mt-1 block">Tulisan yang tampil pada kartu produk. Kosongkan bila tier tidak memiliki badge.</span>
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Label Badge</label>
+                        <input type="text" 
+                               wire:model="tierBadgeLabel" 
+                               placeholder="Contoh: Silver Official Partner" 
+                               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                        <span class="text-[11px] text-[#828282] mt-1 block">Teks badge yang tampil pada kartu produk katalog.</span>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-3.5">
                         <div>
-                            <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Warna Tier</label>
-                            <input type="color" wire:model="tierBadgeColor" class="w-full h-10 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800">
+                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">Warna Aksen Badge</label>
+                            <div class="flex items-center gap-2">
+                                <input type="color" 
+                                       wire:model="tierBadgeColor" 
+                                       class="w-10 h-10 rounded-xl border border-[#E0E0E0] bg-white cursor-pointer p-0.5 shrink-0">
+                                <input type="text" 
+                                       wire:model="tierBadgeColor" 
+                                       class="w-full px-3 py-2 text-xs font-mono rounded-xl border border-[#E0E0E0] bg-white text-[#212121] focus:outline-none focus:border-[#1a68f0]">
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Urutan</label>
-                            <input type="number" wire:model="tierSortOrder" min="0" class="w-full px-3 py-2 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white">
-                            <span class="text-[11px] text-zinc-400 mt-1 block">Angka kecil tampil lebih dulu.</span>
+                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">Urutan Prioritas</label>
+                            <input type="number" 
+                                   wire:model="tierSortOrder" 
+                                   min="0" 
+                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                            <span class="text-[11px] text-[#828282] mt-1 block">Angka lebih kecil tampil di urutan awal.</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-3 border-t dark:border-zinc-800">
-                    <button wire:click="$set('showTierModal', false)" class="px-4 py-2 text-sm font-semibold rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">Batal</button>
-                    <button wire:click="saveTier" class="px-4 py-2 text-sm font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm">Simpan Tier</button>
+                <!-- Sticky Footer -->
+                <div class="sticky bottom-0 z-10 bg-white px-6 py-4 flex items-center justify-end gap-3 border-t border-[#E0E0E0]">
+                    <button type="button" 
+                            wire:click="$set('showTierModal', false)" 
+                            class="px-5 py-2 text-xs font-semibold rounded-xl border border-[#E0E0E0] bg-white text-[#212121] hover:bg-zinc-50 hover:border-zinc-300 transition-colors">
+                        Batal
+                    </button>
+                    <button type="button" 
+                            wire:click="saveTier" 
+                            wire:loading.attr="disabled"
+                            class="px-5 py-2 text-xs font-semibold rounded-xl bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                        <span wire:loading.remove wire:target="saveTier">Simpan Tier</span>
+                        <span wire:loading wire:target="saveTier" class="flex items-center gap-1.5">
+                            <svg class="animate-spin -ml-0.5 mr-1 h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                            </svg>
+                            Menyimpan...
+                        </span>
+                    </button>
                 </div>
             </div>
         </div>
