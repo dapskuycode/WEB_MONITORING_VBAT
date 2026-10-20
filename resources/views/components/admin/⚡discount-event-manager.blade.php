@@ -247,16 +247,13 @@ new class extends Component
 ?>
 
 <div class="space-y-6 text-[#212121]">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-            <div class="flex items-center gap-3 mb-2">
-                <h1 class="text-2xl font-bold text-[#212121]">Manajemen Event & Diskon Shop</h1>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-200">
-                    <i class="fas fa-arrow-right"></i>
-                    Bikin Event → Pilih Produk
-                </span>
-            </div>
+    <!-- Info & Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-200">
+                <i class="fas fa-arrow-right"></i>
+                Bikin Event → Pilih Produk
+            </span>
             <p class="text-sm text-[#828282]">
                 Atur program event diskon khusus. Hanya produk yang Anda pilih yang akan mendapatkan harga diskon dan tampil di section promo event.
             </p>
