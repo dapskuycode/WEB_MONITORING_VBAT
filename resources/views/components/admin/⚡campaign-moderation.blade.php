@@ -100,69 +100,47 @@ new class extends Component
 ?>
 
 <div class="space-y-6 text-[#212121]">
-    <!-- Page Header: Title + Subtitle + Slot Indicators -->
-    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-slate-200/80">
-        <div>
-            <h1 class="text-xl sm:text-2xl font-bold text-[#212121] flex items-center gap-2.5">
-                <svg class="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                Moderasi Kampanye Promosi Sponsor
-            </h1>
-            <p class="text-xs sm:text-sm text-[#828282] mt-1.5 leading-relaxed">
-                Tinjau materi banner promosi yang diajukan oleh sponsor, berikan persetujuan (Approve/Reject), dan atur bobot rotasi serta limit penayangan harian.
-            </p>
-        </div>
-
-        <!-- Top Right: Slot Indicators -->
-        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-            <!-- Slot Hero Indicator -->
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-bold text-blue-700">
-                <span class="w-2 h-2 rounded-full {{ $this->activeHeroCount >= 6 ? 'bg-amber-500' : 'bg-emerald-500' }}"></span>
-                <span>Slot Hero: {{ $this->activeHeroCount }}/6</span>
-            </div>
-
-            <!-- Pop Up Aktif Indicator -->
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700">
-                <span class="w-2 h-2 rounded-full {{ $this->activePopupCount > 0 ? 'bg-rose-500' : 'bg-slate-400' }}"></span>
-                <span>Pop Up Aktif: {{ $this->activePopupCount }}</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- Filter Bar: Placement & Status -->
+    <!-- Filter Bar: Dropdowns + Slot Indicators -->
     <div class="p-3.5 sm:p-4 bg-white rounded-[12px] border border-slate-200/80 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
-        <!-- Left: Placement Filter Pills -->
-        <div class="flex flex-wrap items-center gap-2">
-            <button wire:click="setPlacementFilter('all')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition {{ $placementFilter === 'all' ? 'bg-[#1a68f0] text-white shadow-sm' : 'text-[#828282] hover:text-[#212121] hover:bg-slate-50' }}">
-                Semua Penempatan
-            </button>
-            <button wire:click="setPlacementFilter('hero_slider')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition {{ $placementFilter === 'hero_slider' ? 'bg-[#1a68f0] text-white shadow-sm' : 'text-[#828282] hover:text-[#212121] hover:bg-slate-50' }}">
-                Hero Slide (16:9)
-            </button>
-            <button wire:click="setPlacementFilter('shop_horizontal')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition {{ $placementFilter === 'shop_horizontal' ? 'bg-[#1a68f0] text-white shadow-sm' : 'text-[#828282] hover:text-[#212121] hover:bg-slate-50' }}">
-                Horizontal Slider
-            </button>
-            <button wire:click="setPlacementFilter('card_slider')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition {{ $placementFilter === 'card_slider' ? 'bg-[#1a68f0] text-white shadow-sm' : 'text-[#828282] hover:text-[#212121] hover:bg-slate-50' }}">
-                Card Slider
-            </button>
-            <button wire:click="setPlacementFilter('popup_modal')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition {{ $placementFilter === 'popup_modal' ? 'bg-[#1a68f0] text-white shadow-sm' : 'text-[#828282] hover:text-[#212121] hover:bg-slate-50' }}">
-                Pop Up Iklan
-            </button>
+        <!-- Left: Filter Dropdowns -->
+        <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Placement Filter Dropdown -->
+            <div class="relative">
+                <select wire:model.live="placementFilter" class="appearance-none px-3.5 py-2 pr-8 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-semibold text-[#212121] hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#1a68f0]/20 focus:border-[#1a68f0] transition cursor-pointer">
+                    <option value="all">Semua Penempatan</option>
+                    <option value="hero_slider">Hero Slide (16:9)</option>
+                    <option value="shop_horizontal">Horizontal Slider</option>
+                    <option value="card_slider">Card Slider</option>
+                    <option value="popup_modal">Pop Up Iklan</option>
+                </select>
+                <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+            </div>
+
+            <!-- Status Filter Dropdown -->
+            <div class="relative">
+                <select wire:model.live="statusFilter" class="appearance-none px-3.5 py-2 pr-8 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-semibold text-[#212121] hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#1a68f0]/20 focus:border-[#1a68f0] transition cursor-pointer">
+                    <option value="all">Semua Status</option>
+                    <option value="pending">Menunggu (Pending)</option>
+                    <option value="approved">Disetujui</option>
+                    <option value="rejected">Ditolak</option>
+                </select>
+                <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
+            </div>
         </div>
 
-        <!-- Right: Status Filter Pills -->
-        <div class="flex flex-wrap items-center gap-2">
-            <button wire:click="setStatusFilter('all')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition {{ $statusFilter === 'all' ? 'border-2 border-[#1a68f0] text-[#1a68f0] bg-white' : 'border border-slate-200 text-[#828282] hover:text-[#212121] hover:border-slate-300' }}">
-                Semua Status
-            </button>
-            <button wire:click="setStatusFilter('pending')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition {{ $statusFilter === 'pending' ? 'border-2 border-[#1a68f0] text-[#1a68f0] bg-white' : 'border border-slate-200 text-[#828282] hover:text-[#212121] hover:border-slate-300' }}">
-                Menunggu (Pending)
-            </button>
-            <button wire:click="setStatusFilter('approved')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition {{ $statusFilter === 'approved' ? 'border-2 border-[#1a68f0] text-[#1a68f0] bg-white' : 'border border-slate-200 text-[#828282] hover:text-[#212121] hover:border-slate-300' }}">
-                Disetujui
-            </button>
-            <button wire:click="setStatusFilter('rejected')" class="px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition {{ $statusFilter === 'rejected' ? 'border-2 border-[#1a68f0] text-[#1a68f0] bg-white' : 'border border-slate-200 text-[#828282] hover:text-[#212121] hover:border-slate-300' }}">
-                Ditolak
-            </button>
+        <!-- Right: Slot Indicators -->
+        <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Slot Hero -->
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-bold text-blue-700">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Slot Hero: {{ $this->activeHeroCount }} dari 6</span>
+            </div>
+
+            <!-- Pop Up Aktif -->
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                <span>Pop Up Aktif: {{ $this->activePopupCount }} dari 1</span>
+            </div>
         </div>
     </div>
 

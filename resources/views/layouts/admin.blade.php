@@ -70,6 +70,8 @@
                                 Manajemen Sponsor
                             @elseif(request()->routeIs('admin.products'))
                                 Manajemen Katalog Produk
+                            @elseif(request()->routeIs('admin.campaigns'))
+                                Moderasi Kampanye Promosi Sponsor
                             @else
                                 {{ $title ?? $pageTitle ?? 'Analitik Sponsor' }}
                             @endif
