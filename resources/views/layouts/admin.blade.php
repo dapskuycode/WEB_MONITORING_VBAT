@@ -69,7 +69,7 @@
                             @elseif(request()->routeIs('admin.sponsors'))
                                 Manajemen Sponsor
                             @elseif(request()->routeIs('admin.products'))
-                                Manajemen Produk Part
+                                Manajemen Katalog Produk
                             @else
                                 {{ $title ?? $pageTitle ?? 'Analitik Sponsor' }}
                             @endif

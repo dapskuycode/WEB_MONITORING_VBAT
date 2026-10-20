@@ -117,7 +117,7 @@ class AnalyticsDashboard extends Component
             ];
         }
 
-        // 5. Top 5 Produk Part (Marketplace)
+        // 5. Top 5 Produk (Marketplace)
         $productsFromDb = SponsorProduct::with('sponsor')->orderByDesc('sold_count')->take(5)->get();
         $topProducts = [];
         if ($productsFromDb->isNotEmpty() && $productsFromDb->first()->sold_count > 0) {

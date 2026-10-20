@@ -228,7 +228,7 @@ new class extends Component
             <table class="w-full text-left text-xs">
                 <thead>
                     <tr class="border-b border-slate-200/80 dark:border-zinc-800 bg-[#F8F9FA] dark:bg-zinc-800/40 text-[11px] font-bold text-[#828282] uppercase tracking-wider">
-                        <th class="px-5 py-3.5">Produk Part</th>
+                        <th class="px-5 py-3.5">Produk</th>
                         <th class="px-5 py-3.5">Mitra Sponsor</th>
                         <th class="px-5 py-3.5">Harga & Diskon</th>
                         <th class="px-5 py-3.5">Marketplace</th>
@@ -247,7 +247,7 @@ new class extends Component
                         $tierLabel = strtoupper($prod->sponsor?->sponsorTier?->name ?? $prod->sponsor?->tier ?? 'KONTRIBUSI');
                     @endphp
                     <tr class="hover:bg-slate-50/70 dark:hover:bg-zinc-800/30 transition-colors">
-                        <!-- Column 1: Produk Part (Thumbnail + ONLY Product Name) -->
+                        <!-- Column 1: Produk (Thumbnail + ONLY Product Name) -->
                         <td class="px-5 py-3.5">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-[8px] overflow-hidden bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 shrink-0 flex items-center justify-center">
@@ -404,7 +404,7 @@ new class extends Component
             <div class="sticky top-0 z-10 bg-white px-6 py-4 flex items-center justify-between border-b border-[#E0E0E0]">
                 <div>
                     <h2 class="text-base font-bold text-[#212121]">
-                        {{ $editingId ? 'Edit Data Produk Part' : 'Upload Produk Part Baru' }}
+                        {{ $editingId ? 'Edit Data Produk' : 'Upload Produk Baru' }}
                     </h2>
                     <p class="text-xs text-[#828282] mt-0.5">Lengkapi spesifikasi, harga promo, dan link marketplace resmi</p>
                 </div>
@@ -442,7 +442,7 @@ new class extends Component
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Nama Produk Part <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Nama Produk <span class="text-rose-500">*</span></label>
                         <input wire:model="name" 
                                type="text" 
                                placeholder="Contoh: Solder Listrik T12 Digital" 
@@ -452,7 +452,7 @@ new class extends Component
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-[#212121] mb-1.5">Deskripsi Produk Part</label>
+                    <label class="block text-xs font-semibold text-[#212121] mb-1.5">Deskripsi Produk</label>
                     <textarea wire:model="description" 
                               rows="2" 
                               placeholder="Spesifikasi atau keunggulan part..." 
@@ -480,9 +480,9 @@ new class extends Component
                     </div>
                 </div>
 
-                <!-- Foto Produk Part: Modern Drag-and-Drop Upload Zone -->
+                <!-- Foto Produk: Modern Drag-and-Drop Upload Zone -->
                 <div>
-                    <label class="block text-xs font-semibold text-[#212121] mb-1.5">Foto Produk Part</label>
+                    <label class="block text-xs font-semibold text-[#212121] mb-1.5">Foto Produk</label>
                     <div class="relative rounded-xl border-2 border-dashed border-[#E0E0E0] hover:border-[#1a68f0]/60 bg-[#F8F9FA] hover:bg-[#EBF3FE]/30 p-4 transition-all">
                         <input wire:model="imageFile" 
                                type="file" 

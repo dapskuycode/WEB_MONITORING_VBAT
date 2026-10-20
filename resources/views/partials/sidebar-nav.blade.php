@@ -57,12 +57,12 @@
                 wire:navigate 
                 class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->routeIs('admin.products') ? 'bg-[#EBF3FE] text-[#1a68f0] dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800' }}"
                 :class="sidebarOpen ? '' : 'justify-center px-0'"
-                :title="!sidebarOpen ? 'Produk Part' : ''"
+                :title="!sidebarOpen ? 'Katalog Produk' : ''"
             >
                 <svg class="w-5 h-5 shrink-0 {{ request()->routeIs('admin.products') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-400 dark:text-zinc-500' }}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
                 </svg>
-                <span x-show="sidebarOpen" x-transition.opacity class="truncate">Produk Part</span>
+                <span x-show="sidebarOpen" x-transition.opacity class="truncate">Katalog Produk
             </a>
 
             <a 

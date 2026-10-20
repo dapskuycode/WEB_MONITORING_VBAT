@@ -358,7 +358,7 @@ new class extends Component
                 <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800 text-zinc-700 dark:text-zinc-300">
                     @forelse($products as $prod)
                     <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition">
-                        <!-- Kolom Produk Part -->
+                        <!-- Kolom Produk -->
                         <td class="px-5 py-3.5">
                             <div class="flex items-center gap-3">
                                 <div class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-700 overflow-hidden">
@@ -511,7 +511,7 @@ new class extends Component
             <form wire:submit="save" class="space-y-4">
                 <!-- Nama Produk -->
                 <div>
-                    <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Nama Produk Part / Alat *</label>
+                    <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Nama Produk *</label>
                     <input wire:model="name" type="text" placeholder="Contoh: LCD iPhone 11 Pro Max Original Quality" class="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:text-white">
                     @error('name') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
