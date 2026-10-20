@@ -343,7 +343,7 @@ new class extends Component
                                     type="button"
                                     class="px-2.5 py-1 text-xs font-semibold rounded-full border transition-colors inline-flex items-center gap-1.5 cursor-pointer {{ $prod->is_active ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700' }}"
                                     title="Klik untuk ubah status">
-                                <span class="w-1.5 h-1.5 rounded-full {{ $prod->is_active ? 'bg-emerald-600' : 'bg-slate-400' }}"></span>
+                                <i class="fas fa-circle {{ $prod->is_active ? 'text-emerald-600' : 'text-slate-400' }}"></i>
                                 <span>{{ $prod->is_active ? 'Aktif' : 'Nonaktif' }}</span>
                             </button>
                         </td>

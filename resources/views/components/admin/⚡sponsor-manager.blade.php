@@ -747,7 +747,7 @@ new class extends Component
                                 title="Klik untuk ubah status aktif/nonaktif" 
                                 class="px-2.5 py-1 text-xs font-semibold rounded-full border transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer {{ $sponsor->is_active ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800' : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700' }}"
                             >
-                                <span class="w-1.5 h-1.5 rounded-full {{ $sponsor->is_active ? 'bg-emerald-600' : 'bg-slate-400' }}"></span>
+                                <i class="fas fa-circle {{ $sponsor->is_active ? 'text-emerald-600' : 'text-slate-400' }} shrink-0"></i>
                                 <span>{{ $sponsor->is_active ? 'Aktif' : 'Nonaktif' }}</span>
                             </button>
                         </div>
@@ -1029,7 +1029,7 @@ new class extends Component
                     <div class="flex flex-wrap gap-2">
                         @foreach ($matrixTiers as $t)
                             <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
-                                <svg class="w-3 h-3 shrink-0" fill="{{ $t['badge_color'] ?? '#1B4F9B' }}" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                <i class="fas fa-star shrink-0" style="color: {{ $t['badge_color'] ?? '#1B4F9B' }};"></i>
                                 <span class="text-xs font-bold text-zinc-800 dark:text-zinc-100">{{ $t['name'] }}</span>
                                 <span class="text-[10px] text-zinc-400">{{ $t['badge_label'] }}</span>
                                 <button type="button" wire:click="openTierModal({{ $t['id'] }})" class="text-[11px] font-semibold text-blue-600 hover:underline">Ubah</button>
