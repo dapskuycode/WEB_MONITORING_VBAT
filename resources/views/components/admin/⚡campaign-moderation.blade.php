@@ -100,10 +100,25 @@ new class extends Component
 ?>
 
 <div class="space-y-6 text-[#212121]">
-    <!-- Filter Bar: Dropdowns + Slot Indicators -->
+    <!-- Filter Bar: Slot Indicators (Left) + Filter Dropdowns (Right) -->
     <div class="p-3.5 sm:p-4 bg-white rounded-[12px] border border-slate-200/80 flex flex-col lg:flex-row lg:items-center justify-between gap-3.5">
-        <!-- Left: Filter Dropdowns -->
+        <!-- Left: Slot Indicators -->
         <div class="flex flex-wrap items-center gap-2.5">
+            <!-- Slot Hero -->
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-bold text-blue-700">
+                <i class="fas fa-bookmark"></i>
+                <span>Slot Hero: {{ $this->activeHeroCount }} dari 6</span>
+            </div>
+
+            <!-- Pop Up Aktif -->
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-orange-50 border border-orange-200 text-xs font-bold text-orange-700">
+                <i class="fas fa-window-maximize"></i>
+                <span>Pop Up Aktif: {{ $this->activePopupCount }} dari 1</span>
+            </div>
+        </div>
+
+        <!-- Right: Filter Dropdowns -->
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
             <!-- Placement Filter Dropdown -->
             <div class="relative">
                 <select wire:model.live="placementFilter" class="appearance-none px-3.5 py-2 pr-8 rounded-lg border border-slate-200 bg-white text-xs sm:text-sm font-semibold text-[#212121] hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#1a68f0]/20 focus:border-[#1a68f0] transition cursor-pointer">
@@ -125,21 +140,6 @@ new class extends Component
                     <option value="rejected">Ditolak</option>
                 </select>
                 <svg class="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19.5 8.25-7.5 7.5-7.5-7.5"/></svg>
-            </div>
-        </div>
-
-        <!-- Right: Slot Indicators -->
-        <div class="flex flex-wrap items-center gap-2.5">
-            <!-- Slot Hero -->
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-bold text-blue-700">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <span>Slot Hero: {{ $this->activeHeroCount }} dari 6</span>
-            </div>
-
-            <!-- Pop Up Aktif -->
-            <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                <span>Pop Up Aktif: {{ $this->activePopupCount }} dari 1</span>
             </div>
         </div>
     </div>
