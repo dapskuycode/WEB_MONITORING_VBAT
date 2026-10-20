@@ -71,7 +71,6 @@ new class extends Component
             $this->start_at = now()->setTimezone('Asia/Jakarta')->format('Y-m-d\TH:i');
         }
 
-        // Jika end_at sudah lampau atau sebelum start_at, otomatis majukan 7 hari ke depan agar tidak error validasi
         if (!$e->end_at || $e->end_at <= $now) {
             $this->end_at = now()->setTimezone('Asia/Jakarta')->addDays(7)->format('Y-m-d\TH:i');
         } else {
@@ -244,114 +243,172 @@ new class extends Component
         $this->loadEvents();
     }
 };
+
 ?>
 
-<div class="space-y-6">
+<div class="space-y-6 text-[#212121]">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-700 pb-5">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-            <div class="flex items-center gap-2">
-                <flux:heading size="xl" class="font-bold">Manajemen Event & Diskon Shop</flux:heading>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
-                    Bikin Event -> Pilih Produk
+            <div class="flex items-center gap-3 mb-2">
+                <h1 class="text-2xl font-bold text-[#212121]">Manajemen Event & Diskon Shop</h1>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-200">
+                    <i class="fas fa-arrow-right"></i>
+                    Bikin Event → Pilih Produk
                 </span>
             </div>
-            <flux:subheading size="sm" class="text-zinc-500 dark:text-zinc-400">
+            <p class="text-sm text-[#828282]">
                 Atur program event diskon khusus. Hanya produk yang Anda pilih yang akan mendapatkan harga diskon dan tampil di section promo event.
-            </flux:subheading>
+            </p>
         </div>
 
-        <flux:button variant="primary" icon="plus" wire:click="openCreateModal">
-            Buat Event Baru
-        </flux:button>
+        <button 
+            type="button"
+            wire:click="openCreateModal"
+            class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors shrink-0"
+        >
+            <i class="fas fa-plus"></i>
+            <span>Buat Event Baru</span>
+        </button>
     </div>
 
-    <!-- Tabel Daftar Event -->
-    <div class="bg-white dark:bg-zinc-800/80 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 overflow-hidden shadow-sm">
+    <!-- Search & Filter Bar -->
+    <div class="p-3.5 sm:p-4 bg-white rounded-[12px] border border-slate-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <!-- Search Input -->
+        <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <i class="fas fa-search text-sm"></i>
+            </div>
+            <input 
+                type="text" 
+                wire:model.live.debounce.250ms="search" 
+                placeholder="Cari nama event..." 
+                class="w-full pl-10 pr-4 py-2 text-sm text-[#212121] placeholder-slate-400 bg-slate-50/70 rounded-lg border border-slate-200 focus:outline-none focus:bg-white focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all"
+            >
+        </div>
+
+        <!-- Filter Dropdowns on Right -->
+        <div class="flex items-center gap-2.5 shrink-0">
+            <select 
+                wire:model.live="typeFilter" 
+                class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 bg-white text-[#212121] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
+            >
+                <option value="">Semua Tipe Diskon</option>
+                <option value="percentage">Persentase (%)</option>
+                <option value="fixed_nominal">Nominal (Rp)</option>
+            </select>
+
+            <select 
+                wire:model.live="statusFilter" 
+                class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 bg-white text-[#212121] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
+            >
+                <option value="">Semua Status</option>
+                <option value="active">Aktif</option>
+                <option value="finished">Selesai</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Events Table -->
+    <div class="bg-white rounded-[12px] border border-slate-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
+            <table class="w-full">
                 <thead>
-                    <tr class="border-b border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-500 uppercase bg-zinc-50/50 dark:bg-zinc-900/40">
-                        <th class="py-3.5 px-4">Nama Event & Banner</th>
-                        <th class="py-3.5 px-4">Tipe & Nilai Diskon</th>
-                        <th class="py-3.5 px-4">Periode Aktif</th>
-                        <th class="py-3.5 px-4 text-center">Produk Terpilih</th>
-                        <th class="py-3.5 px-4 text-center">Status</th>
-                        <th class="py-3.5 px-4 text-right">Aksi</th>
+                    <tr class="bg-slate-50/70 border-b border-slate-200">
+                        <th class="px-4 py-3.5 text-left text-xs font-bold text-[#212121] uppercase tracking-wide">Nama Event & Banner</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-bold text-[#212121] uppercase tracking-wide">Tipe & Nilai Diskon</th>
+                        <th class="px-4 py-3.5 text-left text-xs font-bold text-[#212121] uppercase tracking-wide">Periode Aktif</th>
+                        <th class="px-4 py-3.5 text-center text-xs font-bold text-[#212121] uppercase tracking-wide">Produk Terpilih</th>
+                        <th class="px-4 py-3.5 text-center text-xs font-bold text-[#212121] uppercase tracking-wide">Status</th>
+                        <th class="px-4 py-3.5 text-right text-xs font-bold text-[#212121] uppercase tracking-wide">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-zinc-100 dark:divide-zinc-700/60">
+                <tbody class="divide-y divide-slate-100">
                     @forelse($events as $e)
                     @php
                         $now = now();
                         $isActiveTime = $e->start_at <= $now && $e->end_at >= $now;
                         $isUpcoming = $e->start_at > $now;
                     @endphp
-                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/30 transition">
-                        <td class="py-4 px-4">
-                            <div class="font-bold text-zinc-900 dark:text-white">{{ $e->name }}</div>
-                            <div class="text-xs text-blue-600 dark:text-blue-400 mt-0.5 font-medium">"{{ $e->banner_text }}"</div>
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-4 py-4">
+                            <div class="font-semibold text-sm text-[#212121]">{{ $e->name }}</div>
+                            <div class="text-xs text-[#828282] mt-0.5 line-clamp-1">\"{{ $e->banner_text }}\"</div>
                         </td>
-                        <td class="py-4 px-4">
+                        <td class="px-4 py-4">
                             @if($e->discount_type === 'percentage')
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-orange-50 text-orange-700 border border-orange-200">
                                     Diskon {{ round($e->discount_value) }}%
                                 </span>
                             @else
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-400 border border-purple-200 dark:border-purple-800">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
                                     Potongan Rp {{ number_format($e->discount_value, 0, ',', '.') }}
                                 </span>
                             @endif
                         </td>
-                        <td class="py-4 px-4 font-mono text-xs text-zinc-600 dark:text-zinc-400">
-                            {{ $e->start_at->format('d M Y H:i') }} <br>s/d {{ $e->end_at->format('d M Y H:i') }}
+                        <td class="px-4 py-4">
+                            <div class="flex items-start gap-2">
+                                <i class="fas fa-calendar-alt text-slate-400 text-sm mt-0.5"></i>
+                                <div class="text-sm">
+                                    <div class="text-[#212121] font-medium">{{ $e->start_at->format('d M Y H:i') }}</div>
+                                    <div class="text-[#828282]">{{ $e->end_at->format('d M Y H:i') }}</div>
+                                </div>
+                            </div>
                         </td>
-                        <td class="py-4 px-4 text-center">
-                            <button type="button" wire:click="openProductManager({{ $e->id }})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 transition">
-                                <flux:icon name="shopping-bag" class="w-3.5 h-3.5" />
+                        <td class="px-4 py-4 text-center">
+                            <button type="button" wire:click="openProductManager({{ $e->id }})" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-[#1a68f0] border border-blue-200 hover:bg-blue-100 transition-colors">
+                                <i class="fas fa-box-open text-xs"></i>
                                 <span>{{ $e->products_count }} Produk</span>
-                                <flux:icon name="chevron-right" class="w-3 h-3 text-blue-400" />
+                                <i class="fas fa-chevron-right text-xs text-blue-400"></i>
                             </button>
                         </td>
-                        <td class="py-4 px-4 text-center">
+                        <td class="px-4 py-4 text-center">
                             @if(!$e->is_active)
-                                <button type="button" wire:click="toggleStatus({{ $e->id }})" title="Klik untuk mengaktifkan" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 cursor-pointer">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                                     Nonaktif
-                                </button>
+                                </span>
                             @elseif($e->isOngoing())
-                                <button type="button" wire:click="toggleStatus({{ $e->id }})" title="Klik untuk menonaktifkan" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 hover:bg-emerald-200 cursor-pointer">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <i class="fas fa-circle text-[6px] animate-pulse"></i>
                                     Sedang Berjalan
-                                </button>
+                                </span>
                             @elseif($e->isScheduled())
-                                <button type="button" wire:click="toggleStatus({{ $e->id }})" title="Klik untuk menonaktifkan" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/60 dark:text-indigo-300 hover:bg-indigo-200 cursor-pointer">
-                                    <flux:icon name="clock" class="w-3.5 h-3.5 text-indigo-600" />
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                    <i class="fas fa-clock text-indigo-600"></i>
                                     Terjadwal
-                                </button>
+                                </span>
                             @else
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
                                     Selesai
                                 </span>
                             @endif
                         </td>
-                        <td class="py-4 px-4 text-right">
+                        <td class="px-4 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">
-                                <button type="button" wire:click="openProductManager({{ $e->id }})" class="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40" title="Kelola Produk Event">
-                                    <flux:icon name="squares-plus" class="w-4 h-4" />
+                                <button type="button" wire:click="openProductManager({{ $e->id }})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Kelola Produk">
+                                    <i class="fas fa-plus-square text-sm"></i>
                                 </button>
-                                <button type="button" wire:click="editEvent({{ $e->id }})" class="p-1.5 rounded-lg text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-700" title="Edit Event">
-                                    <flux:icon name="pencil" class="w-4 h-4" />
+                                <button type="button" wire:click="editEvent({{ $e->id }})" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" title="Edit Event">
+                                    <i class="fas fa-pencil-alt text-sm"></i>
                                 </button>
-                                <button type="button" wire:click="deleteEvent({{ $e->id }})" wire:confirm="Yakin ingin menghapus event ini?" class="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40" title="Hapus Event">
-                                    <flux:icon name="trash" class="w-4 h-4" />
+                                <button type="button" wire:click="deleteEvent({{ $e->id }})" wire:confirm="Yakin ingin menghapus event ini?" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Hapus Event">
+                                    <i class="fas fa-trash-alt text-sm"></i>
                                 </button>
                             </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="py-10 text-center text-zinc-400 text-sm">
-                            Belum ada program Event Diskon. Klik "Buat Event Baru" di atas.
+                        <td colspan="6" class="px-4 py-12 text-center">
+                            <div class="flex flex-col items-center gap-3">
+                                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-calendar-times text-slate-400 text-2xl"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-semibold text-[#212121] mb-1">Belum ada program Event Diskon</div>
+                                    <div class="text-sm text-[#828282]">Klik tombol "Buat Event Baru" di atas</div>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     @endforelse
@@ -359,228 +416,4 @@ new class extends Component
             </table>
         </div>
     </div>
-
-    <!-- MODAL 1: Form Buat / Edit Event -->
-    @if($showModal)
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-        <div class="bg-white dark:bg-zinc-800 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-zinc-200 dark:border-zinc-700/80 space-y-5">
-            <!-- Modal Header -->
-            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700/80 pb-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-white shadow-sm shadow-orange-500/30">
-                        <flux:icon name="sparkles" class="w-5 h-5" />
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-lg text-zinc-900 dark:text-white">
-                            {{ $editingId ? 'Edit Event Diskon' : 'Buat Event Diskon Baru' }}
-                        </h3>
-                        <p class="text-xs text-zinc-500 dark:text-zinc-400">Atur parameter promo & jadwal tayang event</p>
-                    </div>
-                </div>
-                <button type="button" wire:click="$set('showModal', false)" class="w-8 h-8 rounded-full flex items-center justify-center text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 dark:hover:text-zinc-200 dark:hover:bg-zinc-700/60 transition">
-                    <flux:icon name="x-mark" class="w-5 h-5" />
-                </button>
-            </div>
-
-            <!-- Modal Body -->
-            <form wire:submit.prevent="save" class="space-y-4">
-                <flux:input label="Nama Event Diskon *" wire:model="name" placeholder="Contoh: FLASH SALE SPESIAL VBAT" required />
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">Tipe Diskon *</label>
-                        <select wire:model.live="discount_type" class="w-full h-10 px-3.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition">
-                            <option value="percentage">Persentase (%)</option>
-                            <option value="fixed_nominal">Potongan Nominal (Rp)</option>
-                        </select>
-                    </div>
-                    <flux:input type="number" step="any" label="Nilai Diskon ({{ $discount_type === 'percentage' ? '%' : 'Rp' }}) *" wire:model="discount_value" required />
-                </div>
-
-                <flux:input label="Teks Banner / Headline Promo" wire:model="banner_text" placeholder="Contoh: DISKON SPESIAL 15% PRODUK PILIHAN!" />
-
-                <!-- Mode Publikasi Eksklusif (EVENT-01) -->
-                <div>
-                    <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-2">Pilihan Mode Publikasi *</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <label class="cursor-pointer border rounded-2xl p-3.5 transition flex flex-col gap-1 {{ $publish_mode === 'instant' ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30 text-amber-950 dark:text-amber-200 ring-2 ring-amber-500/20' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400' }}">
-                            <div class="flex items-center justify-between">
-                                <span class="font-extrabold text-xs flex items-center gap-1.5">
-                                    <flux:icon name="bolt" class="w-3.5 h-3.5 text-amber-500" />
-                                    Aktifkan Sekarang
-                                </span>
-                                <input type="radio" wire:model.live="publish_mode" value="instant" class="text-amber-600 focus:ring-amber-500">
-                            </div>
-                            <span class="text-[10px] leading-tight text-zinc-500 dark:text-zinc-400">
-                                Langsung aktif dan tayang seketika di aplikasi tanpa menunggu jadwal.
-                            </span>
-                        </label>
-
-                        <label class="cursor-pointer border rounded-2xl p-3.5 transition flex flex-col gap-1 {{ $publish_mode === 'scheduled' ? 'border-indigo-500 bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20' : 'border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 bg-white dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400' }}">
-                            <div class="flex items-center justify-between">
-                                <span class="font-extrabold text-xs flex items-center gap-1.5">
-                                    <flux:icon name="calendar-days" class="w-3.5 h-3.5 text-indigo-500" />
-                                    Pakai Jadwal Tanggal
-                                </span>
-                                <input type="radio" wire:model.live="publish_mode" value="scheduled" class="text-indigo-600 focus:ring-indigo-500">
-                            </div>
-                            <span class="text-[10px] leading-tight text-zinc-500 dark:text-zinc-400">
-                                Menentukan tanggal mulai & berakhir secara presisi (WIB).
-                            </span>
-                        </label>
-                    </div>
-                </div>
-
-                <!-- Input Tanggal & Pintasan Durasi (EVENT-01) -->
-                <div class="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-700/80 space-y-3">
-                    @if ($publish_mode === 'instant')
-                        <div class="space-y-1.5">
-                            <flux:input type="datetime-local" label="Masa Berakhir Promo *" wire:model="end_at" required />
-                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400">Event akan langsung aktif dan otomatis berakhir pada tanggal & jam di atas.</p>
-                        </div>
-                    @else
-                        <div class="space-y-2">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <flux:input type="datetime-local" label="Waktu Mulai *" wire:model.live="start_at" required />
-                                <flux:input type="datetime-local" label="Waktu Berakhir *" wire:model="end_at" required />
-                            </div>
-                            <p class="text-[11px] text-zinc-500 dark:text-zinc-400">Event berstatus Terjadwal dan otomatis aktif pada waktu mulai.</p>
-                        </div>
-                    @endif
-
-                    <!-- Pintasan Cepat Durasi Promo -->
-                    <div class="pt-2.5 border-t border-zinc-200/60 dark:border-zinc-700/60 flex flex-wrap items-center justify-between gap-2">
-                        <span class="text-xs font-semibold text-zinc-600 dark:text-zinc-400 flex items-center gap-1.5">
-                            <flux:icon name="clock" class="w-3.5 h-3.5 text-zinc-400" />
-                            Pilih Durasi Cepat:
-                        </span>
-                        <div class="flex items-center gap-1.5">
-                            <button type="button" wire:click="setEndDurationDays(3)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 shadow-xs transition cursor-pointer">
-                                +3 Hari
-                            </button>
-                            <button type="button" wire:click="setEndDurationDays(7)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 shadow-xs transition cursor-pointer">
-                                +7 Hari
-                            </button>
-                            <button type="button" wire:click="setEndDurationDays(14)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 shadow-xs transition cursor-pointer">
-                                +14 Hari
-                            </button>
-                            <button type="button" wire:click="setEndDurationDays(30)" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-zinc-800 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-500 dark:hover:text-white text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 shadow-xs transition cursor-pointer">
-                                +30 Hari
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-end gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-700/80">
-                    <flux:button type="button" wire:click="$set('showModal', false)">Batal</flux:button>
-                    <flux:button type="submit" variant="primary" icon="check">Simpan Event</flux:button>
-                </div>
-            </form>
-        </div>
-    </div>
-    @endif
-
-    <!-- MODAL 2: Product Picker (Pilih Produk yang Masuk ke Event) -->
-    @if($showProductModal && $managingEvent)
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-        <div class="bg-white dark:bg-zinc-800 rounded-3xl max-w-4xl w-full p-6 shadow-2xl border border-zinc-200 dark:border-zinc-700 space-y-4 max-h-[92vh] flex flex-col">
-            <!-- Header Modal Produk -->
-            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700 pb-3 shrink-0">
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h3 class="font-bold text-lg text-zinc-900 dark:text-white">Pilih Produk Untuk Event Diskon</h3>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                            {{ $managingEvent->name }} ({{ $managingEvent->discount_type === 'percentage' ? round($managingEvent->discount_value).'%' : 'Rp '.number_format($managingEvent->discount_value) }})
-                        </span>
-                    </div>
-                    <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Centang atau klik "Tambahkan" pada produk yang ingin diberi diskon. Total {{ count($selectedProductIds) }} produk terpilih.
-                    </p>
-                </div>
-                <button type="button" wire:click="$set('showProductModal', false)" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1">
-                    <flux:icon name="x-mark" class="w-6 h-6" />
-                </button>
-            </div>
-
-            <!-- Search Bar Produk -->
-            <div class="shrink-0">
-                <flux:input icon="magnifying-glass" wire:model.live.debounce.300ms="searchProduct" placeholder="Cari nama sparepart, LCD, baterai, atau nama sponsor..." />
-            </div>
-
-            <!-- List Produk Master & Status Terpilih -->
-            <div class="flex-1 overflow-y-auto space-y-2 pr-1 divide-y divide-zinc-100 dark:divide-zinc-700/60">
-                @php
-                    $allProducts = SponsorProduct::with('sponsor')
-                        ->where('is_active', true)
-                        ->when($searchProduct, function($q) {
-                            $q->where('name', 'like', '%'.$this->searchProduct.'%')
-                              ->orWhereHas('sponsor', fn($sq) => $sq->where('name', 'like', '%'.$this->searchProduct.'%'));
-                        })
-                        ->orderBy('name')
-                        ->get();
-                @endphp
-
-                @forelse($allProducts as $p)
-                @php
-                    $isAttached = in_array($p->id, $selectedProductIds);
-                    $basePrice = (float)$p->price;
-                    if ($managingEvent->discount_type === 'percentage') {
-                        $discountedPrice = round($basePrice * (1 - ($managingEvent->discount_value / 100)));
-                    } else {
-                        $discountedPrice = max(0, $basePrice - (float)$managingEvent->discount_value);
-                    }
-                @endphp
-                <div class="py-3 flex items-center justify-between gap-4 {{ $isAttached ? 'bg-emerald-50/40 dark:bg-emerald-950/20 -mx-2 px-2 rounded-xl' : '' }}">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-700 overflow-hidden flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-600">
-                            @if($p->image_path)
-                                <img src="{{ str_starts_with($p->image_path, 'http') ? $p->image_path : asset($p->image_path) }}" class="w-full h-full object-cover" alt="{{ $p->name }}" />
-                            @else
-                                <flux:icon name="shopping-bag" class="w-5 h-5 text-zinc-400" />
-                            @endif
-                        </div>
-                        <div>
-                            <div class="font-bold text-sm text-zinc-900 dark:text-white">{{ $p->name }}</div>
-                            <div class="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
-                                <span>{{ $p->sponsor?->name }}</span>
-                                <span>•</span>
-                                <span class="line-through text-zinc-400">Rp {{ number_format($basePrice, 0, ',', '.') }}</span>
-                                <span class="font-bold text-emerald-600 dark:text-emerald-400">-> Rp {{ number_format($discountedPrice, 0, ',', '.') }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="shrink-0">
-                        @if($isAttached)
-                            <button type="button" wire:click="toggleProductToEvent({{ $p->id }})" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-rose-600 text-white shadow-xs group transition flex items-center gap-1">
-                                <span class="group-hover:hidden">✓ Terdaftar</span>
-                                <span class="hidden group-hover:inline">✕ Hapus</span>
-                            </button>
-                        @else
-                            <button type="button" wire:click="toggleProductToEvent({{ $p->id }})" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-zinc-100 hover:bg-blue-600 text-zinc-700 hover:text-white dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-blue-600 transition flex items-center gap-1">
-                                <flux:icon name="plus" class="w-3.5 h-3.5" />
-                                <span>Pilih</span>
-                            </button>
-                        @endif
-                    </div>
-                </div>
-                @empty
-                <div class="py-12 text-center text-zinc-400 text-sm">
-                    Tidak ditemukan produk yang sesuai pencarian.
-                </div>
-                @endforelse
-            </div>
-
-            <!-- Footer Modal -->
-            <div class="flex items-center justify-between border-t border-zinc-200 dark:border-zinc-700 pt-3 shrink-0">
-                <span class="text-xs text-zinc-500 dark:text-zinc-400">
-                    Perubahan disimpan otomatis secara instan.
-                </span>
-                <flux:button variant="primary" wire:click="$set('showProductModal', false)">
-                    Selesai Memilih
-                </flux:button>
-            </div>
-        </div>
-    </div>
-    @endif
 </div>
