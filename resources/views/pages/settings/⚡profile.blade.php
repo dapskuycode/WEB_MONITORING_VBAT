@@ -76,8 +76,7 @@ new #[Title('Pengaturan Profil')] class extends Component {
     }
 }; ?>
 
-<x-layouts::admin :title="__('Pengaturan Profil')">
-<section class="w-full">
+<div>
     @include('partials.settings-heading', [
         'pageIcon' => 'fa-user',
         'pageTitle' => __('Profil'),
@@ -167,5 +166,4 @@ new #[Title('Pengaturan Profil')] class extends Component {
         @endif
         </div>
     </div>
-</section>
-</x-layouts::admin>
+</div>

@@ -7,8 +7,7 @@ new #[Title('Pengaturan tampilan')] class extends Component {
     //
 }; ?>
 
-<x-layouts::admin :title="__('Pengaturan Tampilan')">
-<section class="w-full">
+<div>
     @include('partials.settings-heading', [
         'pageIcon' => 'fa-palette',
         'pageTitle' => __('Tampilan'),
@@ -56,5 +55,4 @@ new #[Title('Pengaturan tampilan')] class extends Component {
         </div>
         </div>
     </div>
-</section>
-</x-layouts::admin>
+</div>
