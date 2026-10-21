@@ -103,82 +103,144 @@ new class extends Component
 ?>
 
 <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-700 pb-5">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-                <svg class="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+            <h1 class="text-2xl font-bold tracking-tight text-[#212121] flex items-center gap-2.5">
+                <i class="fas fa-cloud-upload-alt text-[#1a73e8]"></i>
                 Bulk Upload Materi Kelas Video (Excel / CSV)
             </h1>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            <p class="text-sm text-[#828282] mt-1.5">
                 Unggah puluhan materi video kelas secara massal menggunakan file format Excel/CSV berisi Judul, Deskripsi, dan Link YouTube.
             </p>
         </div>
-        <button wire:click="downloadTemplate" class="px-4 py-2.5 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition">
-            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <button wire:click="downloadTemplate" class="px-4 py-2.5 border-2 border-[#1a73e8] text-[#1a73e8] hover:bg-[#e8f1fd] rounded-lg text-sm font-semibold flex items-center gap-2 transition">
+            <i class="fas fa-download"></i>
             Unduh Format Template Excel (.CSV)
         </button>
     </div>
 
-    <!-- Upload Card -->
-    <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm space-y-5">
-        <h2 class="text-base font-bold text-zinc-900 dark:text-white">Form Impor Materi Massal</h2>
+    <!-- Upload Form Card -->
+    <div class="bg-white rounded-lg shadow-sm p-6 space-y-5">
+        <h2 class="text-base font-semibold text-[#212121]">Form Impor Materi Massal</h2>
 
         @if ($uploadSuccessCount > 0)
-            <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-3">
-                <svg class="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            <div class="p-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-3">
+                <i class="fas fa-check-circle text-emerald-600"></i>
                 <span>Berhasil mengimpor <strong>{{ $uploadSuccessCount }} materi video</strong> ke kelas yang dipilih!</span>
             </div>
         @endif
 
         @if ($errorMessage)
-            <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-sm">
-                {{ $errorMessage }}
+            <div class="p-4 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center gap-3">
+                <i class="fas fa-exclamation-circle text-rose-600"></i>
+                <span>{{ $errorMessage }}</span>
             </div>
         @endif
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Left Column: Pilih Kelas -->
             <div>
-                <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">1. Pilih Kelas Target *</label>
-                <select wire:model="selectedCourseId" class="w-full px-4 py-2.5 text-sm rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 dark:text-white font-medium">
+                <label class="block text-sm font-semibold text-[#212121] mb-2">Pilih Kelas Target</label>
+                <select wire:model="selectedCourseId" class="w-full px-4 py-3 text-sm rounded-lg border border-[#e2e8f0] bg-white text-[#212121] focus:border-[#1a73e8] focus:ring-2 focus:ring-[#1a73e8]/20 outline-none transition">
                     @foreach ($courses as $c)
                         <option value="{{ $c->id }}">{{ $c->title }}</option>
                     @endforeach
                 </select>
-                <p class="text-xs text-zinc-400 mt-1">Seluruh video dari file akan otomatis dihubungkan ke kelas ini.</p>
+                <p class="text-xs text-[#828282] mt-2">Seluruh video dari file akan otomatis dihubungkan ke kelas ini.</p>
             </div>
 
+            <!-- Right Column: Drag & Drop Zone -->
             <div>
-                <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1.5">2. Pilih File Template (.CSV / Excel) *</label>
-                <input type="file" wire:model="csvFile" accept=".csv,.txt" class="w-full px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                <div wire:loading wire:target="csvFile" class="text-xs text-blue-600 mt-1">Mengunggah file...</div>
+                <label class="block text-sm font-semibold text-[#212121] mb-2">Pilih File Template (.CSV / Excel)</label>
+                <div class="relative">
+                    <label for="csvFileInput" class="block w-full cursor-pointer">
+                        <div class="border-2 border-dashed border-[#1a73e8] bg-[#f4f6f8] rounded-lg p-8 text-center hover:bg-[#e8f1fd] transition">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-[#1a73e8] mb-3"></i>
+                            <p class="text-sm font-medium text-[#212121]">Klik atau seret file template ke sini</p>
+                            <p class="text-xs text-[#828282] mt-1">Format: CSV, maksimal 5MB</p>
+                        </div>
+                    </label>
+                    <input 
+                        id="csvFileInput" 
+                        type="file" 
+                        wire:model="csvFile" 
+                        accept=".csv,.txt" 
+                        class="hidden"
+                    >
+                </div>
+                <div wire:loading wire:target="csvFile" class="text-xs text-[#1a73e8] mt-2 flex items-center gap-2">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Mengunggah file...
+                </div>
+                @if ($csvFile)
+                    <div class="text-xs text-emerald-600 mt-2 flex items-center gap-2">
+                        <i class="fas fa-file-csv"></i>
+                        File dipilih: {{ $csvFile->getClientOriginalName() }}
+                    </div>
+                @endif
             </div>
         </div>
 
         <div class="pt-2 flex justify-end">
-            <button wire:click="uploadBulk" wire:loading.attr="disabled" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-sm flex items-center gap-2 transition disabled:opacity-50">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            <button wire:click="uploadBulk" wire:loading.attr="disabled" class="px-6 py-3 bg-[#1a73e8] hover:bg-[#1557b0] text-white rounded-lg text-sm font-semibold shadow-sm flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-upload"></i>
                 Mulai Proses Import Video
             </button>
         </div>
     </div>
 
-    <!-- Riwayat Video Terakhir -->
-    <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm space-y-4">
-        <h3 class="text-sm font-bold text-zinc-900 dark:text-white">Daftar Materi Video Terbaru</h3>
-        <div class="divide-y divide-zinc-100 dark:divide-zinc-800">
-            @forelse ($recentVideos as $vid)
-                <div class="py-3 flex items-center justify-between">
-                    <div>
-                        <div class="text-sm font-bold text-zinc-900 dark:text-white">{{ $vid->title }}</div>
-                        <div class="text-xs text-zinc-400 mt-0.5">{{ $vid->course?->title }} • {{ $vid->source_type }}</div>
-                    </div>
-                    <a href="{{ $vid->source_path }}" target="_blank" class="text-xs text-blue-600 hover:underline flex items-center gap-1 font-medium">
-                        Buka Video ↗
-                    </a>
+    <!-- Recent Uploads Table -->
+    <div class="bg-white rounded-lg shadow-sm p-6 space-y-4">
+        <h3 class="text-base font-semibold text-[#212121]">Riwayat Upload Terbaru</h3>
+        
+        @if ($recentVideos->isEmpty())
+            <div class="py-12 text-center">
+                <div class="w-14 h-14 bg-[#f4f6f8] rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-video text-[#a0aec0] text-xl"></i>
                 </div>
-            @empty
-                <p class="text-xs text-zinc-500 py-4 text-center">Belum ada video materi yang diunggah.</p>
-            @endforelse
-        </div>
+                <p class="text-sm font-medium text-[#212121] mb-1">Belum ada video materi yang diunggah</p>
+                <p class="text-xs text-[#828282]">Video yang berhasil diimpor akan muncul di sini.</p>
+            </div>
+        @else
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-[#f4f6f8] border-b border-[#e2e8f0]">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-[#212121] uppercase tracking-wider">Judul Video</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-[#212121] uppercase tracking-wider">Kelas Target</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-[#212121] uppercase tracking-wider">Status Import</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-[#212121] uppercase tracking-wider">Tanggal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#e2e8f0]">
+                        @foreach ($recentVideos as $vid)
+                            <tr class="hover:bg-[#f4f6f8] transition">
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-youtube text-red-500"></i>
+                                        <a href="{{ $vid->source_path }}" target="_blank" class="font-medium text-[#212121] hover:text-[#1a73e8] transition">
+                                            {{ $vid->title }}
+                                        </a>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-[#828282]">
+                                    {{ $vid->course?->title ?? '-' }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <i class="fas fa-check-circle text-[10px]"></i>
+                                        Sukses
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-[#828282]">
+                                    {{ $vid->created_at->format('d/m/Y H:i') }}
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </div>
 </div>
