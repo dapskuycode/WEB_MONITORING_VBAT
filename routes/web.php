@@ -39,6 +39,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('admin/rules', RuleConfigManager::class)->name('admin.rules');
         Route::get('admin/analytics', AnalyticsDashboard::class)->name('admin.analytics');
         Route::view('admin/modal-ui-kit', 'pages.admin.modal-ui-kit')->name('admin.modal-ui-kit');
+        Route::view('admin/dark-theme', 'pages.admin.dark-theme')->name('admin.dark-theme');
     });
 
     // 2. Modul Sponsor (Mitra Sponsor, Super Admin, & Owner)
