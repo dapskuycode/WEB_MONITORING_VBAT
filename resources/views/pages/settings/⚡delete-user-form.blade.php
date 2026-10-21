@@ -1,8 +1,9 @@
 <?php
 
 use Livewire\Component;
+use Livewire\Attributes\Layout;
 
-new class extends Component {}; ?>
+new #[Layout('layouts.admin')] class extends Component {}; ?>
 
 <div>
     <!-- Danger Zone Card -->

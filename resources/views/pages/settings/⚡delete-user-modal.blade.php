@@ -4,8 +4,9 @@ use App\Concerns\PasswordValidationRules;
 use App\Livewire\Actions\Logout;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Livewire\Attributes\Layout;
 
-new class extends Component {
+new #[Layout('layouts.admin')] class extends Component {
     use PasswordValidationRules;
 
     public string $password = '';
