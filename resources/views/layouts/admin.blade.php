@@ -67,66 +67,34 @@
                     <!-- Left: Page Title with Icon & Description -->
                     <div>
                         <div class="flex items-start gap-4">
-                            @if(request()->routeIs('admin.analytics'))
-                                <i class="fas fa-chart-line text-[#1a73e8] text-4xl mt-1"></i>
-                                <div>
-                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Analitik Aplikasi</h1>
-                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
-                                        Pantau kinerja aplikasi, engagement user, dan performa sponsor secara real‑time.
-                                    </p>
-                                </div>
-                            @elseif(request()->routeIs('dashboard'))
-                                <i class="fas fa-home text-[#1a73e8] text-4xl mt-1"></i>
-                                <div>
-                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Dashboard Utama</h1>
-                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
-                                        Ringkasan performa aplikasi dan aktivitas terkini.
-                                    </p>
-                                </div>
-                            @elseif(request()->routeIs('admin.sponsors'))
-                                <i class="fas fa-handshake text-[#1a73e8] text-4xl mt-1"></i>
-                                <div>
-                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Manajemen Sponsor</h1>
-                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
-                                        Kelola sponsor, verifikasi dokumen, dan kelola benefit tiap tier.
-                                    </p>
-                                </div>
-                            @elseif(request()->routeIs('admin.products'))
-                                <i class="fas fa-cube text-[#1a73e8] text-4xl mt-1"></i>
-                                <div>
-                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Katalog Produk</h1>
-                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
-                                        Kelola katalog produk, inventory, dan link penjualan.
-                                    </p>
-                                </div>
-                            @elseif(request()->routeIs('admin.campaigns'))
-                                <i class="fas fa-bullhorn text-[#1a73e8] text-4xl mt-1"></i>
-                                <div>
-                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Moderasi Kampanye</h1>
-                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
-                                        Tinjau dan moderasi kampanye promosi dari sponsor.
-                                    </p>
-                                </div>
-                            @elseif(request()->routeIs('admin.events'))
-                                <i class="fas fa-calendar-alt text-[#1a73e8] text-4xl mt-1"></i>
-                                <div>
-                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Event & Diskon Shop</h1>
-                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
-                                        Atur program event diskon khusus dan manage produk yang masuk ke promo.
-                                    </p>
-                                </div>
-                            @elseif(request()->routeIs('admin.bulk-upload'))
-                                <i class="fas fa-cloud-upload-alt text-[#1a73e8] text-4xl mt-1"></i>
-                                <div>
-                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Bulk Upload Materi Kelas</h1>
-                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
-                                        Unggah puluhan materi video kelas secara massal menggunakan file format Excel/CSV.
-                                    </p>
-                                </div>
-                            @else
-                                <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">{{ $title ?? $pageTitle ?? 'Analitik Sponsor' }}</h1>
-                                <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">{{ $description ?? 'Halaman administrasi VBAT Ponsel' }}</p>
+                            @php
+                                $currentPageIcon = $pageIcon ?? null;
+                                $currentPageTitle = $pageTitle ?? $title ?? 'Dashboard';
+                                $currentPageDescription = $pageDescription ?? '';
+                                
+                                // Fallback untuk route-specific titles
+                                if (!$pageIcon || !$pageDescription) {
+                                    if (request()->routeIs('admin.analytics')) {
+                                        $currentPageIcon = $currentPageIcon ?? 'fa-chart-line';
+                                        $currentPageTitle = $currentPageTitle ?? 'Analitik Aplikasi';
+                                        $currentPageDescription = $currentPageDescription ?? 'Pantau kinerja aplikasi, engagement user, dan performa sponsor secara real‑time.';
+                                    } elseif (request()->routeIs('dashboard')) {
+                                        $currentPageIcon = $currentPageIcon ?? 'fa-home';
+                                        $currentPageTitle = $currentPageTitle ?? 'Dashboard Utama';
+                                        $currentPageDescription = $currentPageDescription ?? 'Ringkasan performa aplikasi dan aktivitas terkini.';
+                                    }
+                                }
+                            @endphp
+                            
+                            @if($currentPageIcon)
+                                <i class="fas {{ $currentPageIcon }} text-[#1a73e8] text-4xl mt-1 flex-shrink-0"></i>
                             @endif
+                            <div>
+                                <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">{{ $currentPageTitle }}</h1>
+                                @if($currentPageDescription)
+                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">{{ $currentPageDescription }}</p>
+                                @endif
+                            </div>
                         </div>
                     </div>
 

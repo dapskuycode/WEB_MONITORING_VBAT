@@ -1,6 +1,9 @@
 <x-layouts::admin
     :title="__('Program Best Deal')"
     :breadcrumb="[['label' => 'Admin', 'url' => route('dashboard')], ['label' => 'Program Best Deal']]"
+    pageIcon="fa-star"
+    pageTitle="Program Best Deal"
+    pageDescription="Kelola produk unggulan dan penawaran terbaik untuk teknisi"
 >
     <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
         <livewire:admin.best-deal-manager />
