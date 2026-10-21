@@ -103,17 +103,8 @@ new class extends Component
 ?>
 
 <div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-bold tracking-tight text-[#212121] flex items-center gap-2.5">
-                <i class="fas fa-cloud-upload-alt text-[#1a73e8]"></i>
-                Bulk Upload Materi Kelas Video (Excel / CSV)
-            </h1>
-            <p class="text-sm text-[#828282] mt-1.5">
-                Unggah puluhan materi video kelas secara massal menggunakan file format Excel/CSV berisi Judul, Deskripsi, dan Link YouTube.
-            </p>
-        </div>
+    <!-- Quick Action: Download Template -->
+    <div class="flex justify-end">
         <button wire:click="downloadTemplate" class="px-4 py-2.5 border-2 border-[#1a73e8] text-[#1a73e8] hover:bg-[#e8f1fd] rounded-lg text-sm font-semibold flex items-center gap-2 transition">
             <i class="fas fa-download"></i>
             Unduh Format Template Excel (.CSV)
