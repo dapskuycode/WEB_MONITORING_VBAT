@@ -29,20 +29,6 @@
         </div>
     </div>
 
-    {{-- Settings --}}
-    <div class="border-t border-slate-200 dark:border-zinc-700 pt-4">
-        <a 
-            href="{{ route('profile.edit') }}" 
-            wire:navigate 
-            class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->routeIs('profile.edit', 'security.edit', 'appearance.edit', 'password.confirm') ? 'bg-[#EBF3FE] text-[#1a68f0] dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-slate-800 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800' }}"
-            :class="sidebarOpen ? '' : 'justify-center px-0'"
-            :title="!sidebarOpen ? 'Pengaturan' : ''"
-        >
-            <i class="fas fa-cog w-5 h-5 shrink-0 {{ request()->routeIs('profile.edit', 'security.edit', 'appearance.edit', 'password.confirm') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
-            <span x-show="sidebarOpen" x-transition.opacity class="truncate">Pengaturan</span>
-        </a>
-    </div>
-
     {{-- Group Manajemen --}}
     <div>
         <p x-show="sidebarOpen" x-transition.opacity class="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-2 truncate">

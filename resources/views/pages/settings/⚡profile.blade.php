@@ -9,7 +9,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Profile settings')] class extends Component {
+new #[Title('Pengaturan Profil')] class extends Component {
     use ProfileValidationRules;
 
     public string $name = '';
@@ -77,6 +77,12 @@ new #[Title('Profile settings')] class extends Component {
 }; ?>
 
 <section class="w-full">
+    @include('partials.settings-heading', [
+        'pageIcon' => 'fa-user',
+        'pageTitle' => __('Profil'),
+        'pageDescription' => __('Perbarui nama dan alamat email Anda')
+    ])
+
     <x-pages::settings.layout :heading="__('Profil')" :subheading="__('Perbarui nama dan alamat email Anda')">
         <form wire:submit="updateProfileInformation" class="space-y-5">
             <!-- Name Input -->

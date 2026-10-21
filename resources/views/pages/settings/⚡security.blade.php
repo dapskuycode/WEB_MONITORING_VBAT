@@ -167,15 +167,19 @@ new #[Title('Pengaturan keamanan')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    @include('partials.settings-heading')
+    @include('partials.settings-heading', [
+        'pageIcon' => 'fa-shield-alt',
+        'pageTitle' => __('Keamanan'),
+        'pageDescription' => __('Kelola password dan pengaturan keamanan akun Anda')
+    ])
 
-    <flux:heading level="2" class="sr-only">{{ __('Security settings') }}</flux:heading>
+    <flux:heading level="2" class="sr-only">{{ __('Pengaturan keamanan') }}</flux:heading>
 
-    <x-pages::settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
+    <x-pages::settings.layout :heading="__('Perbarui Password')" :subheading="__('Pastikan akun Anda menggunakan password yang panjang dan acak agar tetap aman')">
         <form method="POST" wire:submit="updatePassword" class="space-y-5">
             <!-- Current Password -->
             <div>
-                <label for="current_password" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Current password') }}</label>
+                <label for="current_password" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Password saat ini') }}</label>
                 <input 
                     id="current_password"
                     wire:model="current_password"
@@ -191,7 +195,7 @@ new #[Title('Pengaturan keamanan')] class extends Component {
 
             <!-- New Password -->
             <div>
-                <label for="password" class="block text-sm font-medium text-[#212121] mb-2">{{ __('New password') }}</label>
+                <label for="password" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Password baru') }}</label>
                 <input 
                     id="password"
                     wire:model="password"
@@ -207,7 +211,7 @@ new #[Title('Pengaturan keamanan')] class extends Component {
 
             <!-- Confirm Password -->
             <div>
-                <label for="password_confirmation" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Confirm password') }}</label>
+                <label for="password_confirmation" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Konfirmasi password') }}</label>
                 <input 
                     id="password_confirmation"
                     wire:model="password_confirmation"

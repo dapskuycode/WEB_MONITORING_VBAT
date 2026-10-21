@@ -8,7 +8,11 @@ new #[Title('Pengaturan tampilan')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    @include('partials.settings-heading')
+    @include('partials.settings-heading', [
+        'pageIcon' => 'fa-palette',
+        'pageTitle' => __('Tampilan'),
+        'pageDescription' => __('Perbarui pengaturan tampilan untuk akun Anda')
+    ])
 
     <x-pages::settings.layout :heading="__('Tampilan')" :subheading="__('Perbarui pengaturan tampilan untuk akun Anda')">
         <!-- ponytail: Alpine.js theme toggle ketika backend implement theme persistence -->
