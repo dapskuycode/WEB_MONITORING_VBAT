@@ -6,8 +6,10 @@
     <body class="min-h-screen bg-[#F4F6F8] dark:bg-zinc-950 text-[#212121] dark:text-zinc-100 antialiased font-sans selection:bg-blue-600/15 selection:text-blue-600"
           x-data="{ 
               sidebarOpen: true,
+              sidebarPinned: true,
               toggleSidebar() {
                   this.sidebarOpen = !this.sidebarOpen;
+                  this.sidebarPinned = this.sidebarOpen;
               }
           }"
     >
@@ -16,18 +18,19 @@
             <aside 
                 class="fixed inset-y-0 left-0 z-40 bg-white dark:bg-zinc-900 border-r border-slate-200/80 dark:border-zinc-800 transition-all duration-300 flex flex-col justify-between"
                 :class="sidebarOpen ? 'w-64' : 'w-20'"
+                @mouseenter="if(!sidebarPinned) sidebarOpen = true"
+                @mouseleave="if(!sidebarPinned) sidebarOpen = false"
             >
                 <!-- Subtle Collapse / Minimize Icon floating on sidebar border edge -->
                 <button 
                     type="button"
                     @click="toggleSidebar()"
-                    class="hidden lg:flex items-center justify-center w-6 h-6 rounded-full bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-all cursor-pointer focus:outline-none shadow-md z-50 absolute -right-3 top-6"
+                    class="hidden lg:flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border-2 border-slate-300 dark:border-zinc-700 text-slate-600 hover:text-[#1a73e8] dark:text-zinc-400 dark:hover:text-blue-400 transition-all cursor-pointer focus:outline-none shadow-md z-50 absolute -right-4 top-6"
+                    @mouseenter="if(!sidebarPinned) sidebarOpen = true"
                     :title="sidebarOpen ? 'Perkecil Sidebar' : 'Perluas Sidebar'"
                     aria-label="Toggle collapse sidebar"
                 >
-                    <svg class="w-3.5 h-3.5 transition-transform duration-200" :class="sidebarOpen ? '' : 'rotate-180'" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-                    </svg>
+                    <i class="fas fa-chevron-right w-5 h-5 transition-transform duration-300" :class="sidebarOpen ? 'rotate-180' : ''"></i>
                 </button>
 
                 <!-- Top Brand Header -->
