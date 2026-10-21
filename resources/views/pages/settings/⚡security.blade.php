@@ -166,6 +166,7 @@ new #[Title('Pengaturan keamanan')] class extends Component {
     }
 }; ?>
 
+<x-layouts::admin :title="__('Pengaturan Keamanan')">
 <section class="w-full">
     @include('partials.settings-heading', [
         'pageIcon' => 'fa-shield-alt',
@@ -386,3 +387,4 @@ new #[Title('Pengaturan keamanan')] class extends Component {
         </div>
     </flux:modal>
 </section>
+</x-layouts::admin>
