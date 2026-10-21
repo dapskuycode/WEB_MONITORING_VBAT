@@ -247,29 +247,7 @@ new class extends Component
 ?>
 
 <div class="space-y-6 text-[#212121]">
-    <!-- Info & Action Bar -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-center gap-3">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-200">
-                <i class="fas fa-arrow-right"></i>
-                Bikin Event → Pilih Produk
-            </span>
-            <p class="text-sm text-[#828282]">
-                Atur program event diskon khusus. Hanya produk yang Anda pilih yang akan mendapatkan harga diskon dan tampil di section promo event.
-            </p>
-        </div>
-
-        <button 
-            type="button"
-            wire:click="openCreateModal"
-            class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors shrink-0"
-        >
-            <i class="fas fa-plus"></i>
-            <span>Buat Event Baru</span>
-        </button>
-    </div>
-
-    <!-- Search & Filter Bar -->
+    <!-- Search & Filter Bar with Action Button -->
     <div class="p-3.5 sm:p-4 bg-white rounded-[12px] border border-slate-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-3">
         <!-- Search Input -->
         <div class="relative flex-1">
@@ -284,7 +262,7 @@ new class extends Component
             >
         </div>
 
-        <!-- Filter Dropdowns on Right -->
+        <!-- Filter Dropdowns & Action Button on Right -->
         <div class="flex items-center gap-2.5 shrink-0">
             <select 
                 wire:model.live="typeFilter" 
@@ -303,6 +281,15 @@ new class extends Component
                 <option value="active">Aktif</option>
                 <option value="finished">Selesai</option>
             </select>
+
+            <button 
+                type="button"
+                wire:click="openCreateModal"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
+            >
+                <i class="fas fa-plus"></i>
+                <span>Buat Event Baru</span>
+            </button>
         </div>
     </div>
 
