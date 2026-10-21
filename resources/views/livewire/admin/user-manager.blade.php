@@ -56,9 +56,9 @@
 
     <!-- Filter Bar -->
     <div class="bg-white rounded-xl p-4 shadow-sm">
-        <div class="flex flex-col sm:flex-row gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <!-- Search Input (Left, Wide) -->
-            <div class="flex-1">
+            <div class="flex-1 min-w-[200px]">
                 <div class="relative">
                     <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-[#828282] text-sm"></i>
                     <input 
@@ -71,7 +71,7 @@
             </div>
 
             <!-- Role Filter Dropdown -->
-            <div class="sm:w-48">
+            <div class="w-full sm:w-auto sm:min-w-[180px]">
                 <select 
                     wire:model.live="roleFilter"
                     class="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent appearance-none bg-white bg-no-repeat bg-right pr-10"
@@ -85,7 +85,7 @@
             </div>
 
             <!-- KTA Status Filter -->
-            <div class="sm:w-48">
+            <div class="w-full sm:w-auto sm:min-w-[180px]">
                 <select 
                     wire:model.live="ktaStatusFilter"
                     class="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent appearance-none bg-white bg-no-repeat bg-right pr-10"
