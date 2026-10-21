@@ -3,11 +3,9 @@
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Campaign;
-use App\Models\CampaignLog;
 use App\Models\Sponsor;
 use App\Models\SponsorProduct;
 use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
 
 new class extends Component
 {
@@ -129,372 +127,445 @@ new class extends Component
         if (!$this->sponsor) {
             return [
                 'hasSponsor' => false,
-                'totalViews' => 0,
-                'totalClicks' => 0,
-                'ctr' => 0,
-                'totalProducts' => 0,
-                'totalWishlists' => 0,
+                'quotas' => [
+                    'hero_slider' => ['label' => 'Hero Slider (16:9)', 'used' => 0, 'max' => 5, 'remaining' => 5, 'percent' => 100, 'icon' => 'fa-images', 'route' => route('sponsor.campaigns.hero')],
+                    'horizontal_slider' => ['label' => 'Horizontal Slider', 'used' => 0, 'max' => 2, 'remaining' => 2, 'percent' => 100, 'icon' => 'fa-sliders-h', 'route' => route('sponsor.campaigns.horizontal')],
+                    'card_slider' => ['label' => 'Card Slider', 'used' => 0, 'max' => 10, 'remaining' => 10, 'percent' => 100, 'icon' => 'fa-th-large', 'route' => route('sponsor.campaigns.card')],
+                    'popup_ad' => ['label' => 'Pop Up Iklan', 'used' => 0, 'max' => 1, 'remaining' => 1, 'percent' => 100, 'icon' => 'fa-bullhorn', 'route' => route('sponsor.campaigns.popup')],
+                ],
                 'campaigns' => collect(),
-                'placementCounts' => [],
+                'products' => collect(),
             ];
         }
 
         $sponsorId = $this->sponsor->id;
 
-        $campaignIds = Campaign::where('sponsor_id', $sponsorId)->pluck('id');
-        $productIds = SponsorProduct::where('sponsor_id', $sponsorId)->pluck('id');
+        // Hitung kuota real-time untuk masing-masing penempatan iklan
+        $countHero = Campaign::where('sponsor_id', $sponsorId)->where('placement_type', 'hero_slider')->count();
+        $countHorizontal = Campaign::where('sponsor_id', $sponsorId)->where('placement_type', 'shop_horizontal')->count();
+        $countCard = Campaign::where('sponsor_id', $sponsorId)->where('placement_type', 'card_slider')->count();
+        $countPopup = Campaign::where('sponsor_id', $sponsorId)->where('placement_type', 'popup_modal')->count();
 
-        $totalViews = CampaignLog::whereIn('campaign_id', $campaignIds)->where('event_type', 'view')->count();
-        $totalClicks = CampaignLog::whereIn('campaign_id', $campaignIds)->where('event_type', 'click')->count();
-        $ctr = $totalViews > 0 ? round(($totalClicks / $totalViews) * 100, 2) : 0;
+        // Resolusi batas kuota dari benefit tier sponsor (atau fallback rasional sesuai brief: 5, 2, 10, 1)
+        $benefitHero = $this->sponsor->resolveBenefit('hero_slider');
+        $benefitPopup = $this->sponsor->resolveBenefit('popup_cta');
+        $benefitInfeed = $this->sponsor->resolveBenefit('infeed_banner');
 
-        $totalProducts = $productIds->count();
-        $totalWishlists = CampaignLog::whereIn('sponsor_product_id', $productIds)->where('event_type', 'wishlist')->count();
+        $maxHero = is_numeric($benefitHero) ? (int)$benefitHero : 5;
+        $maxHorizontal = is_numeric($benefitInfeed) ? (int)$benefitInfeed : 2;
+        $maxCard = 10;
+        $maxPopup = is_numeric($benefitPopup) ? (int)$benefitPopup : 1;
 
-        $placementCounts = [
-            'hero_slider' => Campaign::where('sponsor_id', $sponsorId)->where('placement_type', 'hero_slider')->count(),
-            'shop_horizontal' => Campaign::where('sponsor_id', $sponsorId)->where('placement_type', 'shop_horizontal')->count(),
-            'card_slider' => Campaign::where('sponsor_id', $sponsorId)->where('placement_type', 'card_slider')->count(),
-            'popup_modal' => Campaign::where('sponsor_id', $sponsorId)->where('placement_type', 'popup_modal')->count(),
+        // Pastikan kalkulasi sisa dan persentase tidak bernilai negatif
+        $remHero = max(0, $maxHero - $countHero);
+        $remHorizontal = max(0, $maxHorizontal - $countHorizontal);
+        $remCard = max(0, $maxCard - $countCard);
+        $remPopup = max(0, $maxPopup - $countPopup);
+
+        $quotas = [
+            'hero_slider' => [
+                'label' => 'Hero Slider (16:9)',
+                'used' => $countHero,
+                'max' => $maxHero,
+                'remaining' => $remHero,
+                'percent' => $maxHero > 0 ? min(100, round(($remHero / $maxHero) * 100)) : 0,
+                'icon' => 'fa-images',
+                'route' => route('sponsor.campaigns.hero'),
+            ],
+            'horizontal_slider' => [
+                'label' => 'Horizontal Slider',
+                'used' => $countHorizontal,
+                'max' => $maxHorizontal,
+                'remaining' => $remHorizontal,
+                'percent' => $maxHorizontal > 0 ? min(100, round(($remHorizontal / $maxHorizontal) * 100)) : 0,
+                'icon' => 'fa-sliders-h',
+                'route' => route('sponsor.campaigns.horizontal'),
+            ],
+            'card_slider' => [
+                'label' => 'Card Slider',
+                'used' => $countCard,
+                'max' => $maxCard,
+                'remaining' => $remCard,
+                'percent' => $maxCard > 0 ? min(100, round(($remCard / $maxCard) * 100)) : 0,
+                'icon' => 'fa-th-large',
+                'route' => route('sponsor.campaigns.card'),
+            ],
+            'popup_ad' => [
+                'label' => 'Pop Up Iklan',
+                'used' => $countPopup,
+                'max' => $maxPopup,
+                'remaining' => $remPopup,
+                'percent' => $maxPopup > 0 ? min(100, round(($remPopup / $maxPopup) * 100)) : 0,
+                'icon' => 'fa-bullhorn',
+                'route' => route('sponsor.campaigns.popup'),
+            ],
         ];
 
+        // Daftar kampanye promosi (tanpa CTR / Clicks, hanya Kampanye, Penempatan, Status)
         $campaigns = Campaign::where('sponsor_id', $sponsorId)
-            ->withCount([
-                'logs as views_count' => fn($q) => $q->where('event_type', 'view'),
-                'logs as clicks_count' => fn($q) => $q->where('event_type', 'click'),
-            ])
             ->latest()
-            ->take(10)
+            ->take(6)
             ->get();
 
-        $topProducts = SponsorProduct::where('sponsor_id', $sponsorId)
-            ->withCount('wishlists')
-            ->orderByDesc('view_count')
-            ->take(5)
+        // Katalog produk suku cadang milik sponsor
+        $products = SponsorProduct::where('sponsor_id', $sponsorId)
+            ->latest()
+            ->take(6)
             ->get();
 
         return [
             'hasSponsor' => true,
-            'totalViews' => $totalViews,
-            'totalClicks' => $totalClicks,
-            'ctr' => $ctr,
-            'totalProducts' => $totalProducts,
-            'totalWishlists' => $totalWishlists,
+            'quotas' => $quotas,
             'campaigns' => $campaigns,
-            'topProducts' => $topProducts,
-            'placementCounts' => $placementCounts,
+            'products' => $products,
         ];
     }
 };
 ?>
 
-<div class="space-y-6">
-    @if ($logoSuccessMessage)
-        <div class="p-4 rounded-xl bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-xs flex items-center justify-between shadow-lg">
+<div class="space-y-6 select-none">
+    {{-- Toast Notifikasi Sukses --}}
+    @if ($logoSuccessMessage || $headerSuccessMessage)
+        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center justify-between shadow-xs">
             <div class="flex items-center gap-2">
-                <flux:icon name="check-circle" class="w-4 h-4 text-emerald-400" />
-                <span>{{ $logoSuccessMessage }}</span>
+                <i class="fas fa-check-circle text-emerald-600 text-sm"></i>
+                <span class="font-medium">{{ $logoSuccessMessage ?: $headerSuccessMessage }}</span>
             </div>
-            <button wire:click="$set('logoSuccessMessage', '')" class="text-emerald-400 hover:text-white font-bold">✕</button>
+            <button wire:click="$set('logoSuccessMessage', ''); $set('headerSuccessMessage', '')" class="text-emerald-700 hover:text-emerald-900 font-bold cursor-pointer">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     @endif
 
-    <!-- Header Sponsor -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
-        <div class="flex items-center gap-4">
-            <!-- Logo with quick change trigger -->
-            <div class="relative group">
-                <div class="w-16 h-16 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-700/80 flex items-center justify-center overflow-hidden shadow-lg shadow-black/40">
+    {{-- 1. HEADER SECTION (Profile & Actions - Crisp White Container) --}}
+    <div class="bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 p-6 shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+        <!-- Left Side: Partner Profile Area -->
+        <div class="flex items-center gap-4 min-w-0">
+            <!-- Large Avatar: SP with small camera icon for upload -->
+            <div class="relative shrink-0">
+                <div class="w-16 h-16 rounded-[12px] bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden shadow-xs">
                     @if ($sponsor?->logo_path)
-                        <img src="{{ asset('storage/' . $sponsor->logo_path) }}" alt="{{ $sponsor->name }}" class="w-full h-full object-contain p-1.5">
+                        <img src="{{ asset('storage/' . $sponsor->logo_path) }}" alt="{{ $sponsor->name }}" class="w-full h-full object-contain p-1">
                     @else
-                        <div class="w-full h-full bg-gradient-to-br from-indigo-600 to-blue-600 flex items-center justify-center text-white font-black text-xl">
+                        <span class="text-xl font-extrabold text-[#1a68f0] tracking-wider uppercase">
                             {{ strtoupper(substr($sponsor?->name ?? 'SP', 0, 2)) }}
-                        </div>
+                        </span>
                     @endif
                 </div>
-                <button type="button" wire:click="$set('showLogoModal', true)" title="Ganti Logo Resmi" class="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-md border-2 border-zinc-900 transition">
-                    <flux:icon name="camera" class="w-3 h-3" />
+                <button 
+                    type="button" 
+                    wire:click="$set('showLogoModal', true)" 
+                    title="Upload Logo Resmi" 
+                    class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#1a68f0] hover:bg-blue-600 text-white shadow-xs border-2 border-white dark:border-zinc-900 flex items-center justify-center cursor-pointer transition-transform hover:scale-105"
+                >
+                    <i class="fas fa-camera text-[10px]"></i>
                 </button>
             </div>
 
-            <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="text-2xl font-bold text-white tracking-tight">{{ $sponsor?->name ?? 'Portal Mitra Sponsor' }}</h1>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-900/60 text-blue-300 border border-blue-700/50">
+            <!-- Partner Info & Quick Links -->
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <h2 class="text-xl sm:text-2xl font-bold text-[#212121] dark:text-zinc-100 tracking-tight truncate">
+                        {{ $sponsor?->name ?? 'Mitra Sponsor' }}
+                    </h2>
+                    <!-- Clean Pastel Blue Badge for TIER PARTNER -->
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[#EBF3FE] text-[#1a68f0] border border-blue-200/60 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-900/60">
                         TIER {{ strtoupper($sponsor?->tier ?? 'PARTNER') }}
                     </span>
                 </div>
-                <div class="flex items-center gap-3 mt-1 text-xs text-zinc-400">
-                    <span>Dashboard analitik performa iklan & katalog produk khusus mitra {{ $sponsor?->name }}</span>
-                    <button type="button" wire:click="$set('showProfileModal', true)" class="text-blue-400 hover:underline font-semibold flex items-center gap-1">
-                        Ubah Profil
+
+                <div class="flex flex-wrap items-center gap-3.5 mt-1.5 text-xs text-[#828282] dark:text-zinc-400">
+                    <button type="button" wire:click="$set('showProfileModal', true)" class="text-[#1a68f0] hover:underline font-semibold flex items-center gap-1.5 cursor-pointer">
+                        <i class="fas fa-pen-to-square text-[11px]"></i>
+                        <span>Ubah Profil</span>
                     </button>
-                    <button type="button" wire:click="$set('showHeaderModal', true)" class="text-blue-400 hover:underline font-semibold flex items-center gap-1">
-                        Gambar Header
+                    <span class="text-slate-300 dark:text-zinc-700">•</span>
+                    <button type="button" wire:click="$set('showHeaderModal', true)" class="text-[#1a68f0] hover:underline font-semibold flex items-center gap-1.5 cursor-pointer">
+                        <i class="fas fa-panorama text-[11px]"></i>
+                        <span>Gambar Header</span>
                     </button>
-                    <button type="button" wire:click="$set('showLogoModal', true)" class="text-blue-400 hover:underline font-semibold flex items-center gap-1">
-                        <flux:icon name="arrow-up-tray" class="w-3 h-3" />
+                    <span class="text-slate-300 dark:text-zinc-700">•</span>
+                    <button type="button" wire:click="$set('showLogoModal', true)" class="text-[#1a68f0] hover:underline font-semibold flex items-center gap-1.5 cursor-pointer">
+                        <i class="fas fa-upload text-[11px]"></i>
                         <span>Upload Logo</span>
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="flex items-center gap-2.5">
-            <button type="button" wire:click="$refresh" class="px-3.5 py-2 rounded-xl bg-zinc-800/80 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold border border-zinc-700/80 transition flex items-center gap-1.5 shadow-sm">
-                <flux:icon name="arrow-path" class="w-3.5 h-3.5" />
+        <!-- Right Side: Action Buttons -->
+        <div class="flex items-center gap-3 shrink-0">
+            <!-- Secondary Outline Button: Segarkan Data -->
+            <button 
+                type="button" 
+                wire:click="$refresh" 
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs sm:text-sm font-semibold text-[#212121] dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-700/60 transition-colors shadow-xs cursor-pointer"
+            >
+                <i class="fas fa-arrows-rotate text-xs text-[#828282] dark:text-zinc-400"></i>
                 <span>Segarkan Data</span>
             </button>
-            <a href="{{ route('sponsor.campaigns.hero') }}" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-lg shadow-blue-600/30 transition flex items-center gap-1.5">
-                <flux:icon name="plus" class="w-3.5 h-3.5" />
+
+            <!-- Primary VBAT Solid Blue Button: + Ajukan Kampanye -->
+            <a 
+                href="{{ route('sponsor.campaigns.hero') }}" 
+                wire:navigate 
+                class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1a68f0] hover:bg-blue-600 text-white text-xs sm:text-sm font-bold shadow-xs transition-colors cursor-pointer"
+            >
+                <i class="fas fa-plus text-xs"></i>
                 <span>+ Ajukan Kampanye</span>
             </a>
         </div>
     </div>
 
-    <!-- KPI Metric Cards Khusus Sponsor (Dark Harmonized) -->
+    {{-- 2. CRITICAL FIX - QUOTA SUMMARY CARDS (NO ANALYTICS) --}}
+    {{-- Row of 4 clean, white cards with very soft drop shadows. Each card displays a quota type, relevant minimal icon, and visual progress bar --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- 1. Total Impresi Banner -->
-        <div class="p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-sm relative overflow-hidden group hover:border-blue-500/50 transition">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Tayangan Banner</span>
-                <div class="p-2.5 rounded-xl bg-blue-950/60 text-blue-400 border border-blue-900/50">
-                    <flux:icon name="eye" class="w-4 h-4" />
-                </div>
-            </div>
-            <div class="mt-3">
-                <span class="text-3xl font-extrabold text-white tracking-tight">{{ number_format($totalViews) }}</span>
-                <p class="text-xs text-zinc-400 mt-1">Total impresi ke pengguna ponsel</p>
-            </div>
-        </div>
-
-        <!-- 2. Total Klik & Interaksi -->
-        <div class="p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-sm relative overflow-hidden group hover:border-emerald-500/50 transition">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Klik Iklan</span>
-                <div class="p-2.5 rounded-xl bg-emerald-950/60 text-emerald-400 border border-emerald-900/50">
-                    <flux:icon name="cursor-arrow-rays" class="w-4 h-4" />
-                </div>
-            </div>
-            <div class="mt-3">
-                <span class="text-3xl font-extrabold text-emerald-400 tracking-tight">{{ number_format($totalClicks) }}</span>
-                <p class="text-xs text-zinc-400 mt-1">Interaksi langsung ke tautan/marketplace</p>
-            </div>
-        </div>
-
-        <!-- 3. Rata-rata CTR -->
-        <div class="p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-sm relative overflow-hidden group hover:border-amber-500/50 transition">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Efektivitas (CTR)</span>
-                <div class="p-2.5 rounded-xl bg-amber-950/60 text-amber-400 border border-amber-900/50">
-                    <flux:icon name="arrow-trending-up" class="w-4 h-4" />
-                </div>
-            </div>
-            <div class="mt-3">
-                <span class="text-3xl font-extrabold text-amber-400 tracking-tight">{{ $ctr }}%</span>
-                <p class="text-xs text-zinc-400 mt-1">Rasio klik dibanding tayangan</p>
-            </div>
-        </div>
-
-        <!-- 4. Peminat Produk (Wishlist) -->
-        <div class="p-5 rounded-2xl bg-zinc-900/90 border border-zinc-800 shadow-sm relative overflow-hidden group hover:border-purple-500/50 transition">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Wishlist Produk</span>
-                <div class="p-2.5 rounded-xl bg-purple-950/60 text-purple-400 border border-purple-900/50">
-                    <flux:icon name="heart" class="w-4 h-4" />
-                </div>
-            </div>
-            <div class="mt-3">
-                <span class="text-3xl font-extrabold text-purple-400 tracking-tight">{{ number_format($totalWishlists) }}</span>
-                <p class="text-xs text-zinc-400 mt-1">Disimpan oleh teknisi di ponsel</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Status Penempatan Iklan Aktif Sponsor (Dark Cards) -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <a href="{{ route('sponsor.campaigns.hero') }}" class="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-blue-500/60 hover:bg-zinc-850 transition block group">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-medium text-zinc-400 group-hover:text-blue-300">Hero Slider (16:9)</span>
-                <span class="text-lg font-bold text-blue-400">{{ $placementCounts['hero_slider'] ?? 0 }}</span>
-            </div>
-            <p class="text-[11px] text-zinc-400 mt-1">Header atas Beranda</p>
-        </a>
-        <a href="{{ route('sponsor.campaigns.horizontal') }}" class="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-indigo-500/60 hover:bg-zinc-850 transition block group">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-medium text-zinc-400 group-hover:text-indigo-300">Horizontal Slider</span>
-                <span class="text-lg font-bold text-indigo-400">{{ $placementCounts['shop_horizontal'] ?? 0 }}</span>
-            </div>
-            <p class="text-[11px] text-zinc-400 mt-1">Shop & Separator Home</p>
-        </a>
-        <a href="{{ route('sponsor.campaigns.card') }}" class="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-teal-500/60 hover:bg-zinc-850 transition block group">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-medium text-zinc-400 group-hover:text-teal-300">Card Slider</span>
-                <span class="text-lg font-bold text-teal-400">{{ $placementCounts['card_slider'] ?? 0 }}</span>
-            </div>
-            <p class="text-[11px] text-zinc-400 mt-1">Grid Promo Beranda</p>
-        </a>
-        <a href="{{ route('sponsor.campaigns.popup') }}" class="p-4 rounded-2xl bg-zinc-900/80 border border-zinc-800 hover:border-rose-500/60 hover:bg-zinc-850 transition block group">
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-medium text-zinc-400 group-hover:text-rose-300">Pop Up Iklan</span>
-                <span class="text-lg font-bold text-rose-400">{{ $placementCounts['popup_modal'] ?? 0 }}</span>
-            </div>
-            <p class="text-[11px] text-zinc-400 mt-1">Dialog Startup Ponsel</p>
-        </a>
-    </div>
-
-    <!-- Tabel Kampanye & Produk Terbaru Sponsor -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Kampanye Iklan Terbaru Sponsor (2 Kolom) -->
-        <div class="lg:col-span-2 bg-zinc-900/90 rounded-2xl border border-zinc-800 p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
+        @foreach($quotas as $key => $quota)
+            @php
+                $isFull = $quota['remaining'] <= 0;
+            @endphp
+            <a 
+                href="{{ $quota['route'] ?? '#' }}" 
+                wire:navigate 
+                class="bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 p-5 shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] hover:shadow-[0_8px_24px_-6px_rgba(20,40,90,0.08)] hover:border-[#1a68f0]/40 transition-all group flex flex-col justify-between"
+            >
                 <div>
-                    <h3 class="font-bold text-base text-white">Daftar Kampanye Promosi</h3>
-                    <p class="text-xs text-zinc-400">Status persetujuan dan metrik performa tiap iklan</p>
-                </div>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead>
-                        <tr class="border-b border-zinc-800 text-xs font-semibold text-zinc-400 uppercase">
-                            <th class="pb-3">Iklan / Penempatan</th>
-                            <th class="pb-3 text-center">Status</th>
-                            <th class="pb-3 text-right">Tayang</th>
-                            <th class="pb-3 text-right">Klik</th>
-                            <th class="pb-3 text-right">CTR</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-zinc-800/80">
-                        @forelse($campaigns as $camp)
-                        <tr class="hover:bg-zinc-800/50 transition">
-                            <td class="py-3.5 pr-4 flex items-center gap-3">
-                                <div class="rounded-lg bg-zinc-950 overflow-hidden relative border border-zinc-800 flex items-center justify-center shrink-0" style="width: 48px; height: 32px;">
-                                    <img src="{{ $camp->thumbnail_url }}" style="width: 48px; height: 32px; object-fit: cover;" alt="{{ $camp->title }}" onerror="this.src='{{ asset('assets/images/banner_promo_diskon.png') }}'" />
-                                    @if($camp->media_type === 'video')
-                                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center text-white pointer-events-none">
-                                            <flux:icon name="play" class="w-2.5 h-2.5 text-white fill-white" />
-                                        </div>
-                                    @endif
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="font-semibold text-white truncate max-w-xs">{{ $camp->title }}</div>
-                                    <div class="flex items-center gap-2 mt-0.5">
-                                        <span class="text-[11px] text-zinc-400 uppercase font-mono">{{ str_replace('_', ' ', $camp->placement_type) }}</span>
-                                        <span class="text-[11px] text-zinc-400">• {{ $camp->media_type }}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="py-3.5 text-center">
-                                @if($camp->status === 'approved')
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">Aktif</span>
-                                @elseif($camp->status === 'pending')
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-950/60 text-amber-400 border border-amber-800/50">Menunggu</span>
-                                @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-950/60 text-rose-400 border border-rose-800/50">Ditolak</span>
-                                @endif
-                            </td>
-                            <td class="py-3.5 text-right font-mono text-zinc-300">{{ number_format($camp->views_count) }}</td>
-                            <td class="py-3.5 text-right font-mono text-emerald-400">{{ number_format($camp->clicks_count) }}</td>
-                            <td class="py-3.5 text-right font-mono font-bold text-white">
-                                {{ $camp->views_count > 0 ? round(($camp->clicks_count / $camp->views_count) * 100, 1) : 0 }}%
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="5" class="py-8 text-center text-zinc-400 text-sm">
-                                Belum ada kampanye iklan yang diajukan.
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Top Produk Milik Sponsor (1 Kolom - Dark Styled, No Stark White!) -->
-        <div class="bg-zinc-900/90 rounded-2xl border border-zinc-800 p-5 shadow-sm">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h3 class="font-bold text-base text-white">Katalog Terlaris</h3>
-                    <p class="text-xs text-zinc-400">Produk paling banyak diminati</p>
-                </div>
-            </div>
-
-            <div class="space-y-3">
-                @forelse($topProducts ?? [] as $prod)
-                <div class="flex items-center gap-3 p-3 rounded-xl bg-zinc-800/60 border border-zinc-700/60 hover:border-zinc-600 hover:bg-zinc-800/90 transition group">
-                    <div class="w-12 h-12 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center overflow-hidden shrink-0">
-                        @if($prod->image_path)
-                            <img src="{{ str_starts_with($prod->image_path, 'http') ? $prod->image_path : asset($prod->image_path) }}" class="w-full h-full object-cover" alt="{{ $prod->name }}" onerror="this.src='{{ asset('assets/images/product_1.png') }}'" />
-                        @else
-                            <flux:icon name="shopping-bag" class="w-5 h-5 text-zinc-400" />
-                        @endif
+                    <!-- Header Card: Minimal Icon + Title -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold text-[#828282] dark:text-zinc-400 group-hover:text-[#212121] dark:group-hover:text-white transition-colors">
+                            {{ $quota['label'] }}
+                        </span>
+                        <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-[#1a68f0] dark:text-blue-400 flex items-center justify-center">
+                            <i class="fas {{ $quota['icon'] }} text-xs"></i>
+                        </div>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="text-xs font-semibold text-zinc-200 group-hover:text-white truncate">{{ $prod->name }}</div>
-                        <div class="text-xs text-blue-400 font-mono font-bold mt-0.5">Rp {{ number_format($prod->price, 0, ',', '.') }}</div>
-                    </div>
-                    <div class="text-right shrink-0">
-                        <div class="text-xs font-bold text-purple-400 flex items-center gap-1">
-                            <flux:icon name="heart" class="w-3.5 h-3.5" />
-                            <span>{{ $prod->wishlists_count }}</span>
+
+                    <!-- Quota Text: "Sisa Kuota: X dari Y" -->
+                    <div class="mt-3.5">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-xs text-[#828282] dark:text-zinc-400">Sisa Kuota:</span>
+                            <span class="text-base font-extrabold text-[#212121] dark:text-white">
+                                {{ $quota['remaining'] }} <span class="text-xs font-semibold text-[#828282] dark:text-zinc-400">dari {{ $quota['max'] }}</span>
+                            </span>
                         </div>
                     </div>
                 </div>
-                @empty
-                <div class="py-8 text-center text-zinc-400 text-xs">
-                    Belum ada produk aktif di katalog.
+
+                <!-- Visual Progress Bar: Thin blue progress bar (thin gray when 0) -->
+                <div class="mt-4 pt-1">
+                    <div class="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+                        <div 
+                            class="h-1.5 rounded-full transition-all duration-300 {{ $isFull ? 'bg-slate-300 dark:bg-zinc-700' : 'bg-[#1a68f0]' }}" 
+                            style="width: {{ $quota['percent'] }}%"
+                        ></div>
+                    </div>
                 </div>
-                @endforelse
+            </a>
+        @endforeach
+    </div>
+
+    {{-- 3. BOTTOM SECTION - QUICK OVERVIEW TABLES (Crisp White Borderless Table Cards) --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- Left Card: Daftar Kampanye Promosi -->
+        <div class="bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between pb-3.5 mb-1 border-b border-slate-100 dark:border-zinc-800">
+                    <div>
+                        <h3 class="font-bold text-base text-[#212121] dark:text-white">Daftar Kampanye Promosi</h3>
+                        <p class="text-xs text-[#828282] dark:text-zinc-400 mt-0.5">Daftar pengajuan kampanye iklan terbaru Anda</p>
+                    </div>
+                    <a href="{{ route('sponsor.campaigns.hero') }}" wire:navigate class="text-xs font-semibold text-[#1a68f0] hover:underline flex items-center gap-1">
+                        <span>Semua Kampanye</span>
+                        <i class="fas fa-chevron-right text-[10px]"></i>
+                    </a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-200/70 dark:border-zinc-800 text-[11px] font-bold text-[#828282] dark:text-zinc-400 uppercase tracking-wider">
+                                <th class="py-3 pr-3">Kampanye</th>
+                                <th class="py-3 px-3">Penempatan</th>
+                                <th class="py-3 pl-3 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-zinc-800/80">
+                            @forelse($campaigns as $camp)
+                                @php
+                                    $placementName = match($camp->placement_type) {
+                                        'hero_slider' => 'Hero Slider',
+                                        'shop_horizontal' => 'Horizontal Slider',
+                                        'card_slider' => 'Card Slider',
+                                        'popup_modal' => 'Pop Up Iklan',
+                                        default => ucwords(str_replace('_', ' ', $camp->placement_type)),
+                                    };
+                                @endphp
+                                <tr class="hover:bg-slate-50/70 dark:hover:bg-zinc-800/40 transition-colors">
+                                    <td class="py-3 pr-3">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-8 rounded-lg bg-slate-100 dark:bg-zinc-800 overflow-hidden border border-slate-200 dark:border-zinc-700 shrink-0 flex items-center justify-center">
+                                                <img 
+                                                    src="{{ $camp->thumbnail_url }}" 
+                                                    alt="{{ $camp->title }}" 
+                                                    class="w-full h-full object-cover" 
+                                                    onerror="this.src='{{ asset('assets/images/banner_promo_diskon.png') }}'" 
+                                                />
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="font-semibold text-[#212121] dark:text-zinc-100 truncate max-w-[200px]" title="{{ $camp->title }}">
+                                                    {{ $camp->title }}
+                                                </p>
+                                                <p class="text-[11px] text-[#828282] dark:text-zinc-400 capitalize">
+                                                    {{ $camp->media_type ?? 'Gambar' }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-3 text-[#212121] dark:text-zinc-300 font-medium">
+                                        {{ $placementName }}
+                                    </td>
+                                    <td class="py-3 pl-3 text-right">
+                                        @if($camp->status === 'approved' || $camp->status === 'active')
+                                            <!-- Green badge for Disetujui -->
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/70 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60">
+                                                <i class="fas fa-circle text-[6px]"></i>
+                                                <span>Disetujui</span>
+                                            </span>
+                                        @elseif($camp->status === 'pending')
+                                            <!-- Yellow badge for Menunggu Approval -->
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/70 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60">
+                                                <i class="fas fa-circle text-[6px]"></i>
+                                                <span>Menunggu Approval</span>
+                                            </span>
+                                        @else
+                                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200/70 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60">
+                                                <i class="fas fa-circle text-[6px]"></i>
+                                                <span>Ditolak</span>
+                                            </span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3" class="py-8 text-center text-[#828282] dark:text-zinc-500 text-xs">
+                                        <i class="fas fa-inbox text-2xl mb-2 text-slate-300 dark:text-zinc-700 block"></i>
+                                        Belum ada kampanye iklan yang diajukan.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Card: Katalog Produk & Suku Cadang Saya -->
+        <div class="bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between pb-3.5 mb-2 border-b border-slate-100 dark:border-zinc-800">
+                    <div>
+                        <h3 class="font-bold text-base text-[#212121] dark:text-white">Katalog Produk & Suku Cadang Saya</h3>
+                        <p class="text-xs text-[#828282] dark:text-zinc-400 mt-0.5">Daftar item suku cadang yang aktif di marketplace</p>
+                    </div>
+                    <!-- Subtle blue link: Lihat Semua Produk -->
+                    <a href="{{ route('sponsor.products') }}" wire:navigate class="text-xs font-semibold text-[#1a68f0] hover:underline flex items-center gap-1">
+                        <span>Lihat Semua Produk</span>
+                        <i class="fas fa-chevron-right text-[10px]"></i>
+                    </a>
+                </div>
+
+                <div class="divide-y divide-slate-100 dark:divide-zinc-800/80">
+                    @forelse($products as $prod)
+                        <div class="py-3 flex items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-zinc-800/40 px-2 rounded-lg transition-colors">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <!-- Small Product Thumbnail -->
+                                <div class="w-10 h-10 rounded-lg bg-slate-100 dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0">
+                                    @if($prod->image_path)
+                                        <img 
+                                            src="{{ str_starts_with($prod->image_path, 'http') ? $prod->image_path : asset($prod->image_path) }}" 
+                                            class="w-full h-full object-cover" 
+                                            alt="{{ $prod->name }}" 
+                                            onerror="this.src='{{ asset('assets/images/product_1.png') }}'" 
+                                        />
+                                    @else
+                                        <i class="fas fa-cube text-[#828282] text-sm"></i>
+                                    @endif
+                                </div>
+                                <div class="min-w-0">
+                                    <!-- Product Name -->
+                                    <p class="text-xs font-semibold text-[#212121] dark:text-zinc-100 truncate max-w-[220px]" title="{{ $prod->name }}">
+                                        {{ $prod->name }}
+                                    </p>
+                                    <p class="text-[11px] text-[#828282] dark:text-zinc-400 mt-0.5">
+                                        {{ $prod->category ?? 'Sparepart' }}
+                                    </p>
+                                </div>
+                            </div>
+                            <!-- Price -->
+                            <div class="text-right shrink-0">
+                                <span class="text-xs font-bold text-[#1a68f0] font-mono">
+                                    Rp {{ number_format($prod->price, 0, ',', '.') }}
+                                </span>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="py-8 text-center text-[#828282] dark:text-zinc-500 text-xs">
+                            <i class="fas fa-box-open text-2xl mb-2 text-slate-300 dark:text-zinc-700 block"></i>
+                            Belum ada produk aktif di katalog suku cadang Anda.
+                        </div>
+                    @endforelse
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- MODAL GANTI LOGO SPONSOR (SPONSOR-03) -->
+    {{-- MODAL GANTI LOGO RESMI SPONSOR (Light Mode Clean Shopee Style) --}}
     @if ($showLogoModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-                <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-                    <div class="flex items-center gap-2">
-                        <flux:icon name="photo" class="w-5 h-5 text-blue-500" />
-                        <h2 class="text-base font-bold text-white">Unggah Logo Resmi Sponsor</h2>
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+                <!-- Sticky Header -->
+                <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-zinc-800">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fas fa-image text-[#1a68f0] text-base"></i>
+                        <h2 class="text-base font-bold text-[#212121] dark:text-white">Unggah Logo Resmi Sponsor</h2>
                     </div>
-                    <button wire:click="$set('showLogoModal', false)" class="text-zinc-400 hover:text-white font-bold">✕</button>
+                    <button type="button" wire:click="$set('showLogoModal', false)" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
 
-                <div class="space-y-4">
-                    <p class="text-xs text-zinc-400">
-                        Logo ini akan ditampilkan di Beranda, Best Deal, katalog produk, dan kartu sponsor pada aplikasi ponsel.
+                <!-- Body -->
+                <div class="p-6 space-y-4">
+                    <p class="text-xs text-[#828282] dark:text-zinc-400">
+                        Logo ini akan ditampilkan di Beranda, katalog produk, dan kartu identitas sponsor pada aplikasi VBAT.
                     </p>
 
-                    <!-- Preview -->
-                    <div class="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-950/60">
-                        <div class="w-24 h-24 rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center overflow-hidden shadow-inner mb-3">
+                    <div class="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-800/40">
+                        <div class="w-24 h-24 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden mb-3 shadow-xs">
                             @if ($logo && method_exists($logo, 'isPreviewable') && $logo->isPreviewable())
                                 <img src="{{ $logo->temporaryUrl() }}" alt="Preview Baru" class="w-full h-full object-contain p-2">
                             @elseif ($sponsor?->logo_path)
                                 <img src="{{ asset('storage/' . $sponsor->logo_path) }}" alt="Logo Saat Ini" class="w-full h-full object-contain p-2">
                             @else
-                                <span class="text-sm font-bold text-zinc-500 uppercase">{{ substr($sponsor?->name ?? 'SP', 0, 2) }}</span>
+                                <span class="text-lg font-bold text-[#1a68f0] uppercase">{{ substr($sponsor?->name ?? 'SP', 0, 2) }}</span>
                             @endif
                         </div>
 
-                        <input type="file" wire:model="logo" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-zinc-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
-                        <span class="text-[11px] text-zinc-500 mt-2">Format: JPG, PNG, atau WEBP (Maksimal 2MB)</span>
-                        <div wire:loading wire:target="logo" class="text-xs text-blue-400 font-semibold mt-1">Mengunggah berkas...</div>
+                        <input type="file" wire:model="logo" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-[#828282] file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#1a68f0] file:text-white hover:file:bg-blue-600 cursor-pointer">
+                        <span class="text-[11px] text-[#828282] mt-2">Format: JPG, PNG, atau WEBP (Maksimal 2MB)</span>
+                        <div wire:loading wire:target="logo" class="text-xs text-[#1a68f0] font-semibold mt-1">Mengunggah berkas...</div>
                         @error('logo')
                             <span class="text-xs text-rose-500 font-medium mt-1">{{ $message }}</span>
                         @enderror
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-3 border-t border-zinc-800">
-                    <button type="button" wire:click="$set('showLogoModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition">
+                <!-- Footer -->
+                <div class="flex justify-end gap-2.5 p-4 border-t border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-850">
+                    <button type="button" wire:click="$set('showLogoModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-[#212121] hover:bg-slate-100 transition cursor-pointer">
                         Batal
                     </button>
-                    <button type="button" wire:click="saveLogo" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-sm transition disabled:opacity-50">
+                    <button type="button" wire:click="saveLogo" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-[#1a68f0] hover:bg-blue-600 text-white shadow-xs transition disabled:opacity-50 cursor-pointer">
                         Simpan Logo
                     </button>
                 </div>
@@ -502,73 +573,85 @@ new class extends Component
         </div>
     @endif
 
-    {{-- WM-02: modal ubah profil sponsor --}}
+    {{-- MODAL UBAH PROFIL SPONSOR (Light Mode Clean Shopee Style) --}}
     @if ($showProfileModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-                <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-                    <h2 class="text-base font-bold text-white">Ubah Profil Sponsor</h2>
-                    <button wire:click="$set('showProfileModal', false)" class="text-zinc-400 hover:text-white font-bold">✕</button>
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+                <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-zinc-800">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fas fa-store text-[#1a68f0] text-base"></i>
+                        <h2 class="text-base font-bold text-[#212121] dark:text-white">Ubah Profil Sponsor</h2>
+                    </div>
+                    <button type="button" wire:click="$set('showProfileModal', false)" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
 
-                <div class="space-y-3">
+                <div class="p-6 space-y-4">
                     <div>
-                        <label class="block text-xs font-bold text-zinc-300 mb-1">Deskripsi Singkat</label>
-                        <textarea wire:model="description" rows="3" class="w-full px-3 py-2 text-sm rounded-xl bg-zinc-950 border border-zinc-700 text-white" placeholder="Ceritakan singkat tentang toko Anda"></textarea>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-zinc-200 mb-1">Deskripsi Singkat</label>
+                        <textarea wire:model="description" rows="3" class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-white focus:outline-none focus:border-[#1a68f0]" placeholder="Ceritakan singkat tentang toko atau produk Anda"></textarea>
                         @error('description') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-zinc-300 mb-1">Website Resmi</label>
-                        <input type="url" wire:model="website_url" class="w-full px-3 py-2 text-sm rounded-xl bg-zinc-950 border border-zinc-700 text-white" placeholder="https://website-toko.com">
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-zinc-200 mb-1">Website Resmi</label>
+                        <input type="url" wire:model="website_url" class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-white focus:outline-none focus:border-[#1a68f0]" placeholder="https://website-toko.com">
                         @error('website_url') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-zinc-300 mb-1">Tautan Marketplace (Shopee / Tokopedia)</label>
-                        <input type="url" wire:model="marketplace_url" class="w-full px-3 py-2 text-sm rounded-xl bg-zinc-950 border border-zinc-700 text-white" placeholder="https://shopee.co.id/nama-toko">
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-zinc-200 mb-1">Tautan Marketplace (Shopee / Tokopedia)</label>
+                        <input type="url" wire:model="marketplace_url" class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-white focus:outline-none focus:border-[#1a68f0]" placeholder="https://shopee.co.id/nama-toko">
                         @error('marketplace_url') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                        <span class="text-[11px] text-zinc-500 mt-1 block">Tombol di aplikasi hanya muncul untuk tautan yang terisi.</span>
+                        <span class="text-[11px] text-[#828282] mt-1 block">Tombol di aplikasi hanya muncul untuk tautan yang terisi.</span>
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-3 border-t border-zinc-800">
-                    <button type="button" wire:click="$set('showProfileModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition">Batal</button>
-                    <button type="button" wire:click="saveProfile" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-sm transition disabled:opacity-50">Simpan Profil</button>
+                <div class="flex justify-end gap-2.5 p-4 border-t border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-850">
+                    <button type="button" wire:click="$set('showProfileModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-[#212121] hover:bg-slate-100 transition cursor-pointer">Batal</button>
+                    <button type="button" wire:click="saveProfile" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-[#1a68f0] hover:bg-blue-600 text-white shadow-xs transition disabled:opacity-50 cursor-pointer">Simpan Profil</button>
                 </div>
             </div>
         </div>
     @endif
 
-    {{-- WR-02: modal unggah gambar header --}}
+    {{-- MODAL UNGGAH GAMBAR HEADER (Light Mode Clean Shopee Style) --}}
     @if ($showHeaderModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-                <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-                    <h2 class="text-base font-bold text-white">Gambar Header Halaman Sponsor</h2>
-                    <button wire:click="$set('showHeaderModal', false)" class="text-zinc-400 hover:text-white font-bold">✕</button>
-                </div>
-
-                <p class="text-xs text-zinc-400">
-                    Gambar ini menjadi latar bagian atas halaman sponsor Anda. Bila dikosongkan, halaman memakai warna aplikasi.
-                </p>
-
-                <div class="flex flex-col items-center justify-center p-6 rounded-2xl border-2 border-dashed border-zinc-700 bg-zinc-950/60">
-                    <div class="w-full h-20 rounded-xl bg-zinc-900 border border-zinc-700 flex items-center justify-center overflow-hidden mb-3">
-                        @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
-                            <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
-                        @elseif ($sponsor?->header_image_url)
-                            <img src="{{ asset('storage/' . $sponsor->header_image_url) }}" alt="Header Saat Ini" class="w-full h-full object-cover">
-                        @else
-                            <span class="text-xs font-bold text-zinc-500">BELUM ADA GAMBAR</span>
-                        @endif
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+            <div class="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+                <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-zinc-800">
+                    <div class="flex items-center gap-2.5">
+                        <i class="fas fa-panorama text-[#1a68f0] text-base"></i>
+                        <h2 class="text-base font-bold text-[#212121] dark:text-white">Gambar Header Halaman Sponsor</h2>
                     </div>
-                    <input type="file" wire:model="headerImage" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-zinc-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
-                    <span class="text-[11px] text-zinc-500 mt-2">Format: JPG, PNG, atau WEBP (Maksimal 4MB)</span>
-                    @error('headerImage') <span class="text-xs text-rose-500 font-medium mt-1">{{ $message }}</span> @enderror
+                    <button type="button" wire:click="$set('showHeaderModal', false)" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
 
-                <div class="flex justify-end gap-2 pt-3 border-t border-zinc-800">
-                    <button type="button" wire:click="$set('showHeaderModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition">Batal</button>
-                    <button type="button" wire:click="saveHeaderImage" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-blue-600 hover:bg-blue-500 text-white shadow-sm transition disabled:opacity-50">Simpan Gambar Header</button>
+                <div class="p-6 space-y-4">
+                    <p class="text-xs text-[#828282] dark:text-zinc-400">
+                        Gambar ini menjadi banner latar atas halaman toko sponsor Anda. Bila dikosongkan, halaman memakai warna standar.
+                    </p>
+
+                    <div class="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-800/40">
+                        <div class="w-full h-24 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden mb-3 shadow-xs">
+                            @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
+                                <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
+                            @elseif ($sponsor?->header_image_url)
+                                <img src="{{ asset('storage/' . $sponsor->header_image_url) }}" alt="Header Saat Ini" class="w-full h-full object-cover">
+                            @else
+                                <span class="text-xs font-semibold text-[#828282]">BELUM ADA GAMBAR HEADER</span>
+                            @endif
+                        </div>
+                        <input type="file" wire:model="headerImage" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-[#828282] file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#1a68f0] file:text-white hover:file:bg-blue-600 cursor-pointer">
+                        <span class="text-[11px] text-[#828282] mt-2">Format: JPG, PNG, atau WEBP (Maksimal 4MB)</span>
+                        @error('headerImage') <span class="text-xs text-rose-500 font-medium mt-1">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2.5 p-4 border-t border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-850">
+                    <button type="button" wire:click="$set('showHeaderModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-[#212121] hover:bg-slate-100 transition cursor-pointer">Batal</button>
+                    <button type="button" wire:click="saveHeaderImage" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-[#1a68f0] hover:bg-blue-600 text-white shadow-xs transition disabled:opacity-50 cursor-pointer">Simpan Gambar Header</button>
                 </div>
             </div>
         </div>

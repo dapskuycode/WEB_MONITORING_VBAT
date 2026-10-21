@@ -42,7 +42,7 @@ Route::middleware(['auth'])->group(function () {
 
     // 2. Modul Sponsor (Mitra Sponsor, Super Admin, & Owner)
     Route::middleware(['role:sponsor,super_admin,owner'])->group(function () {
-        Route::livewire('sponsor/dashboard', 'sponsor.sponsor-dashboard')->name('sponsor.dashboard');
+        Route::view('sponsor/dashboard', 'pages.sponsor.dashboard')->name('sponsor.dashboard');
         Route::view('sponsor/products', 'pages.sponsor.products')->name('sponsor.products');
         Route::view('sponsor/campaigns/hero', 'pages.sponsor.hero-slider')->name('sponsor.campaigns.hero');
         Route::view('sponsor/campaigns/horizontal', 'pages.sponsor.horizontal-slider')->name('sponsor.campaigns.horizontal');

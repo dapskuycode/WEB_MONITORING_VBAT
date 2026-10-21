@@ -13,7 +13,9 @@
                     :class="sidebarOpen ? '' : 'justify-center px-0'"
                     :title="!sidebarOpen ? 'Dashboard Sponsor' : ''"
                 >
-                    <i class="fas fa-home w-5 h-5 shrink-0 {{ request()->routeIs('sponsor.dashboard') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                        <i class="fas fa-home text-base {{ request()->routeIs('sponsor.dashboard') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    </div>
                     <span x-show="sidebarOpen" x-transition.opacity class="truncate">Dashboard Sponsor</span>
                 </a>
 
@@ -24,7 +26,9 @@
                     :class="sidebarOpen ? '' : 'justify-center px-0'"
                     :title="!sidebarOpen ? 'Katalog Produk Saya' : ''"
                 >
-                    <i class="fas fa-cube w-5 h-5 shrink-0 {{ request()->routeIs('sponsor.products') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                        <i class="fas fa-cube text-base {{ request()->routeIs('sponsor.products') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    </div>
                     <span x-show="sidebarOpen" x-transition.opacity class="truncate">Katalog Produk Saya</span>
                 </a>
             </div>
@@ -35,6 +39,7 @@
             <p x-show="sidebarOpen" x-transition.opacity class="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-2 truncate">
                 KAMPANYE PROMOSI
             </p>
+            <div x-show="!sidebarOpen" class="w-8 h-px bg-slate-200 dark:bg-zinc-700 mx-auto my-2"></div>
             <div class="flex flex-col gap-1">
                 <a 
                     href="{{ route('sponsor.campaigns.hero') }}" 
@@ -43,7 +48,9 @@
                     :class="sidebarOpen ? '' : 'justify-center px-0'"
                     :title="!sidebarOpen ? 'Hero Slider' : ''"
                 >
-                    <i class="fas fa-images w-5 h-5 shrink-0 {{ request()->routeIs('sponsor.campaigns.hero') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                        <i class="fas fa-images text-base {{ request()->routeIs('sponsor.campaigns.hero') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    </div>
                     <span x-show="sidebarOpen" x-transition.opacity class="truncate">Hero Slider</span>
                 </a>
 
@@ -54,7 +61,9 @@
                     :class="sidebarOpen ? '' : 'justify-center px-0'"
                     :title="!sidebarOpen ? 'Horizontal Slider' : ''"
                 >
-                    <i class="fas fa-sliders-h w-5 h-5 shrink-0 {{ request()->routeIs('sponsor.campaigns.horizontal') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                        <i class="fas fa-sliders-h text-base {{ request()->routeIs('sponsor.campaigns.horizontal') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    </div>
                     <span x-show="sidebarOpen" x-transition.opacity class="truncate">Horizontal Slider</span>
                 </a>
 
@@ -65,7 +74,9 @@
                     :class="sidebarOpen ? '' : 'justify-center px-0'"
                     :title="!sidebarOpen ? 'Card Slider' : ''"
                 >
-                    <i class="fas fa-th-large w-5 h-5 shrink-0 {{ request()->routeIs('sponsor.campaigns.card') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                        <i class="fas fa-th-large text-base {{ request()->routeIs('sponsor.campaigns.card') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    </div>
                     <span x-show="sidebarOpen" x-transition.opacity class="truncate">Card Slider</span>
                 </a>
 
@@ -76,7 +87,9 @@
                     :class="sidebarOpen ? '' : 'justify-center px-0'"
                     :title="!sidebarOpen ? 'Pop Up Iklan' : ''"
                 >
-                    <i class="fas fa-bullhorn w-5 h-5 shrink-0 {{ request()->routeIs('sponsor.campaigns.popup') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                        <i class="fas fa-bullhorn text-base {{ request()->routeIs('sponsor.campaigns.popup') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    </div>
                     <span x-show="sidebarOpen" x-transition.opacity class="truncate">Pop Up Iklan</span>
                 </a>
 
@@ -87,7 +100,9 @@
                     :class="sidebarOpen ? '' : 'justify-center px-0'"
                     :title="!sidebarOpen ? 'Notifikasi' : ''"
                 >
-                    <i class="fas fa-bell w-5 h-5 shrink-0 {{ request()->routeIs('sponsor.notifications') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                        <i class="fas fa-bell text-base {{ request()->routeIs('sponsor.notifications') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    </div>
                     <span x-show="sidebarOpen" x-transition.opacity class="truncate">Notifikasi</span>
                 </a>
             </div>
