@@ -34,14 +34,17 @@
                 </button>
 
                 <!-- Top Brand Header -->
+                @php
+                    $homeUrl = auth()->user()?->isSponsor() ? route('sponsor.dashboard') : route('dashboard');
+                @endphp
                 <div class="relative flex items-center justify-center p-4 border-b border-slate-100 dark:border-zinc-800/80 min-h-[73px] overflow-hidden">
                     <!-- Expanded Brand: vbat_logo_shadow.png -->
-                    <a href="{{ route('dashboard') }}" x-show="sidebarOpen" x-transition.opacity class="flex items-center overflow-hidden select-none focus:outline-none w-full">
+                    <a href="{{ $homeUrl }}" wire:navigate x-show="sidebarOpen" x-transition.opacity class="flex items-center overflow-hidden select-none focus:outline-none w-full">
                         <img src="{{ asset('assets/images/vbat_logo_shadow.png') }}" alt="VBAT Ponsel" class="h-9 w-auto object-contain shrink-0" />
                     </a>
 
                     <!-- Collapsed Brand: vbat_logo_simple.png (centered when minimized) -->
-                    <a href="{{ route('dashboard') }}" x-show="!sidebarOpen" x-transition.opacity class="flex items-center justify-center w-full select-none focus:outline-none">
+                    <a href="{{ $homeUrl }}" wire:navigate x-show="!sidebarOpen" x-transition.opacity class="flex items-center justify-center w-full select-none focus:outline-none">
                         <img src="{{ asset('assets/images/vbat_logo_simple.png') }}" alt="VBAT" class="h-8 w-auto object-contain shrink-0" />
                     </a>
                 </div>
