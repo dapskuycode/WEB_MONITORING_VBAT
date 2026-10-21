@@ -43,7 +43,7 @@ new class extends Component
     public function loadData()
     {
         $user = Auth::user();
-        if ($user && ($user->isSuperAdmin() || $user->isOwner())) {
+        if ($user && $user->isSuperAdmin()) {
             $this->sponsor = Sponsor::where('slug', 'quantum')->orWhere('name', 'Quantum')->first() ?? $user->sponsor ?? Sponsor::first();
         } else {
             $this->sponsor = $user?->sponsor ?? Sponsor::first();

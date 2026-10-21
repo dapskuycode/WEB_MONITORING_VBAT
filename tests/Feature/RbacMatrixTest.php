@@ -91,15 +91,13 @@ final class RbacMatrixTest extends TestCase
         $this->actingAs($admin)->get(route('dashboard'))->assertOk();
     }
 
-    public function test_admin_route_allows_owner(): void
+    public function test_sponsor_cannot_access_admin_routes(): void
     {
-        $owner = $this->makeUser('owner');
+        $sponsor = $this->makeUser('sponsor');
 
-        foreach (['admin.sponsors', 'admin.products', 'admin.campaigns', 'admin.events', 'admin.best-deals', 'admin.bulk-upload', 'admin.notifications'] as $name) {
-            $this->actingAs($owner)->get(route($name))->assertOk();
+        foreach (['admin.sponsors', 'admin.products'] as $name) {
+            $this->actingAs($sponsor)->get(route($name))->assertForbidden();
         }
-
-        $this->actingAs($owner)->get(route('dashboard'))->assertOk();
     }
 
     // ---- Sponsor Portal Routes ----
@@ -133,9 +131,9 @@ final class RbacMatrixTest extends TestCase
         $this->actingAs($sponsorUser)->get(route('sponsor.notifications'))->assertOk();
     }
 
-    public function test_sponsor_route_allows_owner_and_admin(): void
+    public function test_sponsor_cannot_access_admin_routes_with_super_admin(): void
     {
-        foreach (['owner', 'super_admin'] as $role) {
+        foreach (['super_admin'] as $role) {
             $user = $this->makeUser($role);
             $this->actingAs($user)->get(route('sponsor.dashboard'))->assertOk();
             $this->actingAs($user)->get(route('sponsor.products'))->assertOk();

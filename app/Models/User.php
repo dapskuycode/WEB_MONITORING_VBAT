@@ -73,14 +73,14 @@ class User extends Authenticatable implements PasskeyUser
         return $this->role === 'super_admin';
     }
 
-    public function isOwner(): bool
-    {
-        return $this->role === 'owner';
-    }
-
     public function isSponsor(): bool
     {
         return $this->role === 'sponsor';
+    }
+
+    public function isTeknisi(): bool
+    {
+        return $this->role === 'teknisi';
     }
 
     /**

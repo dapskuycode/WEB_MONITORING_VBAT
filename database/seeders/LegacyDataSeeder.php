@@ -36,11 +36,11 @@ class LegacyDataSeeder extends Seeder
         );
 
         $owner = User::updateOrCreate(
-            ['email' => 'owner@vbatponsel.com'],
+            ['email' => 'admin@vbatponsel.com'],
             [
                 'name' => 'Owner VBAT',
                 'password' => Hash::make('owner123'),
-                'role' => 'owner',
+                'role' => 'super_admin',
                 'birth_date' => '1990-08-20',
                 'gender' => 'male',
                 'phone' => '081234567891',

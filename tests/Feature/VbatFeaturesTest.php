@@ -7,6 +7,7 @@ use App\Models\Sponsor;
 use App\Models\SponsorProduct;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class VbatFeaturesTest extends TestCase
@@ -141,18 +142,17 @@ class VbatFeaturesTest extends TestCase
         $this->actingAs($student)->get('/dashboard')->assertStatus(403);
     }
 
-    public function test_owner_can_access_admin_and_sponsor_panels(): void
+    public function test_super_admin_can_access_admin_panels(): void
     {
-        $owner = User::create([
-            'name' => 'Owner VBAT',
-            'email' => 'owner_test@vbat.id',
-            'password' => 'password',
-            'role' => 'owner',
+        $admin = User::create([
+            'name' => 'Admin Test',
+            'email' => 'admin_test@vbat.id',
+            'password' => Hash::make('password'),
+            'role' => 'super_admin',
         ]);
 
-        $this->actingAs($owner)->get('/dashboard')->assertOk();
-        $this->actingAs($owner)->get('/admin/sponsors')->assertOk();
-        $this->actingAs($owner)->get('/admin/products')->assertOk();
-        $this->actingAs($owner)->get('/sponsor/dashboard')->assertOk();
+        $this->actingAs($admin)->get('/dashboard')->assertOk();
+        $this->actingAs($admin)->get('/admin/sponsors')->assertOk();
+        $this->actingAs($admin)->get('/admin/products')->assertOk();
     }
 }

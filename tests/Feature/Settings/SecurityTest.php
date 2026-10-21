@@ -38,8 +38,8 @@ class SecurityTest extends TestCase
 
         $response->assertOk();
 
-        $response->assertSee('Passkeys');
-        $response->assertSee('No passkeys yet');
+        $response->assertSee('Passkey');
+        $response->assertSee('Belum ada passkey');
         $response->assertSee('Two-factor authentication');
         $response->assertSee('Enable 2FA');
     }

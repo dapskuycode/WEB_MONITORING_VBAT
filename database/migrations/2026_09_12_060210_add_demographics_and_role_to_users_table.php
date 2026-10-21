@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('role')->default('student')->after('email'); // super_admin, owner, sponsor, student
+            $table->string('role')->default('student')->after('email'); // super_admin, sponsor, student
             $table->date('birth_date')->nullable()->after('role');
             $table->string('gender')->nullable()->after('birth_date'); // male, female, other
             $table->foreignId('province_id')->nullable()->after('gender')->constrained('provinces')->nullOnDelete();

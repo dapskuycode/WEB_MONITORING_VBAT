@@ -53,7 +53,7 @@ new class extends Component
         $this->totalCount = User::count();
         $this->studentCount = User::where('role', 'student')->count();
         $this->sponsorCount = User::where('role', 'sponsor')->count();
-        $this->adminCount = User::whereIn('role', ['super_admin', 'owner'])->count();
+        $this->adminCount = User::where('role', 'super_admin')->count();
 
         // Query with eager loading
         $query = User::with(['province', 'city', 'membership', 'sponsor'])->latest();
@@ -69,11 +69,7 @@ new class extends Component
 
         // Role Filter
         if (!empty($this->roleFilter)) {
-            if ($this->roleFilter === 'admin_owner') {
-                $query->whereIn('role', ['super_admin', 'owner']);
-            } else {
-                $query->where('role', $this->roleFilter);
-            }
+            $query->where('role', $this->roleFilter);
         }
 
         // Membership KTA Filter
@@ -204,9 +200,7 @@ new class extends Component
                     <option value="">Semua Role</option>
                     <option value="student">Siswa / Teknisi</option>
                     <option value="sponsor">Mitra Sponsor</option>
-                    <option value="admin_owner">Admin & Owner</option>
                     <option value="super_admin">Super Admin</option>
-                    <option value="owner">Owner</option>
                 </select>
 
                 <!-- Membership Filter -->
@@ -293,11 +287,6 @@ new class extends Component
                                 <span class="inline-flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-950/50 dark:text-red-300">
                                     <span class="h-1.5 w-1.5 rounded-full bg-red-600"></span>
                                     Super Admin
-                                </span>
-                            @elseif($user->role === 'owner')
-                                <span class="inline-flex items-center gap-1.5 rounded-lg border border-indigo-500/20 bg-indigo-50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300">
-                                    <span class="h-1.5 w-1.5 rounded-full bg-indigo-600"></span>
-                                    Owner
                                 </span>
                             @else
                                 <span class="inline-flex items-center rounded-lg bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">

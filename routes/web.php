@@ -22,7 +22,7 @@ Route::get('/home', function () {
 
 Route::middleware(['auth'])->group(function () {
     // 1. Dashboard & Modul Admin/Owner (Hanya Super Admin & Owner)
-    Route::middleware(['role:super_admin,owner'])->group(function () {
+    Route::middleware(['role:super_admin'])->group(function () {
         Route::view('dashboard', 'dashboard')->name('dashboard');
 
         Route::view('admin/sponsors', 'pages.admin.sponsors')->name('admin.sponsors');
@@ -43,7 +43,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // 2. Modul Sponsor (Mitra Sponsor, Super Admin, & Owner)
-    Route::middleware(['role:sponsor,super_admin,owner'])->group(function () {
+    Route::middleware(['role:sponsor,super_admin'])->group(function () {
         Route::view('sponsor/dashboard', 'pages.sponsor.dashboard')->name('sponsor.dashboard');
         Route::view('sponsor/products', 'pages.sponsor.products')->name('sponsor.products');
         Route::view('sponsor/campaigns/hero', 'pages.sponsor.hero-slider')->name('sponsor.campaigns.hero');

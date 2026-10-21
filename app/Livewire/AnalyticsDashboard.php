@@ -63,7 +63,7 @@ class AnalyticsDashboard extends Component
         // 3. User Demographics (Donut chart data: Teknisi, Sponsor, Admin)
         $techniciansCount = User::whereIn('role', ['user', 'technician', 'siswa', 'member'])->count();
         $sponsorsCount = User::where('role', 'sponsor')->count();
-        $adminsCount = User::whereIn('role', ['super_admin', 'admin', 'owner'])->count();
+        $adminsCount = User::where('role', 'super_admin')->count();
 
         // Baseline realistic distribution if DB is freshly seeded
         if ($techniciansCount === 0) $techniciansCount = 4250;
