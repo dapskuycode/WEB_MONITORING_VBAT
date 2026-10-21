@@ -239,14 +239,14 @@ new #[Title('Pengaturan keamanan')] class extends Component {
 
         @if ($canManageTwoFactor)
             <section class="mt-12">
-                <flux:heading>{{ __('Two-factor authentication') }}</flux:heading>
-                <flux:subheading>{{ __('Manage your two-factor authentication settings') }}</flux:subheading>
+                <flux:heading>{{ __('Autentikasi Dua Faktor') }}</flux:heading>
+                <flux:subheading>{{ __('Kelola pengaturan autentikasi dua faktor Anda') }}</flux:subheading>
 
                 <div class="flex flex-col w-full mx-auto space-y-6 text-sm" wire:cloak>
                     @if ($twoFactorEnabled)
                         <div class="space-y-4">
                             <flux:text>
-                                {{ __('You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.') }}
+                                {{ __('Anda akan diminta memasukkan PIN acak yang aman saat login, yang dapat Anda ambil dari aplikasi TOTP di ponsel Anda.') }}
                             </flux:text>
 
                             <div class="flex justify-start">
@@ -254,7 +254,7 @@ new #[Title('Pengaturan keamanan')] class extends Component {
                                     variant="danger"
                                     wire:click="disable"
                                 >
-                                    {{ __('Disable 2FA') }}
+                                    {{ __('Nonaktifkan 2FA') }}
                                 </flux:button>
                             </div>
 
@@ -263,7 +263,7 @@ new #[Title('Pengaturan keamanan')] class extends Component {
                     @else
                         <div class="space-y-4">
                             <flux:text variant="subtle">
-                                {{ __('When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.') }}
+                                {{ __('Saat Anda mengaktifkan autentikasi dua faktor, Anda akan diminta memasukkan PIN aman saat login. PIN ini dapat diambil dari aplikasi TOTP di ponsel Anda.') }}
                             </flux:text>
 
                             <flux:modal.trigger name="two-factor-setup-modal">
@@ -271,7 +271,7 @@ new #[Title('Pengaturan keamanan')] class extends Component {
                                     variant="primary"
                                     wire:click="$dispatch('start-two-factor-setup')"
                                 >
-                                    {{ __('Enable 2FA') }}
+                                    {{ __('Aktifkan 2FA') }}
                                 </flux:button>
                             </flux:modal.trigger>
 
@@ -284,8 +284,8 @@ new #[Title('Pengaturan keamanan')] class extends Component {
 
         @if ($canManagePasskeys)
             <section class="mt-12">
-                <flux:heading>{{ __('Passkeys') }}</flux:heading>
-                <flux:subheading>{{ __('Manage your passkeys for passwordless sign-in') }}</flux:subheading>
+                <flux:heading>{{ __('Passkey') }}</flux:heading>
+                <flux:subheading>{{ __('Kelola passkey Anda untuk masuk tanpa password') }}</flux:subheading>
 
                 <div class="mt-6 flex flex-col w-full mx-auto space-y-6 text-sm" wire:cloak>
                     <div class="border rounded-lg border-zinc-200 dark:border-zinc-700 overflow-hidden">
@@ -303,10 +303,10 @@ new #[Title('Pengaturan keamanan')] class extends Component {
                                             @endif
                                         </div>
                                         <p class="text-zinc-500 dark:text-zinc-400 text-xs">
-                                            {{ __('Added :time', ['time' => $passkey['created_at_diff']]) }}
+                                            {{ __('Ditambahkan :time', ['time' => $passkey['created_at_diff']]) }}
                                             @if ($passkey['last_used_at_diff'])
                                                 <span class="opacity-50 mx-1">/</span>
-                                                {{ __('Last used :time', ['time' => $passkey['last_used_at_diff']]) }}
+                                                {{ __('Terakhir digunakan :time', ['time' => $passkey['last_used_at_diff']]) }}
                                             @endif
                                         </p>
                                     </div>
@@ -326,8 +326,8 @@ new #[Title('Pengaturan keamanan')] class extends Component {
                                 <div class="mx-auto mb-4 flex size-14 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-zinc-800">
                                     <flux:icon.key class="size-7 text-zinc-400 dark:text-zinc-500" />
                                 </div>
-                                <p class="font-medium">{{ __('No passkeys yet') }}</p>
-                                <flux:text class="mt-1">{{ __('Add a passkey to sign in without a password') }}</flux:text>
+                                <p class="font-medium">{{ __('Belum ada passkey') }}</p>
+                                <flux:text class="mt-1">{{ __('Tambahkan passkey untuk masuk tanpa password') }}</flux:text>
                             </div>
                         @endforelse
                     </div>
@@ -346,9 +346,9 @@ new #[Title('Pengaturan keamanan')] class extends Component {
     >
         <div class="space-y-6">
             <div class="space-y-2">
-                <flux:heading size="lg">{{ __('Remove passkey') }}</flux:heading>
+                <flux:heading size="lg">{{ __('Hapus passkey') }}</flux:heading>
                 <flux:text>
-                    {{ __('Are you sure you want to remove the passkey ":name"? You will no longer be able to use it to sign in.', ['name' => $deletingPasskeyName]) }}
+                    {{ __('Apakah Anda yakin ingin menghapus passkey ":name"? Anda tidak akan lagi dapat menggunakannya untuk masuk.', ['name' => $deletingPasskeyName]) }}
                 </flux:text>
             </div>
 
@@ -357,13 +357,13 @@ new #[Title('Pengaturan keamanan')] class extends Component {
                     variant="outline"
                     wire:click="closeDeleteModal"
                 >
-                    {{ __('Cancel') }}
+                    {{ __('Batal') }}
                 </flux:button>
                 <flux:button
                     variant="danger"
                     wire:click="deletePasskey"
                 >
-                    {{ __('Remove passkey') }}
+                    {{ __('Hapus passkey') }}
                 </flux:button>
             </div>
         </div>
