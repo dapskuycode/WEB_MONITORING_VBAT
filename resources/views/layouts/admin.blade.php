@@ -113,6 +113,10 @@
                         </div>
                         @endif
 
+                        @if(isset($actions))
+                            {{ $actions }}
+                        @endif
+
                         @if(request()->routeIs('dashboard') || request()->routeIs('admin.analytics'))
                         <!-- Export to Excel Button (Consistent Green Style) -->
                         <button 

@@ -18,6 +18,8 @@ new class extends Component
     public $editingId = null;
     public $flashMessage = '';
 
+    protected $listeners = ['trigger-create-product' => 'openCreateModal'];
+
     // Filter
     public $search = '';
 
@@ -241,305 +243,336 @@ new class extends Component
 };
 ?>
 
-<div class="space-y-6">
+<div class="space-y-6 text-[#212121]">
+    {{-- Toast Flash Message --}}
     @if ($flashMessage)
-        <div class="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 text-xs flex items-center justify-between shadow-sm">
-            <div class="flex items-center gap-2">
-                <flux:icon name="information-circle" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span>{{ $flashMessage }}</span>
+        <div class="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 text-xs flex items-center justify-between shadow-xs">
+            <div class="flex items-center gap-2.5">
+                <i class="fas fa-info-circle text-[#1a68f0] text-sm"></i>
+                <span class="font-medium">{{ $flashMessage }}</span>
             </div>
-            <button wire:click="$set('flashMessage', '')" class="text-blue-500 hover:text-blue-700 font-bold">✕</button>
+            <button wire:click="$set('flashMessage', '')" class="text-blue-500 hover:text-blue-700 font-bold cursor-pointer">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     @endif
 
-    <!-- Header Page -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-700 pb-5">
-        <div>
-            <div class="flex items-center gap-3">
-                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-                    <flux:icon name="shopping-bag" class="w-7 h-7 text-indigo-600" />
-                    Katalog Produk & Suku Cadang Saya
-                </h1>
-                @if($sponsor)
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
-                    {{ $sponsor->name }} ({{ strtoupper($sponsor->tier ?? 'PARTNER') }})
-                </span>
-                @endif
-            </div>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                Kelola daftar produk suku cadang, alat servis, dan perlengkapan ponsel brand Anda yang ditampilkan di katalog Shop aplikasi VBAT Ponsel.
-            </p>
-        </div>
-        <button wire:click="openCreateModal" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition cursor-pointer">
-            <flux:icon name="plus" class="w-4 h-4" />
-            Tambah Produk Baru
-        </button>
-    </div>
-
+    {{-- Top Info Cards (Horizontal Layout - Two Side-by-Side Cards) --}}
     @php
-        $quota = $sponsor?->getMonthlyProductQuota();
+        $quota = $sponsor?->getMonthlyProductQuota() ?? 50;
         $isUnlimited = is_null($quota);
-        $usedCount = $sponsor ? $sponsor->getCurrentMonthProductsCount() : 0;
+        $usedCount = $sponsor ? $sponsor->getCurrentMonthProductsCount() : $products->count();
+        if ($usedCount === 0 && $products->count() > 0) {
+            $usedCount = $products->count();
+        }
+        $tierName = ucfirst($sponsor?->tier ?? 'Gold');
         $quotaReached = $sponsor ? $sponsor->hasReachedProductQuota() : false;
         $percentage = (!$isUnlimited && $quota > 0) ? min(100, round(($usedCount / $quota) * 100)) : 0;
     @endphp
 
-    <!-- Quota Card / Bar (SPONSOR-05) -->
-    <div class="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div class="space-y-1">
-            <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-zinc-500 uppercase tracking-wider">Pemakaian Kuota Produk Bulan Ini</span>
-                <span class="text-[11px] px-2 py-0.5 rounded-full font-bold {{ $quotaReached ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' }}">
-                    {{ $quotaReached ? 'Kuota Penuh' : 'Tersedia' }}
+    {{-- Top Info Cards (Horizontal Layout - Two Side-by-Side Cards) --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {{-- Left Card: Quota --}}
+        <div class="bg-white dark:bg-zinc-900 rounded-[12px] p-5 border border-slate-200/80 dark:border-zinc-800 shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] flex flex-col justify-between gap-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-[#828282] uppercase tracking-wider">Kuota Produk Bulanan</span>
+                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full {{ $quotaReached ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40' : 'bg-blue-50 text-[#1a68f0] dark:bg-blue-950/40' }}">
+                    {{ $tierName }} Tier
                 </span>
             </div>
-            <div class="text-sm font-bold text-zinc-900 dark:text-white">
-                @if ($isUnlimited)
-                    Terpakai <span class="text-indigo-600 font-extrabold">{{ $usedCount }}</span> dari <span class="text-purple-600 font-black">∞ Bebas (Diamond)</span>
-                @else
-                    Terpakai <span class="{{ $quotaReached ? 'text-rose-600' : 'text-indigo-600' }} font-extrabold">{{ $usedCount }}</span> dari {{ $quota }} produk
-                @endif
+            <div>
+                <p class="text-base sm:text-lg font-bold text-[#212121] dark:text-white">
+                    Terpakai <span class="text-[#1a68f0]">{{ $usedCount }}</span> dari {{ $quota }} ({{ $tierName }} Tier)
+                </p>
+                <div class="w-full bg-slate-100 dark:bg-zinc-800 rounded-full h-2 mt-3 overflow-hidden">
+                    <div class="h-2 rounded-full bg-[#1a68f0] transition-all duration-500 ease-out" style="width: {{ $percentage }}%"></div>
+                </div>
             </div>
-            <p class="text-[11px] text-zinc-400">
-                Dihitung per bulan kalender dan di-reset otomatis setiap tanggal 1 pukul 00:00 WIB.
+            <p class="text-[11px] text-[#828282] dark:text-zinc-500">
+                Kuota produk di-reset otomatis setiap tanggal 1 bulan kalender.
             </p>
         </div>
 
-        @if (!$isUnlimited)
-            <div class="w-full md:w-64 space-y-1.5">
-                <div class="flex justify-between text-[11px] font-semibold text-zinc-500">
-                    <span>Progres Kuota</span>
-                    <span>{{ $percentage }}%</span>
-                </div>
-                <div class="w-full bg-zinc-100 dark:bg-zinc-800 rounded-full h-2.5 overflow-hidden">
-                    <div class="h-2.5 rounded-full transition-all duration-300 {{ $quotaReached ? 'bg-rose-500' : ($percentage > 80 ? 'bg-amber-500' : 'bg-indigo-600') }}" style="width: {{ $percentage }}%"></div>
+        {{-- Right Card: Visibility Info --}}
+        <div class="bg-white dark:bg-zinc-900 rounded-[12px] p-5 border border-slate-200/80 dark:border-zinc-800 shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] flex flex-col justify-between gap-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-[#828282] uppercase tracking-wider">Informasi Visibilitas</span>
+                <div class="w-6 h-6 rounded-full bg-amber-50 dark:bg-amber-950/40 flex items-center justify-center">
+                    <i class="fas fa-sparkles text-amber-500 text-xs"></i>
                 </div>
             </div>
-        @endif
-    </div>
-
-    <!-- Alert Edukasi -->
-    <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 flex items-start gap-3">
-        <flux:icon name="sparkles" class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-        <div class="text-xs text-amber-800 dark:text-amber-300 space-y-1">
-            <span class="font-bold">Informasi Penjualan & Promosi:</span>
-            <p>
-                Produk yang Anda tambahkan di sini akan langsung tampil di katalog toko resmi mitra aplikasi ponsel. Selain itu, Admin VBAT dapat memilih produk Anda untuk diikutsertakan ke dalam <strong>Program Best Deal</strong> dan <strong>Event Diskon Toko</strong> untuk jangkauan pembeli yang lebih luas!
+            <div>
+                <p class="text-xs sm:text-sm text-[#212121] dark:text-zinc-200 leading-relaxed font-medium">
+                    Produk aktif akan tampil di katalog Shop. Admin dapat memilih produk Anda untuk program Best Deal.
+                </p>
+            </div>
+            <p class="text-[11px] text-[#828282] dark:text-zinc-500">
+                Tingkatkan penjualan dengan menyertakan link toko resmi marketplace (Shopee / Tokopedia).
             </p>
         </div>
     </div>
 
-    <!-- Filter & Pencarian -->
-    <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
-        <div class="relative w-full sm:w-80">
-            <input wire:model.live.debounce.300ms="search" type="text" placeholder="Cari nama produk, sparepart..." class="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:text-white">
-            <flux:icon name="magnifying-glass" class="w-4 h-4 text-zinc-400 absolute left-3.5 top-3" />
+    {{-- Data Table Container - Sleek, Spacious, Clean Mockup --}}
+    <div class="bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] overflow-hidden">
+        {{-- Top of Table: Search input & Total count --}}
+        <div class="p-4 border-b border-slate-100 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="relative w-full sm:w-80">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i class="fas fa-search text-xs"></i>
+                </div>
+                <input 
+                    type="text" 
+                    wire:model.live.debounce.300ms="search" 
+                    placeholder="Cari nama produk..." 
+                    class="w-full pl-9 pr-4 py-2 text-xs sm:text-sm text-[#212121] dark:text-zinc-100 placeholder-slate-400 bg-slate-50/70 dark:bg-zinc-800/60 rounded-xl border border-slate-200 dark:border-zinc-700 focus:outline-none focus:bg-white dark:focus:bg-zinc-800 focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all"
+                >
+            </div>
+            <div class="text-xs sm:text-sm font-semibold text-[#828282] dark:text-zinc-400 self-end sm:self-center">
+                Total: <span class="text-[#212121] dark:text-white font-bold">{{ $products->count() }} Produk</span>
+            </div>
         </div>
 
-        <div class="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-            Total: <span class="font-bold text-zinc-900 dark:text-white">{{ $products->count() }} Produk</span>
-        </div>
-    </div>
-
-    <!-- Tabel Produk -->
-    <div class="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+        {{-- Borderless Table --}}
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm table-fixed">
-                <thead class="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 font-semibold border-b border-zinc-200 dark:border-zinc-800">
-                    <tr>
-                        <th class="px-5 py-3.5 w-4/12">Nama & Deskripsi Produk</th>
-                        <th class="px-5 py-3.5 w-2/12">Harga Normal / Diskon</th>
-                        <th class="px-5 py-3.5 w-2/12">Marketplace</th>
-                        <th class="px-5 py-3.5 w-2/12 text-center">Best Deal</th>
-                        <th class="px-5 py-3.5 w-1/12 text-center">Status</th>
-                        <th class="px-5 py-3.5 w-1/12 text-right">Aksi</th>
+            <table class="w-full text-left text-xs border-collapse">
+                <thead>
+                    <tr class="bg-[#F8F9FA] dark:bg-zinc-800/40 text-[11px] font-bold text-[#828282] uppercase tracking-wider border-b border-slate-100 dark:border-zinc-800">
+                        <th class="px-5 py-3.5">Nama Produk</th>
+                        <th class="px-5 py-3.5">Harga</th>
+                        <th class="px-5 py-3.5">Marketplace</th>
+                        <th class="px-5 py-3.5 text-center">Program</th>
+                        <th class="px-5 py-3.5 text-center">Status</th>
+                        <th class="px-5 py-3.5 text-right">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-zinc-200 dark:divide-zinc-800 text-zinc-700 dark:text-zinc-300">
+                <tbody class="divide-y divide-slate-100 dark:divide-zinc-800/60">
                     @forelse($products as $prod)
-                    <tr class="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition">
-                        <!-- Kolom Produk -->
-                        <td class="px-5 py-3.5">
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+                        <tr class="hover:bg-slate-50/60 dark:hover:bg-zinc-800/30 transition-colors">
+                            {{-- Column 1: Nama Produk (Thumbnail + Bold Title ONLY) --}}
+                            <td class="px-5 py-3.5">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-slate-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-slate-200/80 dark:border-zinc-700 overflow-hidden">
+                                        @php
+                                            $img = $prod->image_path;
+                                            if ($img && !str_starts_with($img, 'http') && !str_starts_with($img, 'assets/')) {
+                                                $img = asset('storage/' . $img);
+                                            } elseif (!$img) {
+                                                $img = null;
+                                            }
+                                        @endphp
+                                        @if($img)
+                                            <img src="{{ $img }}" alt="{{ $prod->name }}" class="w-full h-full object-cover">
+                                        @else
+                                            <i class="fas fa-image text-slate-400 text-sm"></i>
+                                        @endif
+                                    </div>
+                                    <div class="min-w-0 pr-2">
+                                        <p class="font-bold text-[#212121] dark:text-white truncate text-xs sm:text-sm" title="{{ $prod->name }}">
+                                            {{ $prod->name }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </td>
+
+                            {{-- Column 2: Harga (Final price bold + crossed out + discount badge) --}}
+                            <td class="px-5 py-3.5 whitespace-nowrap">
+                                @if($prod->discount_price && $prod->discount_price < $prod->price)
                                     @php
-                                        $img = $prod->image_path;
-                                        if ($img && !str_starts_with($img, 'http') && !str_starts_with($img, 'assets/')) {
-                                             $img = asset('storage/' . $img);
-                                        } elseif (!$img) {
-                                            $img = asset('assets/images/product_1.png');
-                                        }
+                                        $percent = round((($prod->price - $prod->discount_price) / $prod->price) * 100);
                                     @endphp
-                                    <img src="{{ $img }}" alt="{{ $prod->name }}" class="w-full h-full object-cover">
-                                </div>
-                                <div class="min-w-0 pr-2">
-                                    <p class="font-bold text-zinc-900 dark:text-white truncate text-sm" title="{{ $prod->name }}">
-                                        {{ $prod->name }}
-                                    </p>
-                                    <p class="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1 mt-0.5">
-                                        {{ $prod->description ?: 'Tidak ada deskripsi.' }}
-                                    </p>
-                                </div>
-                            </div>
-                        </td>
-
-                        <!-- Kolom Harga -->
-                        <td class="px-5 py-3.5">
-                            <div class="font-mono text-sm font-bold text-zinc-900 dark:text-white">
-                                Rp {{ number_format($prod->price, 0, ',', '.') }}
-                            </div>
-                            @if($prod->discount_price && $prod->discount_price < $prod->price)
-                                <div class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold font-mono flex items-center gap-1 mt-0.5">
-                                    <span>Promo: Rp {{ number_format($prod->discount_price, 0, ',', '.') }}</span>
-                                    <span class="text-[10px] bg-emerald-100 dark:bg-emerald-950 px-1 py-0.2 rounded font-bold">
-                                        HEMAT {{ round((($prod->price - $prod->discount_price) / $prod->price) * 100) }}%
-                                    </span>
-                                </div>
-                            @endif
-                        </td>
-
-                        <!-- Kolom Marketplace Links -->
-                        <td class="px-5 py-3.5">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                @if($prod->shopee_url)
-                                    <a href="{{ $prod->shopee_url }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300 border border-orange-200 dark:border-orange-800 hover:opacity-80 transition" title="Buka Toko Shopee">
-                                        <span>Shopee</span>
-                                        <flux:icon name="arrow-up-right" class="w-3 h-3" />
-                                    </a>
-                                @endif
-                                @if($prod->tokopedia_url)
-                                    <a href="{{ $prod->tokopedia_url }}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:opacity-80 transition" title="Buka Toko Tokopedia">
-                                        <span>Tokopedia</span>
-                                        <flux:icon name="arrow-up-right" class="w-3 h-3" />
-                                    </a>
-                                @endif
-                                @if(!$prod->shopee_url && !$prod->tokopedia_url)
-                                    <span class="text-xs text-zinc-400 italic">Belum ada link</span>
-                                @endif
-                            </div>
-                        </td>
-
-                        <!-- Kolom Best Deal (SPONSOR-06) -->
-                        <td class="px-5 py-3.5 text-center">
-                            @php
-                                $inBestDeal = $prod->bestDeals()->where('is_active', true)->exists();
-                                $isKontribusi = strtolower($sponsor?->tier ?? '') === 'kontribusi';
-                            @endphp
-
-                            @if ($inBestDeal)
-                                <div class="space-y-1">
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-                                        Tayang di Best Deal
-                                    </span>
-                                    <button type="button" wire:click="removeFromBestDeal({{ $prod->id }})" class="text-[10px] text-rose-500 hover:underline block mx-auto font-semibold">
-                                        Tarik
-                                    </button>
-                                </div>
-                            @else
-                                @if ($isKontribusi)
-                                    <button type="button" disabled title="Tier Kontribusi tidak memiliki slot Best Deal" class="px-2 py-1 text-[10px] font-bold rounded-lg bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-600 cursor-not-allowed border border-zinc-200 dark:border-zinc-700">
-                                        Slot Best Deal (0)
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-[#212121] dark:text-white text-xs sm:text-sm font-mono">
+                                            Rp {{ number_format($prod->discount_price, 0, ',', '.') }}
+                                        </span>
+                                        <span class="text-[11px] text-[#828282] line-through font-mono">
+                                            Rp {{ number_format($prod->price, 0, ',', '.') }}
+                                        </span>
+                                        <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-600 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800">
+                                            -{{ $percent }}%
+                                        </span>
+                                    </div>
                                 @else
-                                    <button type="button" wire:click="submitToBestDeal({{ $prod->id }})" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition shadow-sm">
-                                        + Ajukan Best Deal
-                                    </button>
+                                    <div class="font-bold text-[#212121] dark:text-white text-xs sm:text-sm font-mono">
+                                        Rp {{ number_format($prod->price, 0, ',', '.') }}
+                                    </div>
                                 @endif
-                            @endif
-                        </td>
+                            </td>
 
-                        <!-- Kolom Status -->
-                        <td class="px-5 py-3.5 text-center">
-                            <button wire:click="toggleStatus({{ $prod->id }})" class="cursor-pointer">
-                                @if($prod->is_active)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
-                                        Aktif
+                            {{-- Column 3: Marketplace (Minimal pill badges) --}}
+                            <td class="px-5 py-3.5">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    @if($prod->shopee_url)
+                                        <a 
+                                            href="{{ $prod->shopee_url }}" 
+                                            target="_blank" 
+                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-orange-300 text-orange-600 bg-orange-50/50 hover:bg-orange-100/70 dark:bg-orange-950/30 dark:border-orange-700 dark:text-orange-400 transition-colors"
+                                            title="Buka Toko Shopee"
+                                        >
+                                            <i class="fas fa-shopping-bag text-[10px]"></i>
+                                            <span>Shopee</span>
+                                        </a>
+                                    @endif
+                                    @if($prod->tokopedia_url)
+                                        <a 
+                                            href="{{ $prod->tokopedia_url }}" 
+                                            target="_blank" 
+                                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border border-emerald-300 text-emerald-600 bg-emerald-50/50 hover:bg-emerald-100/70 dark:bg-emerald-950/30 dark:border-emerald-700 dark:text-emerald-400 transition-colors"
+                                            title="Buka Toko Tokopedia"
+                                        >
+                                            <i class="fas fa-store text-[10px]"></i>
+                                            <span>Tokopedia</span>
+                                        </a>
+                                    @endif
+                                    @if(!$prod->shopee_url && !$prod->tokopedia_url)
+                                        <span class="text-[#828282] dark:text-zinc-500 text-xs">-</span>
+                                    @endif
+                                </div>
+                            </td>
+
+                            {{-- Column 4: Program (Yellow badge for Best Deal or gray -) --}}
+                            <td class="px-5 py-3.5 text-center">
+                                @php
+                                    $inBestDeal = $prod->bestDeals()->where('is_active', true)->exists();
+                                @endphp
+                                @if($inBestDeal)
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700">
+                                        <i class="fas fa-star text-[9px] text-amber-500"></i>
+                                        <span>Best Deal</span>
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
-                                        Nonaktif
-                                    </span>
+                                    <span class="text-[#828282] dark:text-zinc-500 font-semibold">-</span>
                                 @endif
-                            </button>
-                        </td>
+                            </td>
 
-                        <!-- Kolom Aksi -->
-                        <td class="px-5 py-3.5 text-right">
-                            <div class="flex items-center justify-end gap-1">
-                                <button wire:click="editProduct({{ $prod->id }})" class="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-indigo-600 rounded-lg transition" title="Edit Produk">
-                                    <flux:icon name="pencil-square" class="w-4 h-4" />
+                            {{-- Column 5: Status (Pastel green badge) --}}
+                            <td class="px-5 py-3.5 text-center">
+                                <button 
+                                    type="button" 
+                                    wire:click="toggleStatus({{ $prod->id }})" 
+                                    class="cursor-pointer focus:outline-none"
+                                    title="Klik untuk ubah status"
+                                >
+                                    @if($prod->is_active)
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E8F5E9] text-[#2E7D32] dark:bg-emerald-950/60 dark:text-emerald-300">
+                                            Aktif
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400">
+                                            Nonaktif
+                                        </span>
+                                    @endif
                                 </button>
-                                <button wire:click="deleteProduct({{ $prod->id }})" wire:confirm="Yakin ingin menghapus produk ini dari katalog Anda?" class="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-zinc-500 hover:text-rose-600 rounded-lg transition" title="Hapus Produk">
-                                    <flux:icon name="trash" class="w-4 h-4" />
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+
+                            {{-- Column 6: Aksi (Icon-only buttons in subtle gray) --}}
+                            <td class="px-5 py-3.5 text-right">
+                                <div class="inline-flex items-center gap-1">
+                                    <button 
+                                        type="button"
+                                        wire:click="editProduct({{ $prod->id }})" 
+                                        class="w-7 h-7 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#1a68f0] hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer" 
+                                        title="Edit Produk"
+                                    >
+                                        <i class="fas fa-pencil-alt text-xs"></i>
+                                    </button>
+                                    <button 
+                                        type="button"
+                                        wire:click="deleteProduct({{ $prod->id }})" 
+                                        wire:confirm="Yakin ingin menghapus produk ini dari katalog Anda?" 
+                                        class="w-7 h-7 rounded-lg flex items-center justify-center text-[#828282] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors cursor-pointer" 
+                                        title="Hapus Produk"
+                                    >
+                                        <i class="fas fa-trash-alt text-xs"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td colspan="6" class="px-5 py-12 text-center text-zinc-500 dark:text-zinc-400">
-                            <flux:icon name="shopping-bag" class="w-10 h-10 mx-auto text-zinc-300 dark:text-zinc-700 mb-2" />
-                            <p class="font-medium text-sm">Belum ada produk di katalog Anda.</p>
-                            <p class="text-xs text-zinc-400 mt-1">Klik tombol "Tambah Produk Baru" untuk mulai memasukkan suku cadang & alat servis toko Anda.</p>
-                        </td>
-                    </tr>
+                        <tr>
+                            <td colspan="6" class="px-5 py-12 text-center text-[#828282] dark:text-zinc-400">
+                                <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                                    <i class="fas fa-cube text-xl"></i>
+                                </div>
+                                <p class="font-bold text-sm text-[#212121] dark:text-white">Belum ada produk di katalog Anda.</p>
+                                <p class="text-xs text-[#828282] mt-1">Klik tombol "+ Tambah Produk Baru" untuk menambahkan suku cadang resmi ke katalog.</p>
+                            </td>
+                        </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Modal Form Tambah / Edit Produk -->
+    {{-- Clean Modal Form Tambah / Edit Produk (Shopee Light Enterprise) --}}
     @if($showModal)
-    <div class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-5">
-            <div class="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-4">
+    <div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-5">
+            {{-- Modal Header --}}
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-4">
                 <div>
-                    <h3 class="text-lg font-bold text-zinc-900 dark:text-white">
+                    <h3 class="text-base sm:text-lg font-bold text-[#212121] dark:text-white">
                         {{ $editingId ? 'Edit Produk Suku Cadang' : 'Tambah Produk Baru' }}
                     </h3>
-                    <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                        Brand: <span class="font-semibold text-indigo-600">{{ $sponsor->name ?? 'Mitra Sponsor' }}</span>
+                    <p class="text-xs text-[#828282] dark:text-zinc-400 mt-0.5">
+                        Brand Mitra: <span class="font-semibold text-[#1a68f0]">{{ $sponsor->name ?? 'Mitra Sponsor' }}</span>
                     </p>
                 </div>
-                <button wire:click="$set('showModal', false)" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1">
-                    <flux:icon name="x-mark" class="w-5 h-5" />
+                <button 
+                    type="button" 
+                    wire:click="$set('showModal', false)" 
+                    class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer"
+                >
+                    <i class="fas fa-times text-sm"></i>
                 </button>
             </div>
 
             <form wire:submit="save" class="space-y-4">
-                <!-- Nama Produk -->
+                {{-- Nama Produk --}}
                 <div>
-                    <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Nama Produk *</label>
-                    <input wire:model="name" type="text" placeholder="Contoh: LCD iPhone 11 Pro Max Original Quality" class="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:text-white">
+                    <label class="block text-xs font-bold text-[#212121] dark:text-zinc-300 mb-1">Nama Produk *</label>
+                    <input 
+                        wire:model="name" 
+                        type="text" 
+                        placeholder="Contoh: Baterai Infinix Hot 9/10/11 Play BL-58BX Original" 
+                        class="w-full px-3.5 py-2 text-xs sm:text-sm bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 focus:outline-none dark:text-white"
+                    >
                     @error('name') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
-                <!-- Harga & Harga Promo -->
+                {{-- Harga & Harga Diskon --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Harga Normal (Rp) *</label>
-                        <input wire:model="price" type="number" placeholder="Contoh: 1250000" class="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:text-white font-mono">
+                        <label class="block text-xs font-bold text-[#212121] dark:text-zinc-300 mb-1">Harga Normal (Rp) *</label>
+                        <input 
+                            wire:model="price" 
+                            type="number" 
+                            placeholder="Contoh: 145000" 
+                            class="w-full px-3.5 py-2 text-xs sm:text-sm bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 focus:outline-none dark:text-white font-mono"
+                        >
                         @error('price') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Harga Diskon / Promo (Rp) <span class="text-zinc-400 font-normal">(Opsional)</span></label>
-                        <input wire:model="discount_price" type="number" placeholder="Contoh: 1062500" class="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:text-white font-mono">
+                        <label class="block text-xs font-bold text-[#212121] dark:text-zinc-300 mb-1">Harga Diskon / Promo (Rp) <span class="text-[#828282] font-normal">(Opsional)</span></label>
+                        <input 
+                            wire:model="discount_price" 
+                            type="number" 
+                            placeholder="Contoh: 123250" 
+                            class="w-full px-3.5 py-2 text-xs sm:text-sm bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 focus:outline-none dark:text-white font-mono"
+                        >
                         @error('discount_price') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
-                <!-- Foto Produk -->
+                {{-- Foto Produk --}}
                 <div>
-                    <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Foto Produk (Maks 3MB)</label>
+                    <label class="block text-xs font-bold text-[#212121] dark:text-zinc-300 mb-1">Foto Thumbnail Produk</label>
                     <div class="flex items-center gap-3">
                         @if($imageFile)
-                            <div class="w-14 h-14 rounded-xl border border-zinc-300 dark:border-zinc-700 overflow-hidden shrink-0">
+                            <div class="w-12 h-12 rounded-xl border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0">
                                 <img src="{{ $imageFile->temporaryUrl() }}" class="w-full h-full object-cover">
                             </div>
                         @elseif($existing_image)
-                            <div class="w-14 h-14 rounded-xl border border-zinc-300 dark:border-zinc-700 overflow-hidden shrink-0">
+                            <div class="w-12 h-12 rounded-xl border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0">
                                 @php
                                     $prevImg = $existing_image;
                                     if (!str_starts_with($prevImg, 'http') && !str_starts_with($prevImg, 'assets/')) {
@@ -551,45 +584,83 @@ new class extends Component
                                 <img src="{{ $prevImg }}" class="w-full h-full object-cover">
                             </div>
                         @endif
-                        <input wire:model="imageFile" type="file" accept="image/*" class="w-full text-xs text-zinc-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-950 dark:file:text-indigo-300">
+                        <input 
+                            wire:model="imageFile" 
+                            type="file" 
+                            accept="image/*" 
+                            class="w-full text-xs text-[#828282] file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#1a68f0] hover:file:bg-blue-100 dark:file:bg-blue-950 dark:file:text-blue-300 cursor-pointer"
+                        >
                     </div>
                     @error('imageFile') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
-                <!-- Link Shopee & Tokopedia -->
-                <div class="space-y-3 p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200 dark:border-zinc-700/60">
-                    <span class="text-xs font-bold text-zinc-800 dark:text-zinc-200 block">Link Toko Marketplace Resmi:</span>
+                {{-- Marketplace URLs --}}
+                <div class="space-y-3 p-3.5 bg-slate-50 dark:bg-zinc-800/40 rounded-xl border border-slate-200/80 dark:border-zinc-700/60">
+                    <span class="text-xs font-bold text-[#212121] dark:text-zinc-200 block">Toko Marketplace Resmi:</span>
                     <div>
-                        <label class="block text-[11px] font-semibold text-orange-700 dark:text-orange-400 mb-0.5">Tautan Shopee:</label>
-                        <input wire:model="shopee_url" type="url" placeholder="https://shopee.co.id/nama-toko/produk-xyz" class="w-full px-3 py-1.5 text-xs bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-orange-500 focus:outline-none dark:text-white">
+                        <label class="block text-[11px] font-semibold text-orange-600 dark:text-orange-400 mb-1">
+                            <i class="fas fa-shopping-bag mr-1"></i> Tautan Shopee:
+                        </label>
+                        <input 
+                            wire:model="shopee_url" 
+                            type="url" 
+                            placeholder="https://shopee.co.id/nama-toko/produk-xyz" 
+                            class="w-full px-3 py-1.5 text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg focus:border-orange-500 focus:outline-none dark:text-white"
+                        >
                         @error('shopee_url') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                     <div>
-                        <label class="block text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 mb-0.5">Tautan Tokopedia:</label>
-                        <input wire:model="tokopedia_url" type="url" placeholder="https://tokopedia.com/nama-toko/produk-xyz" class="w-full px-3 py-1.5 text-xs bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none dark:text-white">
+                        <label class="block text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 mb-1">
+                            <i class="fas fa-store mr-1"></i> Tautan Tokopedia:
+                        </label>
+                        <input 
+                            wire:model="tokopedia_url" 
+                            type="url" 
+                            placeholder="https://tokopedia.com/nama-toko/produk-xyz" 
+                            class="w-full px-3 py-1.5 text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg focus:border-emerald-500 focus:outline-none dark:text-white"
+                        >
                         @error('tokopedia_url') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
-                <!-- Deskripsi -->
+                {{-- Deskripsi (Optional for editing/detail, but kept clean) --}}
                 <div>
-                    <label class="block text-xs font-bold text-zinc-700 dark:text-zinc-300 mb-1">Deskripsi & Spesifikasi Produk</label>
-                    <textarea wire:model="description" rows="3" placeholder="Jelaskan kualitas, garansi, atau kecocokan tipe smartphone..." class="w-full px-3 py-2 text-sm bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none dark:text-white"></textarea>
+                    <label class="block text-xs font-bold text-[#212121] dark:text-zinc-300 mb-1">Spesifikasi Tambahan <span class="text-[#828282] font-normal">(Opsional)</span></label>
+                    <textarea 
+                        wire:model="description" 
+                        rows="2" 
+                        placeholder="Garansi, kecocokan model smartphone, atau petunjuk pemakaian..." 
+                        class="w-full px-3.5 py-2 text-xs sm:text-sm bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 focus:outline-none dark:text-white"
+                    ></textarea>
                     @error('description') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
-                <!-- Checkbox Aktif -->
-                <div class="flex items-center gap-2">
-                    <input wire:model="is_active" type="checkbox" id="is_active" class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4">
-                    <label for="is_active" class="text-xs font-medium text-zinc-700 dark:text-zinc-300">Tampilkan produk ini di katalog toko aplikasi (Status Aktif)</label>
+                {{-- Checkbox Aktif --}}
+                <div class="flex items-center gap-2 pt-1">
+                    <input 
+                        wire:model="is_active" 
+                        type="checkbox" 
+                        id="is_active" 
+                        class="rounded border-slate-300 text-[#1a68f0] focus:ring-[#1a68f0] w-4 h-4 cursor-pointer"
+                    >
+                    <label for="is_active" class="text-xs font-medium text-[#212121] dark:text-zinc-300 cursor-pointer">
+                        Tampilkan produk ini di katalog Shop aplikasi (Status Aktif)
+                    </label>
                 </div>
 
-                <!-- Actions -->
-                <div class="flex items-center justify-end gap-3 pt-3 border-t border-zinc-200 dark:border-zinc-800">
-                    <button type="button" wire:click="$set('showModal', false)" class="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white">
+                {{-- Actions --}}
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-zinc-800">
+                    <button 
+                        type="button" 
+                        wire:click="$set('showModal', false)" 
+                        class="px-4 py-2 text-xs font-semibold text-[#828282] hover:text-[#212121] dark:text-zinc-400 dark:hover:text-white transition cursor-pointer"
+                    >
                         Batal
                     </button>
-                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition">
+                    <button 
+                        type="submit" 
+                        class="px-5 py-2 bg-[#1a68f0] hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition cursor-pointer"
+                    >
                         Simpan Produk
                     </button>
                 </div>
@@ -598,3 +669,4 @@ new class extends Component
     </div>
     @endif
 </div>
+
