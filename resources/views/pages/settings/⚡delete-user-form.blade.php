@@ -11,7 +11,7 @@ new #[Layout('layouts.admin')] class extends Component {}; ?>
         <!-- Card Header -->
         <div class="px-6 py-5 border-b border-red-100 bg-red-50/30">
             <h3 class="text-lg font-semibold text-red-700">Hapus akun</h3>
-            <p class="text-sm text-red-600 mt-1">Hapus akun Anda dan semua datanya</p>
+            <p class="text-sm text-red-600 mt-1">Akun dan semua data Anda akan dihapus secara permanen dan tidak dapat dipulihkan</p>
         </div>
 
         <!-- Card Content -->
