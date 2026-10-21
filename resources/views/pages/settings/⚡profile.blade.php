@@ -77,43 +77,67 @@ new #[Title('Profile settings')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    @include('partials.settings-heading')
-
-    <flux:heading level="2" class="sr-only">{{ __('Profile settings') }}</flux:heading>
-
     <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
-        <form wire:submit="updateProfileInformation" class="my-6 w-full space-y-6">
-            <flux:input wire:model="name" :label="__('Name')" type="text" required autofocus autocomplete="name" />
-
+        <form wire:submit="updateProfileInformation" class="space-y-5">
+            <!-- Name Input -->
             <div>
-                <flux:input wire:model="email" :label="__('Email')" type="email" required autocomplete="email" />
+                <label for="name" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Name') }}</label>
+                <input 
+                    id="name"
+                    wire:model="name" 
+                    type="text"
+                    required 
+                    autofocus 
+                    autocomplete="name"
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] placeholder-[#828282] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
+                >
+                @error('name')
+                    <p class="text-red-600 text-xs mt-1.5">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Email Input -->
+            <div>
+                <label for="email" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Email') }}</label>
+                <input 
+                    id="email"
+                    wire:model="email" 
+                    type="email"
+                    required 
+                    autocomplete="email"
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] placeholder-[#828282] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
+                >
+                @error('email')
+                    <p class="text-red-600 text-xs mt-1.5">{{ $message }}</p>
+                @enderror
 
                 @if ($this->hasUnverifiedEmail)
-                    <div>
-                        <flux:text class="mt-4">
+                    <div class="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
+                        <p class="text-sm text-[#212121]">
                             {{ __('Your email address is unverified.') }}
-
-                            <flux:link class="text-sm cursor-pointer" wire:click.prevent="resendVerificationNotification">
+                            <button type="button" wire:click.prevent="resendVerificationNotification" class="text-[#1a73e8] font-medium hover:underline">
                                 {{ __('Click here to re-send the verification email.') }}
-                            </flux:link>
-                        </flux:text>
+                            </button>
+                        </p>
 
                         @if (session('status') === 'verification-link-sent')
-                            <flux:text class="mt-2 font-medium !dark:text-green-400 !text-green-600">
+                            <p class="text-sm text-green-600 font-medium mt-2">
                                 {{ __('A new verification link has been sent to your email address.') }}
-                            </flux:text>
+                            </p>
                         @endif
                     </div>
                 @endif
             </div>
 
-            <div class="flex items-center gap-4">
-                <div class="flex items-center justify-end">
-                    <flux:button variant="primary" type="submit" class="w-full" data-test="update-profile-button">
-                        {{ __('Save') }}
-                    </flux:button>
-                </div>
-
+            <!-- Save Button -->
+            <div class="flex pt-4">
+                <button 
+                    type="submit"
+                    class="px-6 py-2.5 bg-[#1a73e8] text-white rounded-lg font-medium text-sm transition-all hover:bg-[#1a5fc0] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:ring-offset-2"
+                    data-test="update-profile-button"
+                >
+                    {{ __('Save') }}
+                </button>
             </div>
         </form>
 

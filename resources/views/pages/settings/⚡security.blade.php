@@ -172,38 +172,64 @@ new #[Title('Security settings')] class extends Component {
     <flux:heading level="2" class="sr-only">{{ __('Security settings') }}</flux:heading>
 
     <x-pages::settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
-        <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
-            <flux:input
-                wire:model="current_password"
-                :label="__('Current password')"
-                type="password"
-                required
-                autocomplete="current-password"
-                viewable
-            />
-            <flux:input
-                wire:model="password"
-                :label="__('New password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
-                viewable
-            />
-            <flux:input
-                wire:model="password_confirmation"
-                :label="__('Confirm password')"
-                type="password"
-                required
-                autocomplete="new-password"
-                passwordrules="{{ \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString() }}"
-                viewable
-            />
+        <form method="POST" wire:submit="updatePassword" class="space-y-5">
+            <!-- Current Password -->
+            <div>
+                <label for="current_password" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Current password') }}</label>
+                <input 
+                    id="current_password"
+                    wire:model="current_password"
+                    type="password"
+                    required
+                    autocomplete="current-password"
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
+                >
+                @error('current_password')
+                    <p class="text-red-600 text-xs mt-1.5">{{ $message }}</p>
+                @enderror
+            </div>
 
-            <div class="flex items-center gap-4">
-                <flux:button variant="primary" type="submit" data-test="update-password-button">
+            <!-- New Password -->
+            <div>
+                <label for="password" class="block text-sm font-medium text-[#212121] mb-2">{{ __('New password') }}</label>
+                <input 
+                    id="password"
+                    wire:model="password"
+                    type="password"
+                    required
+                    autocomplete="new-password"
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
+                >
+                @error('password')
+                    <p class="text-red-600 text-xs mt-1.5">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Confirm Password -->
+            <div>
+                <label for="password_confirmation" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Confirm password') }}</label>
+                <input 
+                    id="password_confirmation"
+                    wire:model="password_confirmation"
+                    type="password"
+                    required
+                    autocomplete="new-password"
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
+                >
+                @error('password_confirmation')
+                    <p class="text-red-600 text-xs mt-1.5">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Save Button -->
+            <div class="flex pt-4">
+                <button 
+                    type="submit"
+                    class="px-6 py-2.5 bg-[#1a73e8] text-white rounded-lg font-medium text-sm transition-all hover:bg-[#1a5fc0] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:ring-offset-2"
+                    data-test="update-password-button"
+                >
                     {{ __('Save') }}
-                </flux:button>
+                </button>
             </div>
         </form>
 
