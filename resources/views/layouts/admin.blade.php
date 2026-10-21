@@ -63,65 +63,68 @@
                 <header class="sticky top-0 z-30 flex items-center justify-between h-20 px-6 sm:px-8 bg-transparent">
                     <!-- Left: Page Title with Icon & Description -->
                     <div>
-                        <div class="flex items-center gap-3 mb-1.5">
+                        <div class="flex items-start gap-4">
                             @if(request()->routeIs('admin.analytics'))
-                                <svg class="w-6 h-6 text-[#1a73e8] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
-                                </svg>
-                                <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Analitik Aplikasi</h1>
+                                <i class="fas fa-chart-line text-[#1a73e8] text-4xl mt-1"></i>
+                                <div>
+                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Analitik Aplikasi</h1>
+                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
+                                        Pantau kinerja aplikasi, engagement user, dan performa sponsor secara real‑time.
+                                    </p>
+                                </div>
                             @elseif(request()->routeIs('dashboard'))
-                                <svg class="w-6 h-6 text-[#1a73e8] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-                                </svg>
-                                <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Dashboard Utama</h1>
+                                <i class="fas fa-home text-[#1a73e8] text-4xl mt-1"></i>
+                                <div>
+                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Dashboard Utama</h1>
+                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
+                                        Ringkasan performa aplikasi dan aktivitas terkini.
+                                    </p>
+                                </div>
                             @elseif(request()->routeIs('admin.sponsors'))
-                                <svg class="w-6 h-6 text-[#1a73e8] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                                </svg>
-                                <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Manajemen Sponsor</h1>
+                                <i class="fas fa-handshake text-[#1a73e8] text-4xl mt-1"></i>
+                                <div>
+                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Manajemen Sponsor</h1>
+                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
+                                        Kelola sponsor, verifikasi dokumen, dan kelola benefit tiap tier.
+                                    </p>
+                                </div>
                             @elseif(request()->routeIs('admin.products'))
-                                <svg class="w-6 h-6 text-[#1a73e8] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
-                                </svg>
-                                <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Katalog Produk</h1>
+                                <i class="fas fa-cube text-[#1a73e8] text-4xl mt-1"></i>
+                                <div>
+                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Katalog Produk</h1>
+                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
+                                        Kelola katalog produk, inventory, dan link penjualan.
+                                    </p>
+                                </div>
                             @elseif(request()->routeIs('admin.campaigns'))
-                                <svg class="w-6 h-6 text-[#1a73e8] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
-                                </svg>
-                                <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Moderasi Kampanye</h1>
+                                <i class="fas fa-bullhorn text-[#1a73e8] text-4xl mt-1"></i>
+                                <div>
+                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Moderasi Kampanye</h1>
+                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
+                                        Tinjau dan moderasi kampanye promosi dari sponsor.
+                                    </p>
+                                </div>
                             @elseif(request()->routeIs('admin.events'))
-                                <svg class="w-6 h-6 text-[#1a73e8] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-                                </svg>
-                                <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Event & Diskon Shop</h1>
+                                <i class="fas fa-calendar-alt text-[#1a73e8] text-4xl mt-1"></i>
+                                <div>
+                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Event & Diskon Shop</h1>
+                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
+                                        Atur program event diskon khusus dan manage produk yang masuk ke promo.
+                                    </p>
+                                </div>
                             @elseif(request()->routeIs('admin.bulk-upload'))
-                                <svg class="w-6 h-6 text-[#1a73e8] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
-                                </svg>
-                                <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Bulk Upload Materi Kelas</h1>
+                                <i class="fas fa-cloud-upload-alt text-[#1a73e8] text-4xl mt-1"></i>
+                                <div>
+                                    <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">Bulk Upload Materi Kelas</h1>
+                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">
+                                        Unggah puluhan materi video kelas secara massal menggunakan file format Excel/CSV.
+                                    </p>
+                                </div>
                             @else
                                 <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">{{ $title ?? $pageTitle ?? 'Analitik Sponsor' }}</h1>
+                                <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">{{ $description ?? 'Halaman administrasi VBAT Ponsel' }}</p>
                             @endif
                         </div>
-                        <p class="text-sm text-[#828282] dark:text-zinc-400 ml-10">
-                            @if(request()->routeIs('admin.analytics'))
-                                Pantau kinerja aplikasi, engagement user, dan performa sponsor secara real‑time.
-                            @elseif(request()->routeIs('admin.sponsors'))
-                                Kelola sponsor, verifikasi dokumen, dan kelola benefit tiap tier.
-                            @elseif(request()->routeIs('admin.products'))
-                                Kelola katalog produk, inventory, dan link penjualan.
-                            @elseif(request()->routeIs('admin.campaigns'))
-                                Tinjau dan moderasi kampanye promosi dari sponsor.
-                            @elseif(request()->routeIs('admin.events'))
-                                Atur program event diskon khusus dan manage produk yang masuk ke promo.
-                            @elseif(request()->routeIs('admin.bulk-upload'))
-                                Unggah puluhan materi video kelas secara massal menggunakan file format Excel/CSV.
-                            @elseif(request()->routeIs('dashboard'))
-                                Ringkasan performa aplikasi dan aktivitas terkini.
-                            @else
-                                {{ $description ?? 'Halaman administrasi VBAT Ponsel' }}
-                            @endif
-                        </p>
                     </div>
 
                     <!-- Right: Actions & Tools -->
