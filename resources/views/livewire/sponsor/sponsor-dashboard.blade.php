@@ -2,14 +2,205 @@
 
 use Livewire\Component;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Layout;
 
-new #[Title('Dashboard Sponsor')] class extends Component {
+new #[Layout('layouts.app')] #[Title('Dashboard Sponsor')] class extends Component {
     public function render()
     {
-        return view('livewire.sponsor.sponsor-dashboard');
+        return <<<'HTML'
+        <div class="min-h-screen bg-[#F4F6F8]">
+            <!-- Header Profile Section -->
+            <div class="bg-white border-b border-gray-200 px-6 py-5">
+                <div class="flex items-center justify-between max-w-7xl mx-auto">
+                    <!-- Left: Partner Profile -->
+                    <div class="flex items-center gap-6">
+                        <div class="relative">
+                            <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl">
+                                SP
+                            </div>
+                            <button class="absolute bottom-0 right-0 w-6 h-6 bg-white rounded-full border-2 border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-camera text-xs text-gray-600"></i>
+                            </button>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-[#212121]">Sponsor Partner</h2>
+                            <span class="inline-block px-3 py-1 mt-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full">TIER PARTNER</span>
+                            <div class="flex items-center gap-4 mt-2 text-sm">
+                                <a href="#" class="text-blue-600 hover:text-blue-700 hover:underline">Ubah Profil</a>
+                                <span class="text-gray-300">|</span>
+                                <a href="#" class="text-blue-600 hover:text-blue-700 hover:underline">Gambar Header</a>
+                                <span class="text-gray-300">|</span>
+                                <a href="#" class="text-blue-600 hover:text-blue-700 hover:underline">Upload Logo</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Action Buttons -->
+                    <div class="flex items-center gap-3">
+                        <button class="px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-sync-alt mr-2"></i>
+                            Segarkan Data
+                        </button>
+                        <button class="px-4 py-2.5 bg-[#1a73e8] text-white font-medium rounded-lg hover:bg-[#1557b0] transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Ajukan Kampanye
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="max-w-7xl mx-auto px-6 py-8">
+                <!-- Quota Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- Hero Slider Quota -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <p class="text-sm font-medium text-[#828282] mb-1">Hero Slider (16:9)</p>
+                                <p class="text-lg font-bold text-[#212121]">Sisa Kuota: 2 dari 5</p>
+                            </div>
+                            <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <i class="fas fa-images text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-[#1a73e8] h-2 rounded-full" style="width: 40%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Horizontal Slider Quota -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <p class="text-sm font-medium text-[#828282] mb-1">Horizontal Slider</p>
+                                <p class="text-lg font-bold text-[#212121]">Sisa Kuota: 0 dari 2</p>
+                            </div>
+                            <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center">
+                                <i class="fas fa-sliders-h text-gray-600"></i>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-gray-400 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Card Slider Quota -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <p class="text-sm font-medium text-[#828282] mb-1">Card Slider</p>
+                                <p class="text-lg font-bold text-[#212121]">Sisa Kuota: 10 dari 10</p>
+                            </div>
+                            <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <i class="fas fa-th-large text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-[#1a73e8] h-2 rounded-full" style="width: 100%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Pop Up Iklan Quota -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <p class="text-sm font-medium text-[#828282] mb-1">Pop Up Iklan</p>
+                                <p class="text-lg font-bold text-[#212121]">Sisa Kuota: 1 dari 1</p>
+                            </div>
+                            <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <i class="fas fa-bullhorn text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-[#1a73e8] h-2 rounded-full" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Overview Tables -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Daftar Kampanye Promosi -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-bold text-[#212121] mb-4">Daftar Kampanye Promosi</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-100">
+                                        <th class="text-left py-3 text-sm font-semibold text-[#828282]">Kampanye</th>
+                                        <th class="text-left py-3 text-sm font-semibold text-[#828282]">Penempatan</th>
+                                        <th class="text-left py-3 text-sm font-semibold text-[#828282]">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b border-gray-50">
+                                        <td class="py-3 text-sm text-[#212121]">Promo Akhir Tahun</td>
+                                        <td class="py-3 text-sm text-[#828282]">Hero Slider</td>
+                                        <td class="py-3">
+                                            <span class="inline-block px-3 py-1 bg-yellow-50 text-yellow-700 text-xs font-medium rounded-full">Menunggu Approval</span>
+                                        </td>
+                                    </tr>
+                                    <tr class="border-b border-gray-50">
+                                        <td class="py-3 text-sm text-[#212121]">Banner Diskon 50%</td>
+                                        <td class="py-3 text-sm text-[#828282]">Card Slider</td>
+                                        <td class="py-3">
+                                            <span class="inline-block px-3 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full">Disetujui</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 text-sm text-[#212121]">Flash Sale Produk</td>
+                                        <td class="py-3 text-sm text-[#828282]">Pop Up Iklan</td>
+                                        <td class="py-3">
+                                            <span class="inline-block px-3 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full">Disetujui</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Katalog Produk & Suku Cadang -->
+                    <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-[#212121]">Katalog Produk & Suku Cadang Saya</h3>
+                            <a href="#" class="text-sm text-blue-600 hover:text-blue-700 hover:underline">Lihat Semua Produk</a>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-image text-gray-400"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-[#212121]">Aki Motor GS Astra Premium</p>
+                                    <p class="text-sm text-[#828282] mt-1">Rp 350.000</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-image text-gray-400"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-[#212121]">Ban FDR Sport XR Evo 120/70</p>
+                                    <p class="text-sm text-[#828282] mt-1">Rp 275.000</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-4">
+                                <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-image text-gray-400"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-[#212121]">Oli Mesin Shell Helix HX7 1L</p>
+                                    <p class="text-sm text-[#828282] mt-1">Rp 85.000</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        HTML;
     }
 };
-?>
 
 <div class="flex flex-col gap-6">
     <!-- Header Profile & Actions -->
