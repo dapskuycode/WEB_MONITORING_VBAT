@@ -11,7 +11,7 @@
             class="inline-flex items-center gap-2 px-4 py-2 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer shrink-0"
         >
             <i class="fas fa-plus text-xs"></i>
-            <span>+ Ajukan Horizontal Banner</span>
+            <span>Ajukan Horizontal Banner</span>
         </button>
     </x-slot:actions>
 
