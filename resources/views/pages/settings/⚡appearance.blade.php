@@ -1,13 +1,16 @@
 <?php
 
-use Livewire\Component;
 use Livewire\Attributes\Title;
+use Livewire\Component;
+use function Livewire\Volt\{layout};
+
+layout('layouts.admin');
 
 new #[Title('Pengaturan tampilan')] class extends Component {
     //
 }; ?>
 
-<div>
+<section class="w-full">
     @include('partials.settings-heading', [
         'pageIcon' => 'fa-palette',
         'pageTitle' => __('Tampilan'),
@@ -55,4 +58,4 @@ new #[Title('Pengaturan tampilan')] class extends Component {
         </div>
         </div>
     </div>
-</div>
+</section>

@@ -12,6 +12,9 @@ use Livewire\Component;
 use Laravel\Passkeys\Actions\DeletePasskey;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
+use function Livewire\Volt\{layout};
+
+layout('layouts.admin');
 
 new #[Title('Pengaturan keamanan')] class extends Component {
     use PasswordValidationRules;
@@ -166,7 +169,7 @@ new #[Title('Pengaturan keamanan')] class extends Component {
     }
 }; ?>
 
-<div>
+<section class="w-full">
     @include('partials.settings-heading', [
         'pageIcon' => 'fa-shield-alt',
         'pageTitle' => __('Keamanan'),
@@ -385,4 +388,4 @@ new #[Title('Pengaturan keamanan')] class extends Component {
             </div>
         </div>
     </flux:modal>
-</div>
+</section>

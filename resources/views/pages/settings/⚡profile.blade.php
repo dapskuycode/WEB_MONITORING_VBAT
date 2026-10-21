@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use function Livewire\Volt\{layout};
+
+layout('layouts.admin');
 
 new #[Title('Pengaturan Profil')] class extends Component {
     use ProfileValidationRules;
@@ -76,7 +79,7 @@ new #[Title('Pengaturan Profil')] class extends Component {
     }
 }; ?>
 
-<div>
+<section class="w-full">
     @include('partials.settings-heading', [
         'pageIcon' => 'fa-user',
         'pageTitle' => __('Profil'),
@@ -166,4 +169,4 @@ new #[Title('Pengaturan Profil')] class extends Component {
         @endif
         </div>
     </div>
-</div>
+</section>
