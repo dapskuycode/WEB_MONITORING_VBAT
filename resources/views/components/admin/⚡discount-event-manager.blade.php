@@ -383,15 +383,23 @@ new class extends Component
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-12 text-center">
-                            <div class="flex flex-col items-center gap-3">
-                                <div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
-                                    <i class="fas fa-calendar-times text-slate-400 text-2xl"></i>
+                        <td colspan="6" class="p-0">
+                            <div class="py-16 text-center bg-white rounded-xl border border-dashed border-[#e2e8f0] mt-6">
+                                <div class="w-14 h-14 bg-[#f4f6f8] rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-calendar-alt text-[#a0aec0] text-xl"></i>
                                 </div>
-                                <div>
-                                    <div class="text-sm font-semibold text-[#212121] mb-1">Belum ada program Event Diskon</div>
-                                    <div class="text-sm text-[#828282]">Klik tombol "Buat Event Baru" di atas</div>
-                                </div>
+                                <h3 class="text-sm font-semibold text-[#212121] mb-1">Belum ada kampanye dengan filter yang dipilih.</h3>
+                                <p class="text-xs text-[#828282] max-w-xs mx-auto mb-4">
+                                    Event dan diskon akan muncul di sini setelah Anda membuat program promo.
+                                </p>
+                                <button 
+                                    type="button"
+                                    wire:click="openCreateModal"
+                                    class="inline-flex items-center gap-2 px-4 py-2 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
+                                >
+                                    <i class="fas fa-plus"></i>
+                                    <span>Buat Event Baru</span>
+                                </button>
                             </div>
                         </td>
                     </tr>
