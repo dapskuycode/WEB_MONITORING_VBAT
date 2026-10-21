@@ -14,8 +14,7 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Layout;
 
-#[Layout('layouts.admin')]
-new #[Title('Pengaturan keamanan')] class extends Component {
+new #[Layout('layouts.admin')] #[Title('Pengaturan keamanan')] class extends Component {
     use PasswordValidationRules;
 
     public string $current_password = '';
