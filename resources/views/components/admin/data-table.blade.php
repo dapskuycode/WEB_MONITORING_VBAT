@@ -30,9 +30,9 @@
                     @foreach($headers as $header)
                         <th class="px-6 py-4" {{ isset($header['class']) ? "class={$header['class']}" : '' }}>
                             @if(isset($header['sortable']) && $header['sortable'])
-                                <button type="button" wire:click="sort('{{ $header['key'] }}')" class="inline-flex items-center gap-1 hover:text-zinc-900 dark:hover:text-white transition">
-                                    {{ $header['label'] }}
-                                    <flux:icon icon="chevron-up-down" variant="micro" />
+                                <button type="button" wire:click="sort('{{ $header['key'] }}')" class="inline-flex items-center gap-1.5 hover:text-zinc-900 dark:hover:text-white transition">
+                                    <span>{{ $header['label'] }}</span>
+                                    <i class="fas fa-sort text-[10px] text-slate-400"></i>
                                 </button>
                             @else
                                 {{ $header['label'] }}

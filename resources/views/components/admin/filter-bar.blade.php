@@ -4,7 +4,9 @@
 
 <form {{ $attributes->merge(['class' => 'flex flex-wrap items-center gap-3 mb-4']) }} method="GET">
     <div class="relative flex-1 min-w-[200px] max-w-md">
-        <flux:icon icon="magnifying-glass" variant="micro" class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+        <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">
+            <i class="fas fa-search"></i>
+        </span>
         <input
             type="search"
             name="q"

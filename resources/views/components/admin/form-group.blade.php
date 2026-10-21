@@ -21,9 +21,9 @@
     @endif
 
     @if($error)
-    <p class="text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1">
-        <flux:icon icon="exclamation-circle" variant="micro" />
-        {{ $error }}
+    <p class="text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1.5 font-medium">
+        <i class="fas fa-circle-exclamation text-xs"></i>
+        <span>{{ $error }}</span>
     </p>
     @endif
 </div>

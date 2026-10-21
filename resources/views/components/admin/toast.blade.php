@@ -11,10 +11,10 @@ $colors = [
     'info' => 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-800',
 ];
 $icons = [
-    'success' => 'check-circle',
-    'error' => 'x-circle',
-    'warning' => 'exclamation-triangle',
-    'info' => 'information-circle',
+    'success' => 'circle-check',
+    'error' => 'circle-xmark',
+    'warning' => 'triangle-exclamation',
+    'info' => 'circle-info',
 ];
 @endphp
 
@@ -25,9 +25,9 @@ $icons = [
     x-show="show"
     x-transition
 >
-    <flux:icon icon="{{ $icons[$type] ?? $icons['info'] }}" variant="micro" />
+    <i class="fas fa-{{ $icons[$type] ?? $icons['info'] }} text-base shrink-0"></i>
     <span class="flex-1">{{ $message }}</span>
-    <button type="button" @click="show = false" aria-label="Dismiss" class="hover:opacity-70 transition">
-        <flux:icon icon="x-mark" variant="micro" />
+    <button type="button" @click="show = false" aria-label="Dismiss" class="hover:opacity-70 transition cursor-pointer shrink-0">
+        <i class="fas fa-times text-sm"></i>
     </button>
 </div>

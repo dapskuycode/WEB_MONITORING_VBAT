@@ -5,9 +5,11 @@
 ])
 
 <label class="block">
-    <div class="flex flex-col items-center justify-center w-full px-6 py-8 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl cursor-pointer hover:border-blue-500 dark:hover:border-blue-500 bg-zinc-50 dark:bg-zinc-800/30 transition">
-        <flux:icon icon="cloud-arrow-up" variant="outline" class="w-10 h-10 text-zinc-400 mb-2" />
-        <p class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+    <div class="flex flex-col items-center justify-center w-full px-6 py-8 border-2 border-dashed border-slate-200 dark:border-zinc-700 rounded-2xl cursor-pointer hover:border-[#1a68f0] dark:hover:border-blue-500 bg-slate-50/60 dark:bg-zinc-800/30 transition group">
+        <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-[#1a68f0] dark:text-blue-400 flex items-center justify-center text-xl mb-3 group-hover:scale-105 transition-transform">
+            <i class="fas fa-cloud-arrow-up"></i>
+        </div>
+        <p class="text-sm font-semibold text-slate-800 dark:text-zinc-200">
             {{ __('Klik atau drop file di sini') }}
         </p>
         <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">

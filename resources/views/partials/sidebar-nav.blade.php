@@ -222,6 +222,17 @@
                 <i class="fas fa-users w-5 h-5 shrink-0 {{ request()->routeIs('admin.users') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
                 <span x-show="sidebarOpen" x-transition.opacity class="truncate">Akun User</span>
             </a>
+
+            <a 
+                href="{{ route('admin.modal-ui-kit') }}" 
+                wire:navigate 
+                class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->routeIs('admin.modal-ui-kit') ? 'bg-[#EBF3FE] text-[#1a68f0] dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-slate-800 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800' }}"
+                :class="sidebarOpen ? '' : 'justify-center px-0'"
+                :title="!sidebarOpen ? 'Modals UI Kit' : ''"
+            >
+                <i class="fas fa-window-restore w-5 h-5 shrink-0 {{ request()->routeIs('admin.modal-ui-kit') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                <span x-show="sidebarOpen" x-transition.opacity class="truncate">Modals UI Kit</span>
+            </a>
         </div>
     </div>
     @endif
