@@ -173,9 +173,23 @@ new #[Title('Pengaturan keamanan')] class extends Component {
         'pageDescription' => __('Kelola password dan pengaturan keamanan akun Anda')
     ])
 
+    <!-- Settings Navigation Tabs -->
+    <div class="flex gap-1 mb-6 border-b border-gray-200">
+        <a href="{{ route('profile.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('profile.edit') ? 'border-b-2 border-[#1a73e8] text-[#1a73e8]' : 'text-[#828282] hover:text-[#212121]' }}">
+            {{ __('Profil') }}
+        </a>
+        <a href="{{ route('security.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('security.edit') ? 'border-b-2 border-[#1a73e8] text-[#1a73e8]' : 'text-[#828282] hover:text-[#212121]' }}">
+            {{ __('Keamanan') }}
+        </a>
+        <a href="{{ route('appearance.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('appearance.edit') ? 'border-b-2 border-[#1a73e8] text-[#1a73e8]' : 'text-[#828282] hover:text-[#212121]' }}">
+            {{ __('Tampilan') }}
+        </a>
+    </div>
+
     <flux:heading level="2" class="sr-only">{{ __('Pengaturan keamanan') }}</flux:heading>
 
-    <x-pages::settings.layout :heading="__('Perbarui Password')" :subheading="__('Pastikan akun Anda menggunakan password yang panjang dan acak agar tetap aman')">
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+        <div class="px-6 py-6">
         <form method="POST" wire:submit="updatePassword" class="space-y-5">
             <!-- Current Password -->
             <div>
@@ -236,9 +250,12 @@ new #[Title('Pengaturan keamanan')] class extends Component {
                 </button>
             </div>
         </form>
+        </div>
+    </div>
 
-        @if ($canManageTwoFactor)
-            <section class="mt-12">
+    @if ($canManageTwoFactor)
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
+            <div class="px-6 py-6">
                 <flux:heading>{{ __('Autentikasi Dua Faktor') }}</flux:heading>
                 <flux:subheading>{{ __('Kelola pengaturan autentikasi dua faktor Anda') }}</flux:subheading>
 
@@ -334,9 +351,9 @@ new #[Title('Pengaturan keamanan')] class extends Component {
 
                     <x-passkey-registration />
                 </div>
-            </section>
-        @endif
-    </x-pages::settings.layout>
+            </div>
+        </div>
+    @endif
 
     <flux:modal
         name="delete-passkey-modal"

@@ -83,7 +83,21 @@ new #[Title('Pengaturan Profil')] class extends Component {
         'pageDescription' => __('Perbarui nama dan alamat email Anda')
     ])
 
-    <x-pages::settings.layout :heading="__('Profil')" :subheading="__('Perbarui nama dan alamat email Anda')">
+    <!-- Settings Navigation Tabs -->
+    <div class="flex gap-1 mb-6 border-b border-gray-200">
+        <a href="{{ route('profile.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('profile.edit') ? 'border-b-2 border-[#1a73e8] text-[#1a73e8]' : 'text-[#828282] hover:text-[#212121]' }}">
+            {{ __('Profil') }}
+        </a>
+        <a href="{{ route('security.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('security.edit') ? 'border-b-2 border-[#1a73e8] text-[#1a73e8]' : 'text-[#828282] hover:text-[#212121]' }}">
+            {{ __('Keamanan') }}
+        </a>
+        <a href="{{ route('appearance.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('appearance.edit') ? 'border-b-2 border-[#1a73e8] text-[#1a73e8]' : 'text-[#828282] hover:text-[#212121]' }}">
+            {{ __('Tampilan') }}
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-6">
         <form wire:submit="updateProfileInformation" class="space-y-5">
             <!-- Name Input -->
             <div>
@@ -150,5 +164,6 @@ new #[Title('Pengaturan Profil')] class extends Component {
         @if ($this->showDeleteUser)
             <livewire:pages::settings.delete-user-form />
         @endif
-    </x-pages::settings.layout>
+        </div>
+    </div>
 </section>
