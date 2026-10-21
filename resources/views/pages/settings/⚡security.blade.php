@@ -13,7 +13,7 @@ use Laravel\Passkeys\Actions\DeletePasskey;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 
-new #[Title('Security settings')] class extends Component {
+new #[Title('Pengaturan keamanan')] class extends Component {
     use PasswordValidationRules;
 
     public string $current_password = '';
@@ -85,7 +85,7 @@ new #[Title('Security settings')] class extends Component {
 
         $this->reset('current_password', 'password', 'password_confirmation');
 
-        Flux::toast(variant: 'success', text: __('Password updated.'));
+        Flux::toast(variant: 'success', text: __('Password berhasil diperbarui.'));
     }
 
     /**

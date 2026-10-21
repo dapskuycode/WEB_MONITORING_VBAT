@@ -73,7 +73,7 @@
                                 $currentPageDescription = $pageDescription ?? '';
                                 
                                 // Fallback untuk route-specific titles
-                                if (!$pageIcon || !$pageDescription) {
+                                if (!isset($pageIcon) || !isset($pageDescription)) {
                                     if (request()->routeIs('admin.analytics')) {
                                         $currentPageIcon = $currentPageIcon ?? 'fa-chart-line';
                                         $currentPageTitle = $currentPageTitle ?? 'Analitik Aplikasi';

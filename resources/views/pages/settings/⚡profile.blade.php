@@ -41,7 +41,7 @@ new #[Title('Profile settings')] class extends Component {
 
         $user->save();
 
-        Flux::toast(variant: 'success', text: __('Profile updated.'));
+        Flux::toast(variant: 'success', text: __('Profil berhasil diperbarui.'));
     }
 
     /**
@@ -77,11 +77,11 @@ new #[Title('Profile settings')] class extends Component {
 }; ?>
 
 <section class="w-full">
-    <x-pages::settings.layout :heading="__('Profile')" :subheading="__('Update your name and email address')">
+    <x-pages::settings.layout :heading="__('Profil')" :subheading="__('Perbarui nama dan alamat email Anda')">
         <form wire:submit="updateProfileInformation" class="space-y-5">
             <!-- Name Input -->
             <div>
-                <label for="name" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Name') }}</label>
+                <label for="name" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Nama') }}</label>
                 <input 
                     id="name"
                     wire:model="name" 
@@ -114,15 +114,15 @@ new #[Title('Profile settings')] class extends Component {
                 @if ($this->hasUnverifiedEmail)
                     <div class="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
                         <p class="text-sm text-[#212121]">
-                            {{ __('Your email address is unverified.') }}
+                            {{ __('Alamat email Anda belum diverifikasi.') }}
                             <button type="button" wire:click.prevent="resendVerificationNotification" class="text-[#1a73e8] font-medium hover:underline">
-                                {{ __('Click here to re-send the verification email.') }}
+                                {{ __('Klik di sini untuk mengirim ulang email verifikasi.') }}
                             </button>
                         </p>
 
                         @if (session('status') === 'verification-link-sent')
                             <p class="text-sm text-green-600 font-medium mt-2">
-                                {{ __('A new verification link has been sent to your email address.') }}
+                                {{ __('Tautan verifikasi baru telah dikirim ke alamat email Anda.') }}
                             </p>
                         @endif
                     </div>
@@ -136,7 +136,7 @@ new #[Title('Profile settings')] class extends Component {
                     class="px-6 py-2.5 bg-[#1a73e8] text-white rounded-lg font-medium text-sm transition-all hover:bg-[#1a5fc0] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:ring-offset-2"
                     data-test="update-profile-button"
                 >
-                    {{ __('Save') }}
+                    {{ __('Simpan') }}
                 </button>
             </div>
         </form>

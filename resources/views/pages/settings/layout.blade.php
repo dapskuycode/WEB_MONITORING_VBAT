@@ -10,7 +10,7 @@
                 class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('profile.edit') ? 'bg-[#E6F0FA] text-[#1a73e8]' : 'text-[#212121] hover:bg-gray-50' }}"
             >
                 <i class="fas fa-user w-5 text-center {{ request()->routeIs('profile.edit') ? 'text-[#1a73e8]' : 'text-[#828282]' }}"></i>
-                <span>{{ __('Profile') }}</span>
+                <span>{{ __('Profil') }}</span>
             </a>
             
             <a 
@@ -19,7 +19,7 @@
                 class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('security.edit') ? 'bg-[#E6F0FA] text-[#1a73e8]' : 'text-[#212121] hover:bg-gray-50' }}"
             >
                 <i class="fas fa-lock w-5 text-center {{ request()->routeIs('security.edit') ? 'text-[#1a73e8]' : 'text-[#828282]' }}"></i>
-                <span>{{ __('Security') }}</span>
+                <span>{{ __('Keamanan') }}</span>
             </a>
             
             <a 
@@ -28,7 +28,7 @@
                 class="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('appearance.edit') ? 'bg-[#E6F0FA] text-[#1a73e8]' : 'text-[#212121] hover:bg-gray-50' }}"
             >
                 <i class="fas fa-palette w-5 text-center {{ request()->routeIs('appearance.edit') ? 'text-[#1a73e8]' : 'text-[#828282]' }}"></i>
-                <span>{{ __('Appearance') }}</span>
+                <span>{{ __('Tampilan') }}</span>
             </a>
         </nav>
     </div>
