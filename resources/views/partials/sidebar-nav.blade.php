@@ -3,7 +3,7 @@
         {{-- SPONSOR MENU --}}
         <div>
             <p x-show="sidebarOpen" x-transition.opacity class="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-2 truncate">
-                SPONSOR
+                Portal Mitra Sponsor
             </p>
             <div class="flex flex-col gap-1">
                 <a 

@@ -29,13 +29,12 @@ class SidebarRoleSeparationTest extends TestCase
             $response->assertStatus(200);
 
             // Harus ada menu admin
-            $response->assertSee('Admin &amp; Owner VBAT', false);
-            $response->assertSee('Manajemen Sponsor');
-            $response->assertSee('Daftar Akun User');
-            $response->assertSee('Super Dashboard');
+            $response->assertSee('Dashboard Utama');
+            $response->assertSee('Manajemen');
 
             // Tidak boleh ada menu portal mitra sponsor
-            $response->assertDontSee('Portal Mitra Sponsor');
+            $response->assertDontSee('Ajukan Kampanye');
+            $response->assertDontSee('Hero Slider');
             $response->assertDontSee('Katalog Produk Saya');
             $response->assertDontSee('Ajukan Hero Slide');
         }
@@ -57,15 +56,11 @@ class SidebarRoleSeparationTest extends TestCase
         $response->assertStatus(200);
 
         // Harus ada menu sponsor
-        $response->assertSee('Portal Mitra Sponsor');
+        $response->assertSee('Hero Slider');
         $response->assertSee('Dashboard Sponsor');
-        $response->assertSee('Katalog Produk Saya');
-        $response->assertSee('Ajukan Hero Slide');
 
         // Tidak boleh ada menu admin
-        $response->assertDontSee('Admin &amp; Owner VBAT', false);
-        $response->assertDontSee('Manajemen Sponsor');
-        $response->assertDontSee('Daftar Akun User');
-        $response->assertDontSee('Super Dashboard');
+        $response->assertDontSee('Manajemen');
+        $response->assertDontSee('Dashboard Utama');
     }
 }

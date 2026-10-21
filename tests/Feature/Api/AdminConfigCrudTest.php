@@ -30,7 +30,20 @@ class AdminConfigCrudTest extends TestCase
 
     public function test_admin_can_list_placement_configs(): void
     {
-        PlacementConfig::factory()->count(3)->create();
+        $tier1 = SponsorTier::first();
+        $tier2 = SponsorTier::skip(1)->first();
+        
+        PlacementConfig::create([
+            'placement_type' => 'hero_slider',
+            'tier_id' => $tier1?->id,
+            'max_slots' => 5,
+        ]);
+        
+        PlacementConfig::create([
+            'placement_type' => 'horizontal_infeed',
+            'tier_id' => $tier2?->id,
+            'max_slots' => 3,
+        ]);
 
         $response = $this->actingAs($this->admin, 'sanctum')
             ->getJson('/api/v1/admin/placement-configs');

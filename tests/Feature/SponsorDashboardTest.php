@@ -220,6 +220,10 @@ class SponsorDashboardTest extends TestCase
 
     public function test_admin_can_upload_valid_sponsor_logo()
     {
+        if (!extension_loaded('gd')) {
+            $this->markTestSkipped('GD extension not installed');
+        }
+
         Storage::fake('public');
 
         $goldTier = SponsorTier::where('slug', 'gold')->first();
@@ -287,6 +291,10 @@ class SponsorDashboardTest extends TestCase
 
     public function test_sponsor_can_upload_logo_from_sponsor_portal_dashboard()
     {
+        if (!extension_loaded('gd')) {
+            $this->markTestSkipped('GD extension not installed');
+        }
+
         Storage::fake('public');
 
         $sponsorUser = User::factory()->create(['role' => 'sponsor']);

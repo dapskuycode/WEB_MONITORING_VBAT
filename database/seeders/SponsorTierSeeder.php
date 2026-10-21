@@ -145,10 +145,11 @@ class SponsorTierSeeder extends Seeder
             );
         }
 
-        // 3. Define 6 Tier x 14 Benefit Baseline Matrix
+        // 3. Define 7 Tier x 14 Benefit Baseline Matrix
         // Format: [tier_slug, benefit_slug, value, is_unlimited, is_disabled, label]
         $matrix = [
             // Kuota Produk (integer, allow ∞)
+            ['free', 'kuota_produk', 3, false, false, null],
             ['kontribusi', 'kuota_produk', 5, false, false, null],
             ['bronze', 'kuota_produk', 15, false, false, null],
             ['silver', 'kuota_produk', 35, false, false, null],
@@ -157,6 +158,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'kuota_produk', null, true, false, 'unlimited'],
 
             // Outbound Marketplace (boolean)
+            ['free', 'outbound_marketplace', false, false, false, null],
             ['kontribusi', 'outbound_marketplace', true, false, false, null],
             ['bronze', 'outbound_marketplace', true, false, false, null],
             ['silver', 'outbound_marketplace', true, false, false, null],
@@ -165,6 +167,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'outbound_marketplace', true, false, false, null],
 
             // Storefront Khusus (boolean)
+            ['free', 'storefront_khusus', false, false, false, null],
             ['kontribusi', 'storefront_khusus', false, false, false, null],
             ['bronze', 'storefront_khusus', false, false, false, null],
             ['silver', 'storefront_khusus', true, false, false, null],
@@ -173,6 +176,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'storefront_khusus', true, false, false, null],
 
             // Best Deal Slot (integer, allow ∞)
+            ['free', 'best_deal_slot', 0, false, false, null],
             ['kontribusi', 'best_deal_slot', 0, false, false, null],
             ['bronze', 'best_deal_slot', 1, false, false, null],
             ['silver', 'best_deal_slot', 3, false, false, null],
@@ -181,6 +185,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'best_deal_slot', null, true, false, 'unlimited'],
 
             // Durasi Best Deal (hari)
+            ['free', 'best_deal_durasi', null, false, true, '—'],
             ['kontribusi', 'best_deal_durasi', null, false, true, '—'],
             ['bronze', 'best_deal_durasi', 3, false, false, null],
             ['silver', 'best_deal_durasi', 7, false, false, null],
@@ -189,6 +194,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'best_deal_durasi', 30, false, false, null],
 
             // Prioritas Best Deal
+            ['free', 'best_deal_prioritas', null, false, true, '—'],
             ['kontribusi', 'best_deal_prioritas', null, false, true, '—'],
             ['bronze', 'best_deal_prioritas', 'Standar', false, false, null],
             ['silver', 'best_deal_prioritas', 'Standar', false, false, null],
@@ -197,6 +203,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'best_deal_prioritas', 'Slot #1', false, false, null],
 
             // Hero Slider (slot)
+            ['free', 'hero_slider', null, false, true, '—'],
             ['kontribusi', 'hero_slider', null, false, true, '—'],
             ['bronze', 'hero_slider', null, false, true, '—'],
             ['silver', 'hero_slider', 1, false, false, null],
@@ -205,6 +212,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'hero_slider', 1, false, false, null],
 
             // Posisi Hero
+            ['free', 'hero_posisi', null, false, true, '—'],
             ['kontribusi', 'hero_posisi', null, false, true, '—'],
             ['bronze', 'hero_posisi', null, false, true, '—'],
             ['silver', 'hero_posisi', 'Slide 5-6', false, false, null],
@@ -213,6 +221,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'hero_posisi', 'Slide #1', false, false, null],
 
             // Share of Voice (%)
+            ['free', 'share_of_voice', 0, false, false, null],
             ['kontribusi', 'share_of_voice', 0, false, false, null],
             ['bronze', 'share_of_voice', 0, false, false, null],
             ['silver', 'share_of_voice', 20, false, false, null],
@@ -221,6 +230,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'share_of_voice', 100, false, false, null],
 
             // Popup + CTA (boolean)
+            ['free', 'popup_cta', false, false, false, null],
             ['kontribusi', 'popup_cta', false, false, false, null],
             ['bronze', 'popup_cta', false, false, false, null],
             ['silver', 'popup_cta', true, false, false, null],
@@ -229,6 +239,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'popup_cta', true, false, false, null],
 
             // In-Feed Banner (slot)
+            ['free', 'infeed_banner', null, false, true, '—'],
             ['kontribusi', 'infeed_banner', null, false, true, '—'],
             ['bronze', 'infeed_banner', 1, false, false, null],
             ['silver', 'infeed_banner', 2, false, false, null],
@@ -237,6 +248,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'infeed_banner', 5, false, false, null],
 
             // Jarak In-Feed (produk)
+            ['free', 'infeed_jarak', null, false, true, '—'],
             ['kontribusi', 'infeed_jarak', null, false, true, '—'],
             ['bronze', 'infeed_jarak', 24, false, false, null],
             ['silver', 'infeed_jarak', 12, false, false, null],
@@ -245,6 +257,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'infeed_jarak', 4, false, false, null],
 
             // Push Broadcast/bulan (integer, allow ∞)
+            ['free', 'push_broadcast', 0, false, false, null],
             ['kontribusi', 'push_broadcast', 0, false, false, null],
             ['bronze', 'push_broadcast', 0, false, false, null],
             ['silver', 'push_broadcast', 0, false, false, null],
@@ -253,6 +266,7 @@ class SponsorTierSeeder extends Seeder
             ['diamond', 'push_broadcast', null, true, false, 'unlimited'],
 
             // Badge
+            ['free', 'badge', '', false, false, null],
             ['kontribusi', 'badge', 'Kontributor', false, false, null],
             ['bronze', 'badge', 'Bronze Partner', false, false, null],
             ['silver', 'badge', 'Silver Official', false, false, null],

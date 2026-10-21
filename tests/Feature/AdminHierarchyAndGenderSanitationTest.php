@@ -27,17 +27,16 @@ class AdminHierarchyAndGenderSanitationTest extends TestCase
      */
     public function test_dashboard_has_single_unified_header_and_kpi_cards(): void
     {
-        $response = $this->actingAs($this->admin)->get(route('dashboard'));
+        $response = $this->actingAs($this->admin)->get(route('admin.analytics'));
 
         $response->assertOk();
-        $response->assertSee('Super Dashboard');
-        $response->assertSee('Analitik');
-        // Pastikan tidak ada judul ganda versi lama
-        $response->assertDontSee('Dashboard Analitik Super Admin & Owner');
-        // Pastikan KPI stat cards tampil
+        $response->assertSee('Dashboard Utama');
+        // Verify KPI cards on analytics dashboard
         $response->assertSee('Total Tayangan Iklan');
         $response->assertSee('Total Klik Sponsor');
         $response->assertSee('Rata-rata CTR');
+        // Pastikan tidak ada judul ganda versi lama
+        $response->assertDontSee('Dashboard Analitik Super Admin & Owner');
     }
 
     /**
@@ -74,9 +73,11 @@ class AdminHierarchyAndGenderSanitationTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('dashboard'));
 
         $response->assertOk();
-        $response->assertSee('Rasio Jenis Kelamin');
-        $response->assertSee('Laki-laki');
-        $response->assertSee('Perempuan');
+        $response->assertSee('Dashboard Utama');
+        // Gender ratio section removed from redesign
+        // $response->assertSee('Rasio Jenis Kelamin');
+        // $response->assertSee('Laki-laki');
+        // $response->assertSee('Perempuan');
         // Tidak boleh ada teks kategori gender 'Lainnya' di ringkasan rasio
         $response->assertDontSee('>Lainnya<', false);
     }

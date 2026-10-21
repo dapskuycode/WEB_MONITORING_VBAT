@@ -21,11 +21,11 @@ class SponsorTierMatrixTest extends TestCase
         $this->seed(SponsorTierSeeder::class);
     }
 
-    public function test_six_tiers_and_fourteen_categories_are_seeded()
+    public function test_seven_tiers_and_fourteen_categories_are_seeded()
     {
-        $this->assertEquals(6, SponsorTier::count());
+        $this->assertEquals(7, SponsorTier::count());
         $this->assertEquals(14, BenefitCategory::count());
-        $this->assertEquals(84, TierBenefit::count());
+        $this->assertEquals(98, TierBenefit::count());
     }
 
     public function test_kontribusi_has_disabled_hero_slider()
