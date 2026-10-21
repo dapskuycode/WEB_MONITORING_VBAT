@@ -386,7 +386,7 @@ new class extends Component
                         <td colspan="6" class="p-0">
                             <div class="py-16 text-center bg-white rounded-xl border border-dashed border-[#e2e8f0] mt-6">
                                 <div class="w-14 h-14 bg-[#f4f6f8] rounded-full flex items-center justify-center mx-auto mb-3">
-                                    <i class="fas fa-calendar text-[#a0aec0] text-xl"></i>
+                                    <i class="fas fa-box text-[#a0aec0] text-xl"></i>
                                 </div>
                                 <h3 class="text-sm font-semibold text-[#212121] mb-1">Belum ada kampanye dengan filter yang dipilih.</h3>
                                 <p class="text-xs text-[#828282] max-w-xs mx-auto mb-4">
