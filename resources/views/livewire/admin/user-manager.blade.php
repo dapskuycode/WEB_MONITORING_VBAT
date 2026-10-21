@@ -71,30 +71,30 @@
             </div>
 
             <!-- Role Filter Dropdown -->
-            <div class="w-full sm:w-auto sm:min-w-[180px]">
+            <div class="w-full sm:w-auto sm:min-w-[180px] relative">
                 <select 
                     wire:model.live="roleFilter"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent appearance-none bg-white bg-no-repeat bg-right pr-10"
-                    style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23828282%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-position: right 0.75rem center; background-size: 1rem;"
+                    class="w-full px-3.5 py-2.5 pr-9 border border-gray-200 rounded-lg text-sm text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent appearance-none bg-white cursor-pointer"
                 >
                     <option value="all">Semua Role</option>
                     <option value="student">Siswa / Teknisi</option>
                     <option value="sponsor">Mitra Sponsor</option>
                     <option value="admin">Administrator</option>
                 </select>
+                <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[#828282] text-xs pointer-events-none"></i>
             </div>
 
             <!-- KTA Status Filter -->
-            <div class="w-full sm:w-auto sm:min-w-[180px]">
+            <div class="w-full sm:w-auto sm:min-w-[180px] relative">
                 <select 
                     wire:model.live="ktaStatusFilter"
-                    class="w-full px-3.5 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent appearance-none bg-white bg-no-repeat bg-right pr-10"
-                    style="background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%23828282%27 stroke-width=%272%27 stroke-linecap=%27round%27 stroke-linejoin=%27round%27%3e%3cpolyline points=%276 9 12 15 18 9%27%3e%3c/polyline%3e%3c/svg%3e'); background-position: right 0.75rem center; background-size: 1rem;"
+                    class="w-full px-3.5 py-2.5 pr-9 border border-gray-200 rounded-lg text-sm text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent appearance-none bg-white cursor-pointer"
                 >
                     <option value="all">Status KTA</option>
                     <option value="free">Free Member</option>
                     <option value="premium">Premium</option>
                 </select>
+                <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[#828282] text-xs pointer-events-none"></i>
             </div>
         </div>
     </div>
