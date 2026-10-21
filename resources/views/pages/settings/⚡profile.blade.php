@@ -7,11 +7,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
-use function Livewire\Volt\{layout};
 
-layout('layouts.admin');
-
+#[Layout('layouts.admin')]
 new #[Title('Pengaturan Profil')] class extends Component {
     use ProfileValidationRules;
 

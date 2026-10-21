@@ -12,10 +12,9 @@ use Livewire\Component;
 use Laravel\Passkeys\Actions\DeletePasskey;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
-use function Livewire\Volt\{layout};
+use Livewire\Attributes\Layout;
 
-layout('layouts.admin');
-
+#[Layout('layouts.admin')]
 new #[Title('Pengaturan keamanan')] class extends Component {
     use PasswordValidationRules;
 

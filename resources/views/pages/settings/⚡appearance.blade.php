@@ -2,10 +2,9 @@
 
 use Livewire\Attributes\Title;
 use Livewire\Component;
-use function Livewire\Volt\{layout};
+use Livewire\Attributes\Layout;
 
-layout('layouts.admin');
-
+#[Layout('layouts.admin')]
 new #[Title('Pengaturan tampilan')] class extends Component {
     //
 }; ?>
