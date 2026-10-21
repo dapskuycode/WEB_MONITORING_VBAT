@@ -15,15 +15,21 @@ new class extends Component
     public $showModal = false;
     public $showPreviewModal = false;
 
+    public $editingId = null;
     public $title = '';
     public $media_type = 'image';
     public $mediaFile;
     public $thumbnailFile;
+    public $existing_media = null;
     public $target_url = '';
     public $description = '';
     public $start_date = '';
     public $end_date = '';
     public $successMessage = '';
+
+    protected $listeners = [
+        'trigger-create-horizontal' => 'openCreateModal'
+    ];
 
     public function mount()
     {
@@ -33,7 +39,7 @@ new class extends Component
     public function loadData()
     {
         $user = Auth::user();
-        $this->sponsor = $user?->sponsor ?? Sponsor::first();
+        $this->sponsor = $user?->sponsor ?? Sponsor::where('name', 'like', '%Quantum%')->first() ?? Sponsor::first();
 
         if ($this->sponsor) {
             $this->campaigns = Campaign::where('sponsor_id', $this->sponsor->id)
@@ -47,30 +53,62 @@ new class extends Component
 
     public function openCreateModal()
     {
-        $this->reset(['title', 'target_url', 'description', 'mediaFile', 'thumbnailFile', 'successMessage']);
+        $this->reset(['editingId', 'title', 'target_url', 'description', 'mediaFile', 'thumbnailFile', 'existing_media', 'successMessage']);
         $this->media_type = 'image';
         $this->start_date = now()->format('Y-m-d');
         $this->end_date = now()->addMonths(1)->format('Y-m-d');
         $this->showModal = true;
     }
 
+    public function editCampaign($id)
+    {
+        $camp = Campaign::where('sponsor_id', $this->sponsor->id)->findOrFail($id);
+        $this->editingId = $camp->id;
+        $this->title = $camp->title;
+        $this->target_url = $camp->target_url;
+        $this->description = $camp->description;
+        $this->media_type = $camp->media_type;
+        $this->existing_media = $camp->media_url;
+        $this->start_date = $camp->start_date ? $camp->start_date->format('Y-m-d') : now()->format('Y-m-d');
+        $this->end_date = $camp->end_date ? $camp->end_date->format('Y-m-d') : now()->addMonths(1)->format('Y-m-d');
+        $this->mediaFile = null;
+        $this->thumbnailFile = null;
+        $this->showModal = true;
+    }
+
+    public function deleteCampaign($id)
+    {
+        $camp = Campaign::where('sponsor_id', $this->sponsor->id)->findOrFail($id);
+        $camp->delete();
+        $this->successMessage = 'Pengajuan banner Horizontal Slider berhasil dihapus.';
+        $this->loadData();
+    }
+
     public function submit()
     {
-        $this->validate([
+        $rules = [
             'title' => 'required|string|max:255',
             'target_url' => 'required|url',
             'description' => 'nullable|string',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
-            'mediaFile' => 'required|file|max:20480',
-            'thumbnailFile' => 'nullable|image|max:5120',
-        ], [
+        ];
+
+        if (!$this->editingId) {
+            $rules['mediaFile'] = 'required|file|max:20480';
+        } else {
+            $rules['mediaFile'] = 'nullable|file|max:20480';
+        }
+
+        $rules['thumbnailFile'] = 'nullable|image|max:5120';
+
+        $this->validate($rules, [
             'mediaFile.required' => 'Wajib memilih file visual banner horizontal (gambar atau video)!',
             'mediaFile.max' => 'Ukuran file visual maksimal 20 MB!',
             'thumbnailFile.max' => 'Ukuran thumbnail maksimal 5 MB!',
         ]);
 
-        $mediaPath = 'assets/images/banner_promo_diskon.png';
+        $mediaPath = null;
         if ($this->mediaFile) {
             $mediaPath = $this->mediaFile->store('campaigns/horizontal', 'public');
             $ext = strtolower($this->mediaFile->getClientOriginalExtension());
@@ -84,27 +122,41 @@ new class extends Component
         $thumbnailPath = null;
         if ($this->thumbnailFile) {
             $thumbnailPath = $this->thumbnailFile->store('campaigns/thumbs', 'public');
-        } elseif ($this->media_type === 'video') {
+        } elseif ($this->media_type === 'video' && $mediaPath) {
             $thumbnailPath = \App\Services\VideoThumbnailService::generateThumbnail($mediaPath);
         }
 
-        Campaign::create([
+        $data = [
             'sponsor_id' => $this->sponsor->id,
             'title' => $this->title,
             'placement_type' => 'shop_horizontal',
-            'media_path' => $mediaPath,
-            'media_type' => $this->media_type,
-            'thumbnail_path' => $thumbnailPath,
             'target_url' => $this->target_url,
             'description' => $this->description,
             'daily_limit' => 2000,
             'weight' => $this->sponsor->weight ?: 2,
-            'status' => 'pending',
             'start_date' => $this->start_date,
             'end_date' => $this->end_date,
-        ]);
+        ];
 
-        $this->successMessage = 'Pengajuan banner Horizontal Slider berhasil dikirim! Menunggu moderasi Super Admin.';
+        if ($mediaPath) {
+            $data['media_path'] = $mediaPath;
+            $data['media_type'] = $this->media_type;
+        }
+
+        if ($thumbnailPath) {
+            $data['thumbnail_path'] = $thumbnailPath;
+        }
+
+        if ($this->editingId) {
+            $camp = Campaign::where('sponsor_id', $this->sponsor->id)->findOrFail($this->editingId);
+            $camp->update($data);
+            $this->successMessage = 'Pengajuan banner Horizontal Slider berhasil diperbarui!';
+        } else {
+            $data['status'] = 'pending';
+            Campaign::create($data);
+            $this->successMessage = 'Pengajuan banner Horizontal Slider berhasil dikirim! Menunggu moderasi Super Admin.';
+        }
+
         $this->showModal = false;
         $this->loadData();
     }
@@ -112,141 +164,185 @@ new class extends Component
 ?>
 
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-800 pb-5">
-        <div>
-            <div class="flex items-center gap-2">
-                <h1 class="text-2xl font-bold text-white tracking-tight">Pengajuan Horizontal Slider</h1>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold bg-indigo-900/60 text-indigo-300 border border-indigo-700/50">
-                    Katalog Shop & Separator Home (3:1)
-                </span>
-            </div>
-            <p class="text-xs text-zinc-400 mt-1">
-                Banner horizontal yang tampil di sela katalog produk Shop dan pembatas section di Beranda.
-            </p>
-        </div>
-
-        <button type="button" wire:click="openCreateModal" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition flex items-center gap-2">
-            <flux:icon name="plus" class="w-4 h-4" />
-            <span>Ajukan Horizontal Banner</span>
-        </button>
-    </div>
-
-    <!-- Alert Success -->
+    <!-- Alert Success / Info Toast -->
     @if($successMessage)
-    <div class="p-4 rounded-xl bg-emerald-950/40 border border-emerald-800/80 text-emerald-300 text-sm flex items-center justify-between">
-        <div class="flex items-center gap-2">
-            <flux:icon name="check-circle" class="w-5 h-5 text-emerald-400" />
-            <span>{{ $successMessage }}</span>
+    <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center justify-between shadow-xs transition animate-fade-in dark:bg-emerald-950/40 dark:border-emerald-800/80 dark:text-emerald-300">
+        <div class="flex items-center gap-2.5">
+            <i class="fas fa-circle-check text-emerald-600 dark:text-emerald-400 text-base"></i>
+            <span class="font-medium">{{ $successMessage }}</span>
         </div>
-        <button type="button" wire:click="$set('successMessage', '')" class="text-xs font-bold text-emerald-400 hover:underline">Tutup</button>
+        <button type="button" wire:click="$set('successMessage', '')" class="text-xs font-semibold text-emerald-700 hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200">
+            Tutup
+        </button>
     </div>
     @endif
 
-    <!-- Panduan Spesifikasi Horizontal Slider (Dark Styled) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-xs">
-        <div class="flex items-center justify-between gap-3">
-            <div class="flex items-start gap-3 min-w-0">
-                <div class="p-2 rounded-lg bg-indigo-950/60 text-indigo-400 border border-indigo-900/50 shrink-0">
-                    <flux:icon name="rectangle-stack" class="w-4 h-4" />
+    <!-- Guidelines Info Section (Horizontal Layout: Single clean white card with 3 divided sections) -->
+    <div class="bg-white dark:bg-zinc-900 rounded-[12px] shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] border border-slate-100 dark:border-zinc-800 p-5">
+        <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-zinc-800 gap-4 md:gap-0">
+            
+            <!-- Section 1: Landscape ~3:1 -->
+            <div class="flex items-center justify-between gap-3 md:pr-6">
+                <div class="flex items-start gap-3.5 min-w-0">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#1a68f0] flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/40">
+                        <i class="fas fa-table-cells-large text-base"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h4 class="font-bold text-sm text-[#212121] dark:text-white leading-snug">Rasio Horizontal Memanjang (~3:1)</h4>
+                        <p class="text-xs text-[#828282] dark:text-zinc-400 mt-0.5 leading-relaxed">Rekomendasi 1200 x 400 px (JPG/PNG/WEBP).</p>
+                    </div>
                 </div>
-                <div>
-                    <span class="font-bold text-white block">Rasio Horizontal Memanjang (~3:1)</span>
-                    <span class="text-zinc-400 text-[11px] leading-tight block mt-0.5">Rekomendasi 1200 × 400 px atau 960 × 320 px (JPG, PNG, WEBP).</span>
+                <button type="button" 
+                    wire:click="$set('showPreviewModal', true)" 
+                    class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 hover:border-[#1a68f0] text-slate-700 dark:text-zinc-300 hover:text-[#1a68f0] bg-white dark:bg-zinc-800 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 text-xs font-semibold transition cursor-pointer active:scale-95 shadow-2xs">
+                    <i class="fas fa-eye text-xs"></i>
+                    <span>Preview</span>
+                </button>
+            </div>
+
+            <!-- Section 2: Dual Placement (Shop & Home) -->
+            <div class="flex items-start gap-3.5 pt-4 md:pt-0 md:px-6">
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-100 dark:border-indigo-900/40">
+                    <i class="fas fa-arrows-split-up-and-left text-base"></i>
+                </div>
+                <div class="min-w-0">
+                    <h4 class="font-bold text-sm text-[#212121] dark:text-white leading-snug">Dual Placement (Shop & Home)</h4>
+                    <p class="text-xs text-[#828282] dark:text-zinc-400 mt-0.5 leading-relaxed">Banner otomatis tayang di sela produk Shop dan separator Beranda.</p>
                 </div>
             </div>
-            <button type="button" 
-                wire:click="$set('showPreviewModal', true)" 
-                class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 hover:text-indigo-300 border border-indigo-500/30 font-semibold text-xs transition duration-150 shadow-sm cursor-pointer active:scale-95">
-                <flux:icon name="eye" class="w-3.5 h-3.5" />
-                <span>Preview</span>
-            </button>
-        </div>
-        <div class="flex items-start gap-3">
-            <div class="p-2 rounded-lg bg-blue-950/60 text-blue-400 border border-blue-900/50 shrink-0">
-                <flux:icon name="arrows-right-left" class="w-4 h-4" />
+
+            <!-- Section 3: Media Maksimal 20 MB -->
+            <div class="flex items-start gap-3.5 pt-4 md:pt-0 md:pl-6">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/40">
+                    <i class="fas fa-photo-film text-base"></i>
+                </div>
+                <div class="min-w-0">
+                    <h4 class="font-bold text-sm text-[#212121] dark:text-white leading-snug">Media Maksimal 20 MB</h4>
+                    <p class="text-xs text-[#828282] dark:text-zinc-400 mt-0.5 leading-relaxed">Dukungan video animasi looping tanpa suara atau gambar statis.</p>
+                </div>
             </div>
-            <div>
-                <span class="font-bold text-white block">Dual Placement (Shop & Home)</span>
-                <span class="text-zinc-400">Banner otomatis tayang di sela produk Shop dan separator Beranda.</span>
-            </div>
-        </div>
-        <div class="flex items-start gap-3">
-            <div class="p-2 rounded-lg bg-emerald-950/60 text-emerald-400 border border-emerald-900/50 shrink-0">
-                <flux:icon name="video-camera" class="w-4 h-4" />
-            </div>
-            <div>
-                <span class="font-bold text-white block">Media Maksimal 20 MB</span>
-                <span class="text-zinc-400">Dukungan video animasi / looping tanpa suara atau gambar statis berkualitas tinggi.</span>
-            </div>
+
         </div>
     </div>
 
-    <!-- Tabel Pengajuan Horizontal Slider -->
-    <div class="bg-zinc-900/90 rounded-2xl border border-zinc-800 p-5 shadow-sm">
-        <h3 class="font-bold text-base text-white mb-4">Riwayat Pengajuan Horizontal Slider</h3>
+    <!-- Data Table Card - SUBMISSION HISTORY (Riwayat Pengajuan: Sleek, spacious, borderless, NO ANALYTICS) -->
+    <div class="bg-white dark:bg-zinc-900 rounded-[12px] shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] border border-slate-100 dark:border-zinc-800 overflow-hidden">
+        <div class="px-6 py-4.5 border-b border-slate-100 dark:border-zinc-800 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <h3 class="font-bold text-base text-[#212121] dark:text-white tracking-tight">Riwayat Pengajuan</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400">
+                    {{ count($campaigns) }}
+                </span>
+            </div>
+            <p class="text-xs text-[#828282] dark:text-zinc-400 hidden sm:block">Status penayangan slider horizontal katalog & pemisah section</p>
+        </div>
 
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
+            <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="border-b border-zinc-800 text-xs font-semibold text-zinc-400 uppercase bg-zinc-950/40">
-                        <th class="py-3 px-3" style="width: 140px;">Visual Media</th>
-                        <th class="py-3 px-3">Judul Banner</th>
-                        <th class="py-3 px-3">Periode Tayang</th>
-                        <th class="py-3 px-3 text-center">Status</th>
-                        <th class="py-3 px-3 text-right">Tayang / Klik</th>
+                    <tr class="border-b border-slate-100 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950/40 text-[11px] font-bold text-[#828282] uppercase tracking-wider">
+                        <th class="py-3.5 px-6 w-44">Visual Media</th>
+                        <th class="py-3.5 px-6">Judul Banner</th>
+                        <th class="py-3.5 px-6 w-52">Periode Tayang</th>
+                        <th class="py-3.5 px-6 w-44 text-center">Status</th>
+                        <th class="py-3.5 px-6 w-24 text-right">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-zinc-800/80">
+                <tbody class="divide-y divide-slate-100 dark:divide-zinc-800 text-sm">
                     @forelse($campaigns as $camp)
-                    <tr class="hover:bg-zinc-800/50 transition">
-                        <td class="py-3 px-3" style="width: 140px; min-width: 140px; max-width: 140px;">
-                            <div class="rounded-xl bg-zinc-950 overflow-hidden relative border border-zinc-800 flex items-center justify-center shadow-xs group" style="width: 124px; height: 48px;">
-                                <img src="{{ $camp->thumbnail_url }}" style="width: 124px; height: 48px; object-fit: cover;" alt="{{ $camp->title }}" onerror="this.src='{{ asset('assets/images/banner_promo_diskon.png') }}'" />
+                    <tr class="hover:bg-slate-50/60 dark:hover:bg-zinc-800/40 transition">
+                        <!-- Column 1: Visual Media (Wide 3:1 Thumbnail) -->
+                        <td class="py-4 px-6 align-middle">
+                            <div class="w-32 h-[42px] rounded-lg bg-slate-100 dark:bg-zinc-800 overflow-hidden relative border border-slate-200/80 dark:border-zinc-700 shrink-0 shadow-2xs group">
+                                <img src="{{ $camp->thumbnail_url }}" 
+                                     alt="{{ $camp->title }}" 
+                                     class="w-full h-full object-cover transition duration-300 group-hover:scale-105"
+                                     onerror="this.src='{{ asset('assets/images/banner_promo_diskon.png') }}'" />
+                                
                                 @if($camp->media_type === 'video')
-                                    <div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 flex items-center justify-center text-white transition">
-                                        <div class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-md">
-                                            <flux:icon name="play" class="w-3.5 h-3.5 text-white fill-white ml-0.5" />
+                                    <div class="absolute inset-0 bg-black/35 flex items-center justify-center text-white">
+                                        <div class="w-5 h-5 rounded-full bg-[#1a68f0] text-white flex items-center justify-center shadow-xs">
+                                            <i class="fas fa-play text-[8px] ml-0.5"></i>
                                         </div>
                                     </div>
-                                    <span class="absolute bottom-1 right-1 px-1 py-0.2 bg-black/80 rounded text-[9px] font-mono text-zinc-300">MP4</span>
+                                    <span class="absolute bottom-1 right-1 px-1 py-0.2 bg-black/75 rounded text-[8px] font-mono text-white font-medium">MP4</span>
                                 @endif
                             </div>
                         </td>
-                        <td class="py-3 px-3">
-                            <div class="font-semibold text-white">{{ $camp->title }}</div>
-                            <div class="text-xs text-blue-400 truncate max-w-xs mt-0.5">
-                                <a href="{{ $camp->target_url }}" target="_blank" class="hover:underline flex items-center gap-1">
-                                    <span>{{ $camp->target_url }}</span>
-                                    <flux:icon name="arrow-top-right-on-square" class="w-3 h-3" />
-                                </a>
+
+                        <!-- Column 2: Judul Banner with subtle blue text link below it -->
+                        <td class="py-4 px-6 align-middle">
+                            <div class="font-bold text-[#212121] dark:text-white text-sm line-clamp-1">
+                                {{ $camp->title }}
                             </div>
-                        </td>
-                        <td class="py-3 px-3 text-xs text-zinc-400 font-mono">
-                            {{ $camp->start_date ? $camp->start_date->format('d M Y') : '-' }} s/d <br>
-                            {{ $camp->end_date ? $camp->end_date->format('d M Y') : '-' }}
-                        </td>
-                        <td class="py-3 px-3 text-center">
-                            @if($camp->status === 'approved')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/60 text-emerald-400 border border-emerald-800/50">Disetujui</span>
-                            @elseif($camp->status === 'pending')
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-950/60 text-amber-400 border border-amber-800/50">Menunggu</span>
-                            @else
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-950/60 text-rose-400 border border-rose-800/50">Ditolak</span>
-                                @if($camp->rejection_reason)
-                                    <p class="text-[10px] text-rose-400 mt-1 max-w-[150px] mx-auto truncate">{{ $camp->rejection_reason }}</p>
-                                @endif
+                            @if($camp->target_url)
+                            <a href="{{ $camp->target_url }}" target="_blank" class="inline-flex items-center gap-1.5 text-xs text-[#1a68f0] hover:underline mt-1 max-w-md truncate">
+                                <span class="truncate">{{ $camp->target_url }}</span>
+                                <i class="fas fa-arrow-up-right-from-square text-[10px] shrink-0"></i>
+                            </a>
                             @endif
                         </td>
-                        <td class="py-3 px-3 text-right font-mono text-xs">
-                            <span class="text-white font-bold">{{ number_format($camp->views_count) }}</span> <span class="text-zinc-400">views</span><br>
-                            <span class="text-emerald-400 font-bold">{{ number_format($camp->clicks_count) }}</span> <span class="text-zinc-400">clicks</span>
+
+                        <!-- Column 3: Periode Tayang -->
+                        <td class="py-4 px-6 align-middle">
+                            <div class="text-xs font-medium text-slate-700 dark:text-zinc-300 flex items-center gap-1.5">
+                                <i class="far fa-calendar text-slate-400 text-xs"></i>
+                                <span>
+                                    {{ $camp->start_date ? $camp->start_date->translatedFormat('d M Y') : '-' }} s/d 
+                                    {{ $camp->end_date ? $camp->end_date->translatedFormat('d M Y') : '-' }}
+                                </span>
+                            </div>
+                        </td>
+
+                        <!-- Column 4: Status (Approval Badges: pastel green for "Disetujui", pastel yellow for "Menunggu Approval") -->
+                        <td class="py-4 px-6 align-middle text-center">
+                            @if($camp->status === 'approved')
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#E8F5E9] text-[#2E7D32] border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60 shadow-2xs">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-[#2E7D32] dark:bg-emerald-400"></span>
+                                    <span>Disetujui</span>
+                                </span>
+                            @elseif($camp->status === 'pending')
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800/60 shadow-2xs">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                    <span>Menunggu Approval</span>
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60 shadow-2xs">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                    <span>Ditolak</span>
+                                </span>
+                            @endif
+                        </td>
+
+                        <!-- Column 5: Aksi (Clean, minimal icon-only buttons for Edit & Delete in subtle gray) -->
+                        <td class="py-4 px-6 align-middle text-right">
+                            <div class="inline-flex items-center justify-end gap-1.5">
+                                <button type="button" 
+                                    wire:click="editCampaign({{ $camp->id }})" 
+                                    title="Edit Pengajuan"
+                                    class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#1a68f0] hover:bg-blue-50 dark:hover:bg-blue-950/50 transition cursor-pointer active:scale-95">
+                                    <i class="fas fa-pen text-xs"></i>
+                                </button>
+                                <button type="button" 
+                                    wire:click="deleteCampaign({{ $camp->id }})" 
+                                    wire:confirm="Yakin ingin menghapus pengajuan banner ini?"
+                                    title="Hapus Pengajuan"
+                                    class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer active:scale-95">
+                                    <i class="fas fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="py-8 text-center text-zinc-400 text-sm">
-                            Belum ada pengajuan Horizontal Slider. Klik "Ajukan Horizontal Banner" di atas.
+                        <td colspan="5" class="py-12 px-6 text-center text-[#828282] dark:text-zinc-400">
+                            <div class="flex flex-col items-center justify-center gap-2">
+                                <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-zinc-800 flex items-center justify-center text-slate-400">
+                                    <i class="fas fa-sliders-h text-lg"></i>
+                                </div>
+                                <span class="font-medium text-sm text-[#212121] dark:text-white">Belum ada pengajuan banner Horizontal Slider</span>
+                                <p class="text-xs text-[#828282] max-w-xs">Klik tombol "+ Ajukan Horizontal Banner" di bagian atas untuk mulai mempromosikan produk Anda.</p>
+                            </div>
                         </td>
                     </tr>
                     @endforelse
@@ -255,78 +351,161 @@ new class extends Component
         </div>
     </div>
 
-    <!-- Modal Form Ajukan Horizontal Slider -->
+    <!-- Modal Form Ajukan / Edit Horizontal Slider (Light Mode Shopee Enterprise) -->
     @if($showModal)
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-        <div class="bg-zinc-900 rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-zinc-800 space-y-4 max-h-[90vh] overflow-y-auto text-zinc-200">
-            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
-                <h3 class="font-bold text-lg text-white">Formulir Pengajuan Horizontal Slider</h3>
-                <button type="button" wire:click="$set('showModal', false)" class="text-zinc-400 hover:text-white">
-                    <flux:icon name="x-mark" class="w-5 h-5" />
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in"
+         wire:keydown.escape="$set('showModal', false)">
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 dark:border-zinc-800 space-y-5 max-h-[90vh] overflow-y-auto">
+            
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-4">
+                <div>
+                    <h3 class="font-bold text-lg text-[#212121] dark:text-white">
+                        {{ $editingId ? 'Edit Banner Horizontal Slider' : 'Formulir Pengajuan Horizontal Slider' }}
+                    </h3>
+                    <p class="text-xs text-[#828282] dark:text-zinc-400 mt-0.5">Spesifikasi banner horizontal memanjang rasio ~3:1 untuk Shop & Beranda.</p>
+                </div>
+                <button type="button" wire:click="$set('showModal', false)" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer">
+                    <i class="fas fa-xmark text-sm"></i>
                 </button>
             </div>
 
+            <!-- Modal Form -->
             <form wire:submit.prevent="submit" class="space-y-4">
-                <flux:input label="Judul Banner Promosi" wire:model="title" placeholder="Contoh: Promo Perkakas Solder & Blower Auto-Sleep" required />
-
-                <flux:input label="Target Link URL / Marketplace" wire:model="target_url" placeholder="https://shopee.co.id/toko-sponsor" required />
-
-                <div class="grid grid-cols-2 gap-4">
-                    <flux:input type="date" label="Tanggal Mulai Tayang" wire:model="start_date" required />
-                    <flux:input type="date" label="Tanggal Selesai Tayang" wire:model="end_date" required />
+                <div>
+                    <label class="block text-xs font-bold text-[#212121] dark:text-white mb-1.5">
+                        Judul Banner Promosi <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" 
+                        wire:model="title" 
+                        placeholder="Contoh: Promo Perkakas Solder & Blower Auto-Sleep" 
+                        required
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm text-[#212121] dark:text-white focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 transition placeholder:text-slate-400" />
+                    @error('title') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-zinc-300 mb-1">Tipe Media Visual</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button type="button" wire:click="$set('media_type', 'image')" class="p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 {{ $media_type === 'image' ? 'border-indigo-500 bg-indigo-950/50 text-indigo-300' : 'border-zinc-700 bg-zinc-800 text-zinc-400' }}">
-                            <flux:icon name="photo" class="w-4 h-4" /> Banner Memanjang (3:1)
-                        </button>
-                        <button type="button" wire:click="$set('media_type', 'video')" class="p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 {{ $media_type === 'video' ? 'border-indigo-500 bg-indigo-950/50 text-indigo-300' : 'border-zinc-700 bg-zinc-800 text-zinc-400' }}">
-                            <flux:icon name="video-camera" class="w-4 h-4" /> Video MP4 (Maks 20MB)
-                        </button>
+                    <label class="block text-xs font-bold text-[#212121] dark:text-white mb-1.5">
+                        Target Link URL / Marketplace <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                            <i class="fas fa-link text-xs"></i>
+                        </span>
+                        <input type="url" 
+                            wire:model="target_url" 
+                            placeholder="https://shopee.co.id/toko-sponsor" 
+                            required
+                            class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm text-[#212121] dark:text-white focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 transition placeholder:text-slate-400" />
+                    </div>
+                    @error('target_url') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-[#212121] dark:text-white mb-1.5">
+                            Tanggal Mulai Tayang <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="date" 
+                            wire:model="start_date" 
+                            required
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm text-[#212121] dark:text-white focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-blue-100 transition" />
+                        @error('start_date') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-[#212121] dark:text-white mb-1.5">
+                            Tanggal Selesai Tayang <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="date" 
+                            wire:model="end_date" 
+                            required
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm text-[#212121] dark:text-white focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-blue-100 transition" />
+                        @error('end_date') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
                 <div>
-                    <div class="flex items-center justify-between mb-1">
-                        <label class="block text-xs font-semibold text-zinc-300">Upload File Banner Memanjang (Maks 20 MB)</label>
-                        <button type="button" wire:click="$set('showPreviewModal', true)" class="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium transition cursor-pointer">
-                            <flux:icon name="eye" class="w-3.5 h-3.5" />
-                            <span>Preview Contoh</span>
+                    <label class="block text-xs font-bold text-[#212121] dark:text-white mb-1.5">Tipe Format Media</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" 
+                            wire:click="$set('media_type', 'image')" 
+                            class="p-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer {{ $media_type === 'image' ? 'border-[#1a68f0] bg-blue-50/70 text-[#1a68f0] dark:bg-blue-950/50' : 'border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#828282]' }}">
+                            <i class="fas fa-image text-sm"></i>
+                            <span>Banner Memanjang (3:1)</span>
+                        </button>
+                        <button type="button" 
+                            wire:click="$set('media_type', 'video')" 
+                            class="p-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer {{ $media_type === 'video' ? 'border-[#1a68f0] bg-blue-50/70 text-[#1a68f0] dark:bg-blue-950/50' : 'border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#828282]' }}">
+                            <i class="fas fa-video text-sm"></i>
+                            <span>Video MP4 (Maks 20MB)</span>
                         </button>
                     </div>
-                    <input type="file" wire:model="mediaFile" class="w-full text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-zinc-200 hover:file:bg-zinc-700" />
-                    @error('mediaFile') <span class="text-xs text-rose-400">{{ $message }}</span> @enderror
+                </div>
 
-                    <div wire:loading wire:target="mediaFile" class="text-xs text-indigo-400 mt-1 flex items-center gap-1">
-                        <flux:icon name="arrow-path" class="w-3.5 h-3.5 animate-spin" />
+                <div class="p-4 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/40 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-bold text-[#212121] dark:text-white">
+                            File Banner Horizontal {{ $editingId ? '(Biarkan kosong jika tidak diganti)' : '*' }}
+                        </label>
+                        <button type="button" wire:click="$set('showPreviewModal', true)" class="text-xs text-[#1a68f0] hover:underline flex items-center gap-1 font-semibold cursor-pointer">
+                            <i class="fas fa-eye text-[11px]"></i>
+                            <span>Lihat Preview Mockup</span>
+                        </button>
+                    </div>
+                    <input type="file" 
+                        wire:model="mediaFile" 
+                        class="w-full text-xs text-[#828282] file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#1a68f0] file:text-white hover:file:bg-blue-700 cursor-pointer" />
+                    @error('mediaFile') <span class="text-xs text-rose-500 block">{{ $message }}</span> @enderror
+
+                    <div wire:loading wire:target="mediaFile" class="text-xs text-[#1a68f0] mt-1.5 flex items-center gap-1.5 font-medium">
+                        <i class="fas fa-circle-notch fa-spin"></i>
                         <span>Mengunggah visual media...</span>
                     </div>
 
                     @if($mediaFile)
-                    <div class="mt-2 text-xs text-emerald-400 flex items-center gap-1">
-                        <flux:icon name="check" class="w-3.5 h-3.5" />
+                    <div class="mt-2 text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 font-medium">
+                        <i class="fas fa-check"></i>
                         <span>File terpilih: {{ $mediaFile->getClientOriginalName() }} ({{ round($mediaFile->getSize() / 1024 / 1024, 2) }} MB)</span>
                     </div>
                     @endif
                 </div>
 
                 @if($media_type === 'video')
-                <div class="p-3 rounded-xl bg-zinc-950/60 border border-zinc-800 space-y-2">
-                    <label class="block text-xs font-semibold text-zinc-200">
-                        Custom Thumbnail Video <span class="text-zinc-500 font-normal">(Opsional - otomatis dibuat dari video jika dikosongkan)</span>
+                <div class="p-4 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50/50 dark:bg-zinc-800/40 space-y-2">
+                    <label class="block text-xs font-bold text-[#212121] dark:text-white">
+                        Custom Thumbnail Video <span class="text-[#828282] font-normal">(Opsional)</span>
                     </label>
-                    <input type="file" wire:model="thumbnailFile" accept="image/*" class="w-full text-xs text-zinc-400 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-zinc-800 file:text-zinc-200 hover:file:bg-zinc-700" />
-                    @error('thumbnailFile') <span class="text-xs text-rose-400">{{ $message }}</span> @enderror
+                    <input type="file" 
+                        wire:model="thumbnailFile" 
+                        accept="image/*" 
+                        class="w-full text-xs text-[#828282] file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer" />
+                    @error('thumbnailFile') <span class="text-xs text-rose-500 block">{{ $message }}</span> @enderror
                 </div>
                 @endif
 
-                <flux:textarea label="Catatan / Deskripsi Singkat" wire:model="description" placeholder="Keterangan singkat produk atau promo..." rows="2" />
+                <div>
+                    <label class="block text-xs font-bold text-[#212121] dark:text-white mb-1.5">
+                        Catatan / Deskripsi Singkat <span class="text-[#828282] font-normal">(Opsional)</span>
+                    </label>
+                    <textarea 
+                        wire:model="description" 
+                        rows="2" 
+                        placeholder="Keterangan singkat produk atau promo..."
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm text-[#212121] dark:text-white focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-blue-100 transition placeholder:text-slate-400"></textarea>
+                </div>
 
-                <div class="flex items-center justify-end gap-3 pt-3 border-t border-zinc-800">
-                    <button type="button" wire:click="$set('showModal', false)" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition">Batal</button>
-                    <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition" wire:loading.attr="disabled">Kirim Pengajuan</button>
+                <!-- Modal Actions -->
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-zinc-800">
+                    <button type="button" 
+                        wire:click="$set('showModal', false)" 
+                        class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 text-xs font-semibold transition cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" 
+                        wire:loading.attr="disabled"
+                        class="px-5 py-2.5 rounded-xl bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold shadow-xs transition cursor-pointer">
+                        {{ $editingId ? 'Simpan Perubahan' : 'Kirim Pengajuan' }}
+                    </button>
                 </div>
             </form>
         </div>
@@ -335,43 +514,43 @@ new class extends Component
 
     <!-- Modal Preview Mockup Tampilan Horizontal Slider -->
     @if($showPreviewModal)
-    <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
          wire:keydown.escape="$set('showPreviewModal', false)">
-        <div class="bg-zinc-900 rounded-2xl max-w-lg w-full p-5 shadow-2xl border border-zinc-800 space-y-4 max-h-[92vh] flex flex-col text-zinc-200">
-            <div class="flex items-center justify-between border-b border-zinc-800 pb-3 shrink-0">
+        <div class="bg-white dark:bg-zinc-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-zinc-800 space-y-4 max-h-[92vh] flex flex-col">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-zinc-800 pb-3 shrink-0">
                 <div class="flex items-center gap-2.5">
-                    <div class="p-2 rounded-xl bg-indigo-950/80 text-indigo-400 border border-indigo-900/60">
-                        <flux:icon name="device-phone-mobile" class="w-4 h-4" />
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#1a68f0] flex items-center justify-center border border-blue-100 dark:border-blue-900/40">
+                        <i class="fas fa-mobile-screen-button text-sm"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-white">Contoh Tampilan Banner Horizontal</h3>
-                        <p class="text-[11px] text-zinc-400">Posisi: Halaman Shop & Separator Beranda (~3:1)</p>
+                        <h3 class="font-bold text-sm text-[#212121] dark:text-white">Preview Banner Horizontal Slider</h3>
+                        <p class="text-[11px] text-[#828282] dark:text-zinc-400">Rasio Memanjang (~3:1) pada Shop & Beranda</p>
                     </div>
                 </div>
-                <button type="button" wire:click="$set('showPreviewModal', false)" class="text-zinc-400 hover:text-white p-1.5 rounded-lg hover:bg-zinc-800 transition">
-                    <flux:icon name="x-mark" class="w-5 h-5" />
+                <button type="button" wire:click="$set('showPreviewModal', false)" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer">
+                    <i class="fas fa-xmark text-sm"></i>
                 </button>
             </div>
 
-            <div class="flex-1 overflow-y-auto pr-1 space-y-3 text-center">
-                <div class="rounded-xl overflow-hidden border border-zinc-800 shadow-2xl bg-zinc-950 inline-block max-w-full">
+            <div class="flex-1 overflow-y-auto pr-1 space-y-3.5 text-center">
+                <div class="rounded-xl overflow-hidden border border-slate-200 dark:border-zinc-800 shadow-sm bg-slate-50 dark:bg-zinc-950 inline-block max-w-full">
                     <img src="{{ asset('assets/images/previews/preview-horizontal-slider.jpg') }}" 
                          alt="Preview Horizontal Slider di Aplikasi" 
-                         class="max-h-[60vh] w-auto mx-auto object-contain">
+                         class="max-h-[58vh] w-auto mx-auto object-contain">
                 </div>
-                <div class="p-3 rounded-xl bg-indigo-950/30 border border-indigo-900/40 text-left text-xs text-indigo-300 space-y-1">
-                    <div class="font-bold flex items-center gap-1.5 text-indigo-400">
-                        <flux:icon name="information-circle" class="w-4 h-4 shrink-0" />
+                <div class="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 dark:bg-blue-950/30 dark:border-blue-900/40 text-left text-xs text-blue-900 dark:text-blue-200 space-y-1">
+                    <div class="font-bold flex items-center gap-1.5 text-[#1a68f0]">
+                        <i class="fas fa-circle-info text-xs"></i>
                         <span>Panduan Rasio Horizontal (~3:1 / 1200 × 400 px)</span>
                     </div>
-                    <p class="text-[11px] text-zinc-400 leading-relaxed">
-                        Area yang dikelilingi <strong class="text-rose-400 font-semibold">kotak merah</strong> di atas menunjukkan letak penayangan banner horizontal Anda di antara daftar item katalog Shop.
+                    <p class="text-[11px] text-slate-600 dark:text-zinc-300 leading-relaxed">
+                        Area yang dikelilingi <strong class="text-rose-500 font-semibold">kotak merah</strong> pada preview menunjukkan letak penayangan banner horizontal Anda di antara daftar item katalog Shop dan pembatas section di Beranda.
                     </p>
                 </div>
             </div>
 
-            <div class="pt-2 border-t border-zinc-800 flex justify-end shrink-0">
-                <button type="button" wire:click="$set('showPreviewModal', false)" class="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition">
+            <div class="pt-3 border-t border-slate-100 dark:border-zinc-800 flex justify-end shrink-0">
+                <button type="button" wire:click="$set('showPreviewModal', false)" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-slate-700 dark:text-zinc-200 text-xs font-semibold transition cursor-pointer">
                     Tutup Preview
                 </button>
             </div>
