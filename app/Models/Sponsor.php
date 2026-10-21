@@ -265,4 +265,59 @@ class Sponsor extends Model
         $slot = $this->resolveBenefit('best_deal_slot');
         return $slot !== null ? (int)$slot : 1;
     }
+
+    /**
+     * Get quota for a specific feature based on tier benefits
+     *
+     * @param string $feature Benefit category slug (e.g., 'hero_slider', 'kuota_produk')
+     * @return int
+     */
+    public function getQuota(string $feature): int
+    {
+        $value = $this->resolveBenefit($feature);
+        return is_numeric($value) ? (int) $value : 0;
+    }
+
+    /**
+     * Get available quota for a feature (total - used)
+     *
+     * @param string $feature Benefit category slug
+     * @return int
+     */
+    public function getAvailableQuota(string $feature): int
+    {
+        $total = $this->getQuota($feature);
+        $used = $this->getUsedQuota($feature);
+        return max(0, $total - $used);
+    }
+
+    /**
+     * Get used quota for a feature
+     *
+     * @param string $feature
+     * @return int
+     */
+    protected function getUsedQuota(string $feature): int
+    {
+        // Map features to campaign placement types
+        $placementMap = [
+            'hero_slider' => 'hero_slider',
+            'best_deal_slot' => 'best_deal',
+            'infeed_banner' => 'horizontal_banner',
+            'popup_cta' => 'popup',
+        ];
+
+        if (isset($placementMap[$feature])) {
+            return $this->campaigns()
+                ->where('placement_type', $placementMap[$feature])
+                ->where('status', 'approved')
+                ->count();
+        }
+
+        if ($feature === 'kuota_produk') {
+            return $this->products()->count();
+        }
+
+        return 0;
+    }
 }

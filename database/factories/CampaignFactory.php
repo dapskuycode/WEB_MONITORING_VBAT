@@ -24,7 +24,7 @@ class CampaignFactory extends Factory
             'weight' => fake()->numberBetween(1, 10),
             'start_date' => now()->subDay()->toDateString(),
             'end_date' => now()->addMonth()->toDateString(),
-            'status' => 'active',
+            'status' => 'pending_approval',
         ];
     }
 

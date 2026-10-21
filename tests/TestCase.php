@@ -13,4 +13,9 @@ abstract class TestCase extends BaseTestCase
             $this->markTestSkipped($message ?? "Fortify feature [{$feature}] is not enabled.");
         }
     }
+
+    protected function assertIn(int $value, array $allowed, string $message = ''): void
+    {
+        $this->assertContains($value, $allowed, $message);
+    }
 }
