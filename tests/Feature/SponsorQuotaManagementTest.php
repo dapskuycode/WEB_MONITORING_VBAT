@@ -29,7 +29,12 @@ class SponsorQuotaManagementTest extends TestCase
         $this->seed(\Database\Seeders\SponsorTierSeeder::class);
         
         $this->sponsorUser = User::factory()->create(['role' => 'sponsor']);
-        $this->sponsor = Sponsor::factory()->create(['user_id' => $this->sponsorUser->id]);
+        $platinumTier = SponsorTier::where('slug', 'platinum')->firstOrFail();
+        $this->sponsor = Sponsor::factory()->create([
+            'user_id' => $this->sponsorUser->id,
+            'tier_id' => $platinumTier->id,
+            'tier' => 'platinum',
+        ]);
     }
 
     public function test_sponsor_has_getquota_method(): void
@@ -127,10 +132,10 @@ class SponsorQuotaManagementTest extends TestCase
         $bronzeQuota = $bronze->getQuota('hero_slider');
         $platinumQuota = $platinum->getQuota('hero_slider');
 
-        // Higher tiers should have equal or more quotas than lower tiers
-        $this->assertGreaterThanOrEqual($freeQuota, $freeQuota, 'Free quota should be consistent');
-        $this->assertGreaterThanOrEqual($bronzeQuota, 0, 'Bronze should have non-negative quota');
-        $this->assertGreaterThanOrEqual($platinumQuota, $bronzeQuota, 'Platinum should have >= Bronze quota');
+        // Free/Bronze disabled (0), Platinum has 2 slots
+        $this->assertGreaterThanOrEqual(0, $freeQuota, 'Free has non-negative quota (0 expected)');
+        $this->assertGreaterThanOrEqual(0, $bronzeQuota, 'Bronze has non-negative quota (0 expected)');
+        $this->assertGreaterThanOrEqual($bronzeQuota, $platinumQuota, 'Platinum >= Bronze quota');
     }
 
     public function test_tier_benefit_overrides_respected(): void
