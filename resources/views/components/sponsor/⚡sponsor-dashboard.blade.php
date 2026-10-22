@@ -244,8 +244,8 @@ new class extends Component
             <!-- Large Avatar: SP with small camera icon for upload -->
             <div class="relative shrink-0">
                 <div class="w-16 h-16 rounded-[12px] bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden shadow-xs">
-                    @if ($sponsor?->logo_path)
-                        <img src="{{ asset('storage/' . $sponsor->logo_path) }}" alt="{{ $sponsor->name }}" class="w-full h-full object-contain p-1">
+                    @if ($sponsor?->logo_url)
+                        <img src="{{ $sponsor->logo_url }}" alt="{{ $sponsor->name }}" class="w-full h-full object-contain p-1" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-xl font-extrabold text-[#1a68f0] tracking-wider uppercase\'>{{ strtoupper(substr($sponsor?->name ?? \'SP\', 0, 2)) }}</span>';">
                     @else
                         <span class="text-xl font-extrabold text-[#1a68f0] tracking-wider uppercase">
                             {{ strtoupper(substr($sponsor?->name ?? 'SP', 0, 2)) }}
@@ -544,8 +544,8 @@ new class extends Component
                         <div class="w-24 h-24 rounded-xl bg-white dark:bg-[#27272A] border border-slate-200 dark:border-[#3F3F46] flex items-center justify-center overflow-hidden mb-3 shadow-xs">
                             @if ($logo && method_exists($logo, 'isPreviewable') && $logo->isPreviewable())
                                 <img src="{{ $logo->temporaryUrl() }}" alt="Preview Baru" class="w-full h-full object-contain p-2">
-                            @elseif ($sponsor?->logo_path)
-                                <img src="{{ asset('storage/' . $sponsor->logo_path) }}" alt="Logo Saat Ini" class="w-full h-full object-contain p-2">
+                            @elseif ($sponsor?->logo_url)
+                                <img src="{{ $sponsor->logo_url }}" alt="Logo Saat Ini" class="w-full h-full object-contain p-2" onerror="this.style.display='none';">
                             @else
                                 <span class="text-lg font-bold text-[#1a68f0] dark:text-blue-400 uppercase">{{ substr($sponsor?->name ?? 'SP', 0, 2) }}</span>
                             @endif
@@ -637,8 +637,8 @@ new class extends Component
                         <div class="w-full h-24 rounded-xl bg-white dark:bg-[#27272A] border border-slate-200 dark:border-[#3F3F46] flex items-center justify-center overflow-hidden mb-3 shadow-xs">
                             @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
                                 <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
-                            @elseif ($sponsor?->header_image_url)
-                                <img src="{{ asset('storage/' . $sponsor->header_image_url) }}" alt="Header Saat Ini" class="w-full h-full object-cover">
+                            @elseif ($sponsor?->header_image_url_full)
+                                <img src="{{ $sponsor->header_image_url_full }}" alt="Header Saat Ini" class="w-full h-full object-cover" onerror="this.style.display='none';">
                             @else
                                 <span class="text-xs font-semibold text-[#828282] dark:text-[#9CA3AF]">BELUM ADA GAMBAR HEADER</span>
                             @endif

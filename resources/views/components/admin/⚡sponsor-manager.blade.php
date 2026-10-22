@@ -717,8 +717,8 @@ new class extends Component
                             <div class="flex items-center gap-3.5 min-w-0">
                                 <!-- Sponsor Avatar/Logo -->
                                 <div class="w-12 h-12 rounded-[10px] bg-slate-50 dark:bg-zinc-800 border border-slate-100 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0">
-                                    @if ($sponsor->logo_path)
-                                        <img src="{{ asset('storage/' . $sponsor->logo_path) }}" alt="{{ $sponsor->name }}" class="w-full h-full object-cover">
+                                    @if ($sponsor->logo_url)
+                                        <img src="{{ $sponsor->logo_url }}" alt="{{ $sponsor->name }}" class="w-full h-full object-contain p-1" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'font-bold text-sm text-[#1a68f0] uppercase tracking-wider\'>{{ substr($sponsor->name, 0, 2) }}</span>';">
                                     @else
                                         <span class="font-bold text-sm text-[#1a68f0] uppercase tracking-wider">{{ substr($sponsor->name, 0, 2) }}</span>
                                     @endif
@@ -1069,9 +1069,9 @@ new class extends Component
             <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between border-b pb-3 dark:border-zinc-800">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border flex items-center justify-center font-bold text-sm">
-                            @if ($s->logo_path)
-                                <img src="{{ asset('storage/' . $s->logo_path) }}" class="w-full h-full object-cover rounded-xl">
+                        <div class="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 border flex items-center justify-center font-bold text-sm overflow-hidden shrink-0">
+                            @if ($s->logo_url)
+                                <img src="{{ $s->logo_url }}" class="w-full h-full object-contain p-1 rounded-xl" onerror="this.onerror=null; this.parentElement.innerText='{{ substr($s->name, 0, 2) }}';">
                             @else
                                 {{ substr($s->name, 0, 2) }}
                             @endif
@@ -1273,7 +1273,12 @@ new class extends Component
                                     @if ($logo && method_exists($logo, 'isPreviewable') && $logo->isPreviewable())
                                         <img src="{{ $logo->temporaryUrl() }}" alt="Preview" class="w-full h-full object-contain p-1.5">
                                     @elseif ($existingLogoPath)
-                                        <img src="{{ asset('storage/' . $existingLogoPath) }}" alt="Logo" class="w-full h-full object-contain p-1.5">
+                                        @php
+                                            $existingLogoUrl = str_starts_with($existingLogoPath, 'http') 
+                                                ? $existingLogoPath 
+                                                : (str_starts_with($existingLogoPath, 'assets/') ? asset($existingLogoPath) : asset('storage/' . ltrim($existingLogoPath, '/')));
+                                        @endphp
+                                        <img src="{{ $existingLogoUrl }}" alt="Logo" class="w-full h-full object-contain p-1.5" onerror="this.style.display='none'; this.nextElementSibling ? this.nextElementSibling.style.display='flex' : null;">
                                     @else
                                         <div class="w-full h-full flex flex-col items-center justify-center text-[#1a68f0] dark:text-[#60A5FA] bg-[#EBF3FE]/60 dark:bg-[#1E3A8A]/30">
                                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1324,7 +1329,12 @@ new class extends Component
                                     @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
                                         <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
                                     @elseif ($existingHeaderImagePath)
-                                        <img src="{{ asset('storage/' . $existingHeaderImagePath) }}" alt="Header" class="w-full h-full object-cover">
+                                        @php
+                                            $existingHeaderUrl = str_starts_with($existingHeaderImagePath, 'http') 
+                                                ? $existingHeaderImagePath 
+                                                : (str_starts_with($existingHeaderImagePath, 'assets/') ? asset($existingHeaderImagePath) : asset('storage/' . ltrim($existingHeaderImagePath, '/')));
+                                        @endphp
+                                        <img src="{{ $existingHeaderUrl }}" alt="Header" class="w-full h-full object-cover" onerror="this.style.display='none';">
                                     @else
                                         <div class="w-full h-full flex flex-col items-center justify-center text-[#828282] dark:text-[#9CA3AF] bg-zinc-100 dark:bg-[#27272A]">
                                             <svg class="w-5 h-5 text-[#828282] dark:text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
