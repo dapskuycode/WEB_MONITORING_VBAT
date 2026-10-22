@@ -103,16 +103,88 @@
 
                     <!-- Right: Actions & Tools -->
                     <div class="flex items-center gap-3.5">
-                        @if(request()->routeIs('admin.analytics'))
-                        <!-- Date Range Picker in Top Bar -->
-                        <div class="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-[#212121] dark:text-zinc-200 shadow-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors">
-                            <svg class="w-3.5 h-3.5 text-[#828282] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
-                            </svg>
-                            <span>01 Oct 2026 - 31 Oct 2026</span>
-                            <svg class="w-3 h-3 text-slate-400 ml-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                            </svg>
+                        @if(request()->routeIs('admin.analytics') || request()->routeIs('dashboard'))
+                        <!-- Date Range Picker in Top Bar with Interactive Modal/Dropdown -->
+                        <div 
+                            x-data="{
+                                openDateFilter: false,
+                                start: '{{ request('start_date', '2026-10-01') }}',
+                                end: '{{ request('end_date', '2026-10-31') }}',
+                                get label() {
+                                    return this.start + ' s/d ' + this.end;
+                                },
+                                setPreset(days) {
+                                    const d = new Date();
+                                    const endStr = d.toISOString().split('T')[0];
+                                    d.setDate(d.getDate() - days);
+                                    const startStr = d.toISOString().split('T')[0];
+                                    this.start = startStr;
+                                    this.end = endStr;
+                                    this.applyFilter();
+                                },
+                                applyFilter() {
+                                    const url = new URL(window.location.href);
+                                    url.searchParams.set('start_date', this.start);
+                                    url.searchParams.set('end_date', this.end);
+                                    window.location.href = url.toString();
+                                }
+                            }" 
+                            class="relative"
+                        >
+                            <button 
+                                type="button" 
+                                @click="openDateFilter = !openDateFilter"
+                                class="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-[#212121] dark:text-zinc-200 shadow-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                                title="Klik untuk mengubah rentang tanggal"
+                            >
+                                <svg class="w-3.5 h-3.5 text-[#1a68f0] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
+                                </svg>
+                                <span x-text="label"></span>
+                                <svg class="w-3 h-3 text-slate-400 ml-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                            </button>
+
+                            <!-- Date Range Dropdown Panel -->
+                            <div 
+                                x-show="openDateFilter" 
+                                x-cloak
+                                @click.outside="openDateFilter = false"
+                                x-transition
+                                class="absolute left-0 sm:right-0 sm:left-auto mt-2 w-72 sm:w-80 p-4 rounded-2xl bg-white dark:bg-[#242424] border border-slate-200 dark:border-[#3F3F46] shadow-2xl z-50 text-xs"
+                            >
+                                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#3F3F46] mb-3">
+                                    <span class="font-bold text-[#212121] dark:text-[#F3F4F6]">Filter Rentang Tanggal</span>
+                                    <button type="button" @click="openDateFilter = false" class="text-slate-400 hover:text-slate-600">✕</button>
+                                </div>
+
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1">Tanggal Mulai</label>
+                                        <input type="date" x-model="start" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] focus:outline-none focus:border-[#1a68f0]">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-semibold text-slate-500 dark:text-zinc-400 mb-1">Tanggal Selesai</label>
+                                        <input type="date" x-model="end" class="w-full px-3 py-1.5 rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] focus:outline-none focus:border-[#1a68f0]">
+                                    </div>
+
+                                    <div class="pt-1">
+                                        <span class="block text-[10px] font-semibold text-slate-400 mb-1 uppercase">Pilihan Cepat:</span>
+                                        <div class="flex flex-wrap gap-1.5">
+                                            <button type="button" @click="setPreset(7)" class="px-2 py-1 rounded bg-slate-100 dark:bg-[#333338] text-slate-700 dark:text-zinc-300 hover:bg-slate-200 text-[11px]">7 Hari</button>
+                                            <button type="button" @click="setPreset(30)" class="px-2 py-1 rounded bg-slate-100 dark:bg-[#333338] text-slate-700 dark:text-zinc-300 hover:bg-slate-200 text-[11px]">30 Hari</button>
+                                            <button type="button" @click="setPreset(90)" class="px-2 py-1 rounded bg-slate-100 dark:bg-[#333338] text-slate-700 dark:text-zinc-300 hover:bg-slate-200 text-[11px]">3 Bulan</button>
+                                            <button type="button" @click="start = '2026-10-01'; end = '2026-10-31'; applyFilter()" class="px-2 py-1 rounded bg-blue-50 text-[#1a68f0] dark:bg-blue-950/60 dark:text-blue-300 text-[11px] font-semibold">Bulan Ini</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-[#3F3F46]">
+                                        <button type="button" @click="openDateFilter = false" class="px-3 py-1.5 rounded-lg text-slate-600 dark:text-zinc-400 font-semibold hover:bg-slate-100 dark:hover:bg-zinc-800">Batal</button>
+                                        <button type="button" @click="applyFilter()" class="px-3.5 py-1.5 rounded-lg bg-[#1a68f0] hover:bg-blue-700 text-white font-bold shadow-xs">Terapkan Filter</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         @endif
 
@@ -121,16 +193,18 @@
                         @endif
 
                         @if(request()->routeIs('dashboard') || request()->routeIs('admin.analytics'))
-                        <!-- Export to Excel Button (Consistent Green Style) -->
-                        <button 
-                            type="button" 
-                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer shadow-xs"
+                        <!-- Export to Excel Button (Functional Real Excel Downloader) -->
+                        <a 
+                            href="{{ route('admin.export.analytics', ['source' => request()->routeIs('dashboard') ? 'dashboard' : 'analytics', 'start_date' => request('start_date', '2026-10-01'), 'end_date' => request('end_date', '2026-10-31')]) }}" 
+                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer shadow-xs select-none"
+                            title="Unduh Laporan Format Excel (.xlsx)"
+                            download
                         >
-                            <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M21.17 3.25q.33 0 .59.25.24.24.24.58v15.84q0 .34-.24.58-.26.25-.59.25H7.83q-.33 0-.58-.25-.25-.24-.25-.58V17H2.83q-.33 0-.58-.24-.25-.26-.25-.59V7.83q0-.33.25-.59.25-.24.58-.24h4.17V4.08q0-.34.25-.58.25-.25.58-.25zm-.75 1.58H8.58v2.34h11.84zm0 3.92H8.58v6.5h11.84zm0 8.08H8.58v2.34h11.84zm-14-6.5H3.58v3.34h2.84zm0-4.91H3.58v3.33h2.84zm-.09 6.27-1.12-2.14h-.05l-1.12 2.14H3.04l1.83-3.03-1.74-2.88h1.28l1.04 2.05h.05l1.04-2.05h1.28l-1.75 2.88 1.83 3.03z"/>
                             </svg>
                             <span>Export to Excel</span>
-                        </button>
+                        </a>
                         @endif
 
                         <!-- Light/Dark Mode Switcher (Pill Toggle with Active Sun Icon) -->
@@ -189,18 +263,8 @@
                             </span>
                         </div>
 
-                        <!-- Notification Bell with Red Dot -->
-                        <div class="relative">
-                            <button 
-                                type="button" 
-                                class="w-9 h-9 rounded-full bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors shadow-xs cursor-pointer focus:outline-none"
-                                aria-label="Notifikasi"
-                            >
-                                <i class="fas fa-bell text-sm"></i>
-                            </button>
-                            <!-- Notification indicator -->
-                            <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-zinc-900"></span>
-                        </div>
+                        <!-- Notification Bell (Livewire Notification Center Component) -->
+                        <livewire:admin.notification-center />
                     </div>
                 </header>
 

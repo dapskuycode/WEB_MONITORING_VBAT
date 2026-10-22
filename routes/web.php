@@ -38,7 +38,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('admin/quizzes', QuizManager::class)->name('admin.quizzes');
         Route::get('admin/rules', RuleConfigManager::class)->name('admin.rules');
         Route::get('admin/analytics', AnalyticsDashboard::class)->name('admin.analytics');
-
+        Route::get('admin/export/analytics', [\App\Http\Controllers\AnalyticsExportController::class, 'export'])->name('admin.export.analytics');
+        Route::view('admin/modal-ui-kit', 'pages.admin.modal-ui-kit')->name('admin.modal-ui-kit');
+        Route::view('admin/dark-theme', 'pages.admin.dark-theme')->name('admin.dark-theme');
     });
 
     // 2. Modul Sponsor (Mitra Sponsor, Super Admin, & Owner)
