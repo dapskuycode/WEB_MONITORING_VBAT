@@ -102,9 +102,36 @@ new class extends Component
         $this->showModal = true;
     }
 
+    protected function isValidUploadedFile($file): bool
+    {
+        if (!$file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+            return false;
+        }
+        try {
+            $realPath = $file->getRealPath();
+            return $file->exists() && !empty($realPath) && is_file($realPath) && !is_dir($realPath);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function updatedImageFile()
+    {
+        if ($this->imageFile && !$this->isValidUploadedFile($this->imageFile)) {
+            $this->imageFile = null;
+            $this->addError('imageFile', 'Berkas foto produk gagal diproses oleh server.');
+        }
+    }
+
     public function save()
     {
         if (!$this->sponsor) return;
+
+        if ($this->imageFile && !$this->isValidUploadedFile($this->imageFile)) {
+            $this->imageFile = null;
+            $this->addError('imageFile', 'Berkas foto produk tidak valid atau gagal terunggah ke server.');
+            return;
+        }
 
         $this->validate([
             'name' => 'required|string|max:255',
@@ -125,7 +152,7 @@ new class extends Component
 
         $imagePath = $this->existing_image ?: 'assets/images/product_1.png';
 
-        if ($this->imageFile) {
+        if ($this->imageFile && $this->isValidUploadedFile($this->imageFile)) {
             $imagePath = $this->imageFile->store('products', 'public');
         } elseif (!empty($this->image_url)) {
             $imagePath = $this->image_url;
