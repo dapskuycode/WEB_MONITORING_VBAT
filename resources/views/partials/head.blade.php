@@ -16,16 +16,15 @@
 @fonts
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
-@fluxAppearance
 <script>
-(function () {
-    // Read saved theme from localStorage, apply if exists
-    const theme = localStorage.getItem('theme') || localStorage.getItem('flux.appearance');
-    if (theme === 'dark') {
-        document.documentElement.classList.add('dark');
-    } else if (theme === 'light') {
-        document.documentElement.classList.remove('dark');
-    }
-    // If no theme saved yet, keep current html state (don't force light)
-})();
+    (function () {
+        // Read saved theme from localStorage
+        const theme = localStorage.getItem('theme') || localStorage.getItem('flux.appearance');
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else if (theme === 'light') {
+            document.documentElement.classList.remove('dark');
+        }
+        // First visit: use system preference (keep browser default)
+    })();
 </script>
