@@ -103,17 +103,18 @@ class AnalyticsDashboard extends Component
         ];
 
         // 4. Top 5 Kelas (LMS) - REAL DATA
-        $topCourses = Course::withCount(['entitlements as students_count'])
-            ->orderByDesc('students_count')
-            ->take(5)
+        $topCourses = Course::with('instructor')
+            ->limit(5)
             ->get()
             ->map(function ($course) {
+                // Count entitlements for this course
+                $studentCount = Entitlement::where('course_id', $course->id)->count();
                 return [
                     'name' => $course->title,
                     'type' => ucfirst(str_replace('_', ' ', $course->type ?? 'Umum')),
-                    'instructor' => $course->instructor ?? 'VBAT Academy',
-                    'students' => $course->students_count ?? 0,
-                    'rating' => 0, // TODO: implement rating system
+                    'instructor' => $course->instructor?->name ?? 'VBAT Academy',
+                    'students' => $studentCount,
+                    'rating' => 0,
                 ];
             })
             ->toArray();
