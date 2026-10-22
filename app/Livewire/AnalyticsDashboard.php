@@ -103,8 +103,7 @@ class AnalyticsDashboard extends Component
         ];
 
         // 4. Top 5 Kelas (LMS) - REAL DATA
-        $topCourses = Course::with('instructor')
-            ->limit(5)
+        $topCourses = Course::limit(5)
             ->get()
             ->map(function ($course) {
                 // Count entitlements for this course
@@ -112,7 +111,7 @@ class AnalyticsDashboard extends Component
                 return [
                     'name' => $course->title,
                     'type' => ucfirst(str_replace('_', ' ', $course->type ?? 'Umum')),
-                    'instructor' => $course->instructor?->name ?? 'VBAT Academy',
+                    'instructor' => $course->instructor_name ?? $course->instructor ?? 'VBAT Academy',
                     'students' => $studentCount,
                     'rating' => 0,
                 ];
