@@ -16,22 +16,20 @@
 @fonts
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
-@fluxAppearance
 <script>
     (function () {
-        // Default is light unless explicitly saved as 'dark'
-        const theme = localStorage.getItem('theme') || localStorage.getItem('flux.appearance');
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            // If nothing is set yet, explicitly ensure light mode
-            if (!theme) {
-                try {
-                    localStorage.setItem('theme', 'light');
-                    localStorage.setItem('flux.appearance', 'light');
-                } catch (e) {}
+        function applyTheme() {
+            const savedTheme = localStorage.getItem('theme') || localStorage.getItem('flux.appearance');
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                // Default pertama kali membuka website adalah Light Mode jika belum pernah diubah
+                document.documentElement.classList.remove('dark');
             }
         }
+        applyTheme();
+        document.addEventListener('livewire:navigated', applyTheme);
     })();
 </script>
