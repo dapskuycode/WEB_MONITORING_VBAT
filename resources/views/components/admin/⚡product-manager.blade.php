@@ -491,8 +491,22 @@ new class extends Component
                         
                         <div class="flex items-center gap-4">
                             <div class="w-14 h-14 rounded-lg bg-white dark:bg-[#27272A] border border-[#E0E0E0] dark:border-[#3F3F46] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
-                                @if($imageFile)
-                                    <img src="{{ $imageFile->temporaryUrl() }}" class="w-full h-full object-cover">
+                                @php
+                                    $isProdImgPreviewable = false;
+                                    $prodImgPreviewUrl = null;
+                                    if ($imageFile instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+                                        try {
+                                            if (is_file($imageFile->getRealPath()) && !is_dir($imageFile->getRealPath()) && $imageFile->isPreviewable()) {
+                                                $prodImgPreviewUrl = $imageFile->temporaryUrl();
+                                                $isProdImgPreviewable = true;
+                                            }
+                                        } catch (\Throwable $e) {
+                                            $isProdImgPreviewable = false;
+                                        }
+                                    }
+                                @endphp
+                                @if($isProdImgPreviewable && $prodImgPreviewUrl)
+                                    <img src="{{ $prodImgPreviewUrl }}" class="w-full h-full object-cover">
                                 @elseif($existing_image)
                                     <img src="{{ str_starts_with($existing_image, 'http') ? $existing_image : asset('storage/' . $existing_image) }}" class="w-full h-full object-cover">
                                 @else
