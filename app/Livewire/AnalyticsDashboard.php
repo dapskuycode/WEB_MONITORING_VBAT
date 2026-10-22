@@ -106,13 +106,11 @@ class AnalyticsDashboard extends Component
         $topCourses = Course::limit(5)
             ->get()
             ->map(function ($course) {
-                // Count entitlements for this course
-                $studentCount = Entitlement::where('course_id', $course->id)->count();
                 return [
                     'name' => $course->title,
                     'type' => ucfirst(str_replace('_', ' ', $course->type ?? 'Umum')),
                     'instructor' => $course->instructor_name ?? $course->instructor ?? 'VBAT Academy',
-                    'students' => $studentCount,
+                    'students' => 0, // ponytail: no enrollment table, count when course_users exists
                     'rating' => 0,
                 ];
             })
