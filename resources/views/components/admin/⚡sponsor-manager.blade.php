@@ -1217,22 +1217,22 @@ new class extends Component
 
     <!-- MODAL FORM TAMBAH / EDIT SPONSOR -->
     @if ($showModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm transition-all"
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/70 p-4 backdrop-blur-sm transition-all"
              x-data
              @keydown.escape.window="$wire.set('showModal', false)">
-            <div class="bg-white rounded-[16px] w-full max-w-[600px] shadow-2xl border border-[#E0E0E0] flex flex-col max-h-[90vh] overflow-hidden text-[#212121] animate-in fade-in zoom-in-95 duration-150">
+            <div class="bg-white dark:bg-[#242424] rounded-[16px] w-full max-w-[600px] shadow-2xl border border-[#E0E0E0] dark:border-[#3F3F46] flex flex-col max-h-[90vh] overflow-hidden text-[#212121] dark:text-[#F3F4F6] animate-in fade-in zoom-in-95 duration-150">
                 
                 <!-- 1. Sticky Header (Fixed at top) -->
-                <div class="sticky top-0 z-10 bg-white px-6 py-4 flex items-center justify-between border-b border-[#E0E0E0]">
+                <div class="sticky top-0 z-10 bg-white dark:bg-[#242424] px-6 py-4 flex items-center justify-between border-b border-[#E0E0E0] dark:border-[#3F3F46]">
                     <div>
-                        <h2 class="text-base font-bold text-[#212121]">
+                        <h2 class="text-base font-bold text-[#212121] dark:text-[#F3F4F6]">
                             {{ $editingId ? 'Edit Mitra Sponsor' : 'Tambah Mitra Sponsor Baru' }}
                         </h2>
-                        <p class="text-xs text-[#828282] mt-0.5">Kelola data identitas dan pengaturan akun mitra sponsor</p>
+                        <p class="text-xs text-[#828282] dark:text-[#9CA3AF] mt-0.5">Kelola data identitas dan pengaturan akun mitra sponsor</p>
                     </div>
                     <button type="button"
                             wire:click="$set('showModal', false)" 
-                            class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-zinc-100 transition-colors"
+                            class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] dark:text-[#9CA3AF] dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-[#333338] transition-colors"
                             title="Tutup Modal">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -1244,24 +1244,24 @@ new class extends Component
                 <div class="flex-1 overflow-y-auto p-6 space-y-5">
                     <!-- Nama Perusahaan / Sponsor -->
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">
                             Nama Perusahaan / Sponsor <span class="text-rose-500">*</span>
                         </label>
                         <input type="text" 
                                wire:model="name" 
                                placeholder="Contoh: PT VBAT Mobile Solusindo"
-                               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] dark:focus:border-[#3B82F6] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                         @error('name')
-                            <span class="text-xs text-rose-500 mt-1 block font-medium">{{ $message }}</span>
+                            <span class="text-xs text-rose-500 font-medium mt-1 block">{{ $message }}</span>
                         @enderror
                     </div>
 
                     <!-- Upload Logo Sponsor Zone -->
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">
                             Logo Resmi Sponsor
                         </label>
-                        <div class="relative rounded-xl border-2 border-dashed border-[#E0E0E0] hover:border-[#1a68f0]/60 bg-[#F8F9FA] hover:bg-[#EBF3FE]/30 p-4 transition-all">
+                        <div class="relative rounded-xl border-2 border-dashed border-[#E0E0E0] dark:border-[#3F3F46] hover:border-[#1a68f0]/60 dark:hover:border-[#3B82F6]/60 bg-[#F8F9FA] dark:bg-[#18181B] hover:bg-[#EBF3FE]/30 dark:hover:bg-[#333338]/40 p-4 transition-all">
                             <input type="file" 
                                    wire:model="logo" 
                                    accept="image/png,image/jpeg,image/jpg,image/webp" 
@@ -1269,13 +1269,13 @@ new class extends Component
                             
                             <div class="flex items-center gap-4">
                                 <!-- Preview Thumbnail -->
-                                <div class="w-16 h-16 rounded-xl bg-white border border-[#E0E0E0] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
+                                <div class="w-16 h-16 rounded-xl bg-white dark:bg-[#242424] border border-[#E0E0E0] dark:border-[#3F3F46] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
                                     @if ($logo && method_exists($logo, 'isPreviewable') && $logo->isPreviewable())
                                         <img src="{{ $logo->temporaryUrl() }}" alt="Preview" class="w-full h-full object-contain p-1.5">
                                     @elseif ($existingLogoPath)
                                         <img src="{{ asset('storage/' . $existingLogoPath) }}" alt="Logo" class="w-full h-full object-contain p-1.5">
                                     @else
-                                        <div class="w-full h-full flex flex-col items-center justify-center text-[#1a68f0] bg-[#EBF3FE]/60">
+                                        <div class="w-full h-full flex flex-col items-center justify-center text-[#1a68f0] dark:text-[#60A5FA] bg-[#EBF3FE]/60 dark:bg-[#1E3A8A]/30">
                                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                             </svg>
@@ -1285,18 +1285,18 @@ new class extends Component
 
                                 <!-- Text & Instructions -->
                                 <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-1.5 text-xs font-semibold text-[#1a68f0]">
+                                    <div class="flex items-center gap-1.5 text-xs font-semibold text-[#1a68f0] dark:text-[#60A5FA]">
                                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                         </svg>
                                         <span>Klik atau seret file ke sini</span>
                                     </div>
-                                    <p class="text-[11px] text-[#828282] mt-0.5">Format: JPG, PNG, atau WEBP (maks. 2MB)</p>
-                                    <div wire:loading wire:target="logo" class="text-[11px] text-[#1a68f0] font-medium mt-1">Mengunggah logo...</div>
+                                    <p class="text-[11px] text-[#828282] dark:text-[#9CA3AF] mt-0.5">Format: JPG, PNG, atau WEBP (maks. 2MB)</p>
+                                    <div wire:loading wire:target="logo" class="text-[11px] text-[#1a68f0] dark:text-[#60A5FA] font-medium mt-1">Mengunggah logo...</div>
                                     @if ($logo || $existingLogoPath)
                                         <button type="button" 
                                                 wire:click.stop="removeLogo" 
-                                                class="relative z-20 text-[11px] text-rose-600 hover:text-rose-700 font-semibold mt-1 inline-block">
+                                                class="relative z-20 text-[11px] text-rose-500 hover:text-rose-600 font-semibold mt-1 inline-block">
                                             Hapus logo terpilih
                                         </button>
                                     @endif
@@ -1310,42 +1310,42 @@ new class extends Component
 
                     <!-- Gambar Header Halaman Sponsor (Upload Zone) -->
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">
-                            Gambar Header Halaman Sponsor <span class="text-[11px] font-normal text-[#828282]">(Opsional)</span>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">
+                            Gambar Header Halaman Sponsor <span class="text-[11px] font-normal text-[#828282] dark:text-[#9CA3AF]">(Opsional)</span>
                         </label>
-                        <div class="relative rounded-xl border-2 border-dashed border-[#E0E0E0] hover:border-[#1a68f0]/60 bg-[#F8F9FA] hover:bg-[#EBF3FE]/30 p-4 transition-all">
+                        <div class="relative rounded-xl border-2 border-dashed border-[#E0E0E0] dark:border-[#3F3F46] hover:border-[#1a68f0]/60 dark:hover:border-[#3B82F6]/60 bg-[#F8F9FA] dark:bg-[#18181B] hover:bg-[#EBF3FE]/30 dark:hover:bg-[#333338]/40 p-4 transition-all">
                             <input type="file" 
                                    wire:model="headerImage" 
                                    accept="image/png,image/jpeg,image/jpg,image/webp" 
                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                             
                             <div class="flex items-center gap-4">
-                                <div class="w-20 h-14 rounded-lg bg-white border border-[#E0E0E0] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
+                                <div class="w-20 h-14 rounded-lg bg-white dark:bg-[#18181B] border border-[#E0E0E0] dark:border-[#3F3F46] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
                                     @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
                                         <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
                                     @elseif ($existingHeaderImagePath)
                                         <img src="{{ asset('storage/' . $existingHeaderImagePath) }}" alt="Header" class="w-full h-full object-cover">
                                     @else
-                                        <div class="w-full h-full flex flex-col items-center justify-center text-[#828282] bg-zinc-100">
-                                            <svg class="w-5 h-5 text-[#828282]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div class="w-full h-full flex flex-col items-center justify-center text-[#828282] dark:text-[#9CA3AF] bg-zinc-100 dark:bg-[#27272A]">
+                                            <svg class="w-5 h-5 text-[#828282] dark:text-[#9CA3AF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                             </svg>
                                         </div>
                                     @endif
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-1.5 text-xs font-semibold text-[#1a68f0]">
+                                    <div class="flex items-center gap-1.5 text-xs font-semibold text-[#1a68f0] dark:text-blue-400">
                                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                         </svg>
                                         <span>Klik atau seret gambar header</span>
                                     </div>
-                                    <p class="text-[11px] text-[#828282] mt-0.5">JPG, PNG, atau WEBP (maks. 4MB). Bila kosong memakai default tema.</p>
-                                    <div wire:loading wire:target="headerImage" class="text-[11px] text-[#1a68f0] font-medium mt-1">Mengunggah header...</div>
+                                    <p class="text-[11px] text-[#828282] dark:text-[#9CA3AF] mt-0.5">JPG, PNG, atau WEBP (maks. 4MB). Bila kosong memakai default tema.</p>
+                                    <div wire:loading wire:target="headerImage" class="text-[11px] text-[#1a68f0] dark:text-blue-400 font-medium mt-1">Mengunggah header...</div>
                                     @if ($headerImage || $existingHeaderImagePath)
                                         <button type="button" 
                                                 wire:click.stop="removeHeaderImage" 
-                                                class="relative z-20 text-[11px] text-rose-600 hover:text-rose-700 font-semibold mt-1 inline-block">
+                                                class="relative z-20 text-[11px] text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-semibold mt-1 inline-block">
                                             Hapus gambar header
                                         </button>
                                     @endif
@@ -1359,12 +1359,12 @@ new class extends Component
 
                     <!-- Tier Sponsor (Modern Custom Styled Select) -->
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">
                             Tier Sponsor <span class="text-rose-500">*</span>
                         </label>
                         <div class="relative">
                             <select wire:model="tier" 
-                                    class="w-full appearance-none px-3.5 py-2.5 pr-10 text-xs font-medium rounded-xl border border-[#E0E0E0] bg-white text-[#212121] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all cursor-pointer">
+                                    class="w-full appearance-none px-3.5 py-2.5 pr-10 text-xs font-medium rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all cursor-pointer">
                                 <option value="free">Free - Basic Exposure</option>
                                 <option value="kontribusi">Kontribusi - Partner</option>
                                 <option value="bronze">Bronze - Featured</option>
@@ -1373,33 +1373,33 @@ new class extends Component
                                 <option value="platinum">Platinum - Exclusive Partner</option>
                                 <option value="diamond">Diamond - Main Partner</option>
                             </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#828282]">
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#828282] dark:text-[#9CA3AF]">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                                 </svg>
                             </div>
                         </div>
-                        <p class="text-[11px] text-[#828282] mt-1">Bobot tayang dan kuota produk otomatis disesuaikan dengan paket benefit tier.</p>
+                        <p class="text-[11px] text-[#828282] dark:text-[#9CA3AF] mt-1">Bobot tayang dan kuota produk otomatis disesuaikan dengan paket benefit tier.</p>
                     </div>
 
                     <!-- 2-Column Grid: WhatsApp Order & Website Resmi -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
-                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">WhatsApp Order</label>
+                            <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">WhatsApp Order</label>
                             <div class="relative">
                                 <input type="text" 
                                        wire:model="whatsapp" 
                                        placeholder="628123456789" 
-                                       class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                                       class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                             </div>
-                            <span class="text-[11px] text-[#828282] mt-1 block">Gunakan kode negara (62...)</span>
+                            <span class="text-[11px] text-[#828282] dark:text-[#9CA3AF] mt-1 block">Gunakan kode negara (62...)</span>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">Website Resmi</label>
+                            <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Website Resmi</label>
                             <input type="url" 
                                    wire:model="website_url" 
                                    placeholder="https://perusahaan.com" 
-                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                             @error('website_url')
                                 <span class="text-xs text-rose-500 mt-1 block font-medium">{{ $message }}</span>
                             @enderror
@@ -1409,21 +1409,21 @@ new class extends Component
                     <!-- 2-Column Grid: Tautan Marketplace & Email Kontak -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
-                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">Tautan Marketplace</label>
+                            <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Tautan Marketplace</label>
                             <input type="url" 
                                    wire:model="marketplace_url" 
                                    placeholder="https://shopee.co.id/toko" 
-                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                             @error('marketplace_url')
                                 <span class="text-xs text-rose-500 mt-1 block font-medium">{{ $message }}</span>
                             @enderror
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">Email Kontak</label>
+                            <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Email Kontak</label>
                             <input type="email" 
                                    wire:model="contact_email" 
                                    placeholder="sponsor@perusahaan.com" 
-                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                             @error('contact_email')
                                 <span class="text-xs text-rose-500 mt-1 block font-medium">{{ $message }}</span>
                             @enderror
@@ -1432,61 +1432,61 @@ new class extends Component
 
                     <!-- Deskripsi Singkat -->
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Deskripsi Singkat</label>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Deskripsi Singkat</label>
                         <textarea wire:model="description" 
                                   rows="2" 
                                   placeholder="Tuliskan profil singkat sponsor atau keterangan kemitraan..." 
-                                  class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all resize-none"></textarea>
+                                  class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all resize-none"></textarea>
                     </div>
 
                     <!-- Status Akun Aktif -->
-                    <div class="p-3.5 rounded-xl border border-[#E0E0E0] bg-[#F8F9FA] flex items-center justify-between">
+                    <div class="p-3.5 rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-[#F8F9FA] dark:bg-[#18181B] flex items-center justify-between">
                         <div>
-                            <label for="sponsor-is-active" class="text-xs font-semibold text-[#212121] cursor-pointer block">
+                            <label for="sponsor-is-active" class="text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] cursor-pointer block">
                                 Status Akun Aktif
                             </label>
-                            <span class="text-[11px] text-[#828282] block mt-0.5">Sponsor dapat tampil dan menayangkan produk di platform</span>
+                            <span class="text-[11px] text-[#828282] dark:text-[#9CA3AF] block mt-0.5">Sponsor dapat tampil dan menayangkan produk di platform</span>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="sponsor-is-active" wire:model="is_active" class="sr-only peer">
-                            <div class="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a68f0]"></div>
+                            <div class="w-11 h-6 bg-zinc-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a68f0]"></div>
                         </label>
                     </div>
 
                     <!-- Terbitkan Akun Login Baru -->
                     @if (!$editingId)
-                        <div class="p-4 rounded-xl border border-[#E0E0E0] bg-[#F8F9FA] space-y-3">
+                        <div class="p-4 rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-[#F8F9FA] dark:bg-[#18181B] space-y-3">
                             <div class="flex items-center justify-between">
                                 <div>
-                                    <label for="create-user-acc" class="text-xs font-semibold text-[#212121] cursor-pointer block">
+                                    <label for="create-user-acc" class="text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] cursor-pointer block">
                                         Terbitkan Akun Login Portal
                                     </label>
-                                    <span class="text-[11px] text-[#828282] block mt-0.5">Buat kredensial login otomatis untuk akses mitra sponsor</span>
+                                    <span class="text-[11px] text-[#828282] dark:text-[#9CA3AF] block mt-0.5">Buat kredensial login otomatis untuk akses mitra sponsor</span>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" id="create-user-acc" wire:model.live="createUserAccount" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a68f0]"></div>
+                                    <div class="w-11 h-6 bg-zinc-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a68f0]"></div>
                                 </label>
                             </div>
 
                             @if ($createUserAccount)
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#E0E0E0]">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#E0E0E0] dark:border-[#3F3F46]">
                                     <div>
-                                        <label class="block text-[11px] font-semibold text-[#212121] mb-1">Email Login Portal</label>
+                                        <label class="block text-[11px] font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1">Email Login Portal</label>
                                         <input type="email" 
                                                wire:model="userEmail" 
                                                placeholder="sponsor@perusahaan.com" 
-                                               class="w-full px-3 py-2 text-xs rounded-lg border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0]">
+                                               class="w-full px-3 py-2 text-xs rounded-lg border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0]">
                                         @error('userEmail')
                                             <span class="text-[11px] text-rose-500 mt-1 block">{{ $message }}</span>
                                         @enderror
                                     </div>
                                     <div>
-                                        <label class="block text-[11px] font-semibold text-[#212121] mb-1">Password Awal</label>
+                                        <label class="block text-[11px] font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1">Password Awal</label>
                                         <input type="password" 
                                                wire:model="userPassword" 
                                                placeholder="Min. 8 karakter" 
-                                               class="w-full px-3 py-2 text-xs rounded-lg border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0]">
+                                               class="w-full px-3 py-2 text-xs rounded-lg border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0]">
                                         @error('userPassword')
                                             <span class="text-[11px] text-rose-500 mt-1 block">{{ $message }}</span>
                                         @enderror
@@ -1498,11 +1498,11 @@ new class extends Component
                 </div>
 
                 <!-- 3. Sticky Footer (Fixed at bottom) -->
-                <div class="sticky bottom-0 z-10 bg-white px-6 py-4 flex items-center justify-end gap-3 border-t border-[#E0E0E0]">
+                <div class="sticky bottom-0 z-10 bg-white dark:bg-[#242424] px-6 py-4 flex items-center justify-end gap-3 border-t border-[#E0E0E0] dark:border-[#3F3F46]">
                     <!-- Secondary Button: Batal (Ghost / Outline style) -->
                     <button type="button" 
                             wire:click="$set('showModal', false)" 
-                            class="px-5 py-2 text-xs font-semibold rounded-xl border border-[#E0E0E0] bg-white text-[#212121] hover:bg-zinc-50 hover:border-zinc-300 transition-colors">
+                            class="px-5 py-2 text-xs font-semibold rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] hover:bg-zinc-50 dark:hover:bg-[#3F3F46] transition-colors">
                         Batal
                     </button>
                     <!-- Primary Button: Simpan (Solid VBAT Blue) -->
@@ -1530,18 +1530,18 @@ new class extends Component
         <div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all"
              x-data
              @keydown.escape.window="$wire.set('showTierModal', false)">
-            <div class="bg-white rounded-[16px] w-full max-w-[480px] shadow-2xl border border-[#E0E0E0] flex flex-col max-h-[90vh] overflow-hidden text-[#212121] animate-in fade-in zoom-in-95 duration-150">
+            <div class="bg-white dark:bg-[#242424] rounded-[16px] w-full max-w-[480px] shadow-2xl border border-[#E0E0E0] dark:border-[#3F3F46] flex flex-col max-h-[90vh] overflow-hidden text-[#212121] dark:text-[#F3F4F6] animate-in fade-in zoom-in-95 duration-150">
                 <!-- Sticky Header -->
-                <div class="sticky top-0 z-10 bg-white px-6 py-4 flex items-center justify-between border-b border-[#E0E0E0]">
+                <div class="sticky top-0 z-10 bg-white dark:bg-[#242424] px-6 py-4 flex items-center justify-between border-b border-[#E0E0E0] dark:border-[#3F3F46]">
                     <div>
-                        <h2 class="text-base font-bold text-[#212121]">
+                        <h2 class="text-base font-bold text-[#212121] dark:text-[#F3F4F6]">
                             {{ $tierEditingId ? 'Ubah Tier Sponsor' : 'Tambah Tier Baru' }}
                         </h2>
-                        <p class="text-xs text-[#828282] mt-0.5">Atur identitas tier sponsor dan urutan penampilan</p>
+                        <p class="text-xs text-[#828282] dark:text-[#9CA3AF] mt-0.5">Atur identitas tier sponsor dan urutan penampilan</p>
                     </div>
                     <button type="button" 
                             wire:click="$set('showTierModal', false)" 
-                            class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-zinc-100 transition-colors">
+                            class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] dark:text-[#9CA3AF] hover:text-[#212121] dark:hover:text-[#F3F4F6] hover:bg-zinc-100 dark:hover:bg-[#333338] transition-colors">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -1551,51 +1551,51 @@ new class extends Component
                 <!-- Scrollable Body -->
                 <div class="flex-1 overflow-y-auto p-6 space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Nama Tier <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Nama Tier <span class="text-rose-500">*</span></label>
                         <input type="text" 
                                wire:model="tierName" 
                                placeholder="Contoh: Silver, Gold, Platinum" 
-                               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                         @error('tierName') <span class="text-xs text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Label Badge</label>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Label Badge</label>
                         <input type="text" 
                                wire:model="tierBadgeLabel" 
                                placeholder="Contoh: Silver Official Partner" 
-                               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
-                        <span class="text-[11px] text-[#828282] mt-1 block">Teks badge yang tampil pada kartu produk katalog.</span>
+                               class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                        <span class="text-[11px] text-[#828282] dark:text-[#9CA3AF] mt-1 block">Teks badge yang tampil pada kartu produk katalog.</span>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3.5">
                         <div>
-                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">Warna Aksen Badge</label>
+                            <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Warna Aksen Badge</label>
                             <div class="flex items-center gap-2">
                                 <input type="color" 
                                        wire:model="tierBadgeColor" 
-                                       class="w-10 h-10 rounded-xl border border-[#E0E0E0] bg-white cursor-pointer p-0.5 shrink-0">
+                                       class="w-10 h-10 rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] cursor-pointer p-0.5 shrink-0">
                                 <input type="text" 
                                        wire:model="tierBadgeColor" 
-                                       class="w-full px-3 py-2 text-xs font-mono rounded-xl border border-[#E0E0E0] bg-white text-[#212121] focus:outline-none focus:border-[#1a68f0]">
+                                       class="w-full px-3 py-2 text-xs font-mono rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] focus:outline-none focus:border-[#1a68f0]">
                             </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-[#212121] mb-1.5">Urutan Prioritas</label>
+                            <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Urutan Prioritas</label>
                             <input type="number" 
                                    wire:model="tierSortOrder" 
                                    min="0" 
-                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] bg-white text-[#212121] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
-                            <span class="text-[11px] text-[#828282] mt-1 block">Angka lebih kecil tampil di urutan awal.</span>
+                                   class="w-full px-3.5 py-2.5 text-xs rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                            <span class="text-[11px] text-[#828282] dark:text-[#9CA3AF] mt-1 block">Angka lebih kecil tampil di urutan awal.</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Sticky Footer -->
-                <div class="sticky bottom-0 z-10 bg-white px-6 py-4 flex items-center justify-end gap-3 border-t border-[#E0E0E0]">
+                <div class="sticky bottom-0 z-10 bg-white dark:bg-[#242424] px-6 py-4 flex items-center justify-end gap-3 border-t border-[#E0E0E0] dark:border-[#3F3F46]">
                     <button type="button" 
                             wire:click="$set('showTierModal', false)" 
-                            class="px-5 py-2 text-xs font-semibold rounded-xl border border-[#E0E0E0] bg-white text-[#212121] hover:bg-zinc-50 hover:border-zinc-300 transition-colors">
+                            class="px-5 py-2 text-xs font-semibold rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] hover:bg-zinc-50 dark:hover:bg-[#3F3F46] transition-colors">
                         Batal
                     </button>
                     <button type="button" 

@@ -252,22 +252,22 @@ new class extends Component
 
     <!-- Modal Edit Limit & Bobot -->
     @if ($editingLimitId)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-            <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4">
-                <h3 class="text-base font-bold text-[#212121]">Atur Kuota & Frekuensi Tayang</h3>
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/70 p-4 backdrop-blur-sm">
+            <div class="bg-white dark:bg-[#242424] border border-[#E0E0E0] dark:border-[#3F3F46] rounded-2xl w-full max-w-sm p-6 shadow-2xl space-y-4 text-[#212121] dark:text-[#F3F4F6]">
+                <h3 class="text-base font-bold text-[#212121] dark:text-[#F3F4F6]">Atur Kuota & Frekuensi Tayang</h3>
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-xs font-bold text-[#212121] mb-1">Limit Tayangan Per Hari</label>
-                        <input type="number" wire:model="newLimit" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200">
+                        <label class="block text-xs font-bold text-[#212121] dark:text-[#F3F4F6] mb-1">Limit Tayangan Per Hari</label>
+                        <input type="number" wire:model="newLimit" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] focus:outline-none focus:border-[#1a68f0]">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-[#212121] mb-1">Bobot Rotasi Iklan (1 - 10)</label>
-                        <input type="number" wire:model="newWeight" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200">
+                        <label class="block text-xs font-bold text-[#212121] dark:text-[#F3F4F6] mb-1">Bobot Rotasi Iklan (1 - 10)</label>
+                        <input type="number" wire:model="newWeight" class="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] focus:outline-none focus:border-[#1a68f0]">
                     </div>
                 </div>
-                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                    <button wire:click="$set('editingLimitId', null)" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-[#828282]">Batal</button>
-                    <button wire:click="saveLimits" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-[#1a68f0] text-white shadow-sm">Simpan</button>
+                <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-[#3F3F46]">
+                    <button wire:click="$set('editingLimitId', null)" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-[#333338] text-[#828282] dark:text-[#9CA3AF] hover:bg-slate-200 dark:hover:bg-[#3F3F46] transition-colors">Batal</button>
+                    <button wire:click="saveLimits" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-[#1a68f0] hover:bg-blue-700 text-white shadow-sm transition-colors">Simpan</button>
                 </div>
             </div>
         </div>

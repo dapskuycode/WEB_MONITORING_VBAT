@@ -393,24 +393,24 @@ new class extends Component
         </div>
     </div>
 
-    <!-- Modal Form Create / Edit Produk (Enterprise Light Mode Dialog) -->
+    <!-- Modal Form Create / Edit Produk (Enterprise Light/Dark Mode Dialog) -->
     @if($showModal)
-    <div class="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 transition-all"
+    <div class="fixed inset-0 z-50 overflow-y-auto bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 transition-all"
          x-data
          @keydown.escape.window="$wire.set('showModal', false)">
-        <div class="bg-white rounded-[16px] max-w-xl w-full border border-[#E0E0E0] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-[#212121] animate-in fade-in zoom-in-95 duration-150">
+        <div class="bg-white dark:bg-[#242424] rounded-[16px] max-w-xl w-full border border-[#E0E0E0] dark:border-[#3F3F46] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden text-[#212121] dark:text-[#F3F4F6] animate-in fade-in zoom-in-95 duration-150">
             
             <!-- 1. Sticky Header -->
-            <div class="sticky top-0 z-10 bg-white px-6 py-4 flex items-center justify-between border-b border-[#E0E0E0]">
+            <div class="sticky top-0 z-10 bg-white dark:bg-[#242424] px-6 py-4 flex items-center justify-between border-b border-[#E0E0E0] dark:border-[#3F3F46]">
                 <div>
-                    <h2 class="text-base font-bold text-[#212121]">
+                    <h2 class="text-base font-bold text-[#212121] dark:text-[#F3F4F6]">
                         {{ $editingId ? 'Edit Data Produk' : 'Upload Produk Baru' }}
                     </h2>
-                    <p class="text-xs text-[#828282] mt-0.5">Lengkapi spesifikasi, harga promo, dan link marketplace resmi</p>
+                    <p class="text-xs text-[#828282] dark:text-[#9CA3AF] mt-0.5">Lengkapi spesifikasi, harga promo, dan link marketplace resmi</p>
                 </div>
                 <button type="button" 
                         wire:click="$set('showModal', false)" 
-                        class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-zinc-100 transition-colors">
+                        class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] dark:text-[#9CA3AF] hover:text-[#212121] dark:hover:text-[#F3F4F6] hover:bg-zinc-100 dark:hover:bg-[#333338] transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                     </svg>
@@ -421,10 +421,10 @@ new class extends Component
             <form wire:submit.prevent="save" id="productForm" class="flex-1 overflow-y-auto p-6 space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Mitra Sponsor <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Mitra Sponsor <span class="text-rose-500">*</span></label>
                         <div class="relative">
                             <select wire:model="sponsor_id" 
-                                    class="w-full appearance-none pl-3.5 pr-9 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all cursor-pointer">
+                                    class="w-full appearance-none pl-3.5 pr-9 py-2.5 bg-white dark:bg-[#333338] border border-[#E0E0E0] dark:border-[#3F3F46] rounded-xl text-xs text-[#212121] dark:text-[#F3F4F6] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all cursor-pointer">
                                 <option value="">-- Pilih Mitra Sponsor --</option>
                                 @foreach($sponsors as $sp)
                                     <option value="{{ $sp->id }}">
@@ -432,7 +432,7 @@ new class extends Component
                                     </option>
                                 @endforeach
                             </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#828282]">
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-[#828282] dark:text-[#9CA3AF]">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5"/>
                                 </svg>
@@ -442,61 +442,61 @@ new class extends Component
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Nama Produk <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Nama Produk <span class="text-rose-500">*</span></label>
                         <input wire:model="name" 
                                type="text" 
                                placeholder="Contoh: Solder Listrik T12 Digital" 
-                               class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-[#333338] border border-[#E0E0E0] dark:border-[#3F3F46] rounded-xl text-xs text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                         @error('name') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-[#212121] mb-1.5">Deskripsi Produk</label>
+                    <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Deskripsi Produk</label>
                     <textarea wire:model="description" 
                               rows="2" 
                               placeholder="Spesifikasi atau keunggulan part..." 
-                              class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all resize-none"></textarea>
+                              class="w-full px-3.5 py-2.5 bg-white dark:bg-[#333338] border border-[#E0E0E0] dark:border-[#3F3F46] rounded-xl text-xs text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all resize-none"></textarea>
                     @error('description') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Harga Normal (Rp) <span class="text-rose-500">*</span></label>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Harga Normal (Rp) <span class="text-rose-500">*</span></label>
                         <input wire:model="price" 
                                type="number" 
                                placeholder="389000" 
-                               class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-[#333338] border border-[#E0E0E0] dark:border-[#3F3F46] rounded-xl text-xs text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                         @error('price') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Harga Promo / Diskon (Opsional)</label>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Harga Promo / Diskon (Opsional)</label>
                         <input wire:model="discount_price" 
                                type="number" 
                                placeholder="330000" 
-                               class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-[#333338] border border-[#E0E0E0] dark:border-[#3F3F46] rounded-xl text-xs text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                         @error('discount_price') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
                 <!-- Foto Produk: Modern Drag-and-Drop Upload Zone -->
                 <div>
-                    <label class="block text-xs font-semibold text-[#212121] mb-1.5">Foto Produk</label>
-                    <div class="relative rounded-xl border-2 border-dashed border-[#E0E0E0] hover:border-[#1a68f0]/60 bg-[#F8F9FA] hover:bg-[#EBF3FE]/30 p-4 transition-all">
+                    <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Foto Produk</label>
+                    <div class="relative rounded-xl border-2 border-dashed border-[#E0E0E0] dark:border-[#3F3F46] hover:border-[#1a68f0]/60 dark:hover:border-blue-500/60 bg-[#F8F9FA] dark:bg-[#18181B] hover:bg-[#EBF3FE]/30 dark:hover:bg-[#333338]/50 p-4 transition-all">
                         <input wire:model="imageFile" 
                                type="file" 
                                accept="image/png,image/jpeg,image/jpg,image/webp" 
                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                         
                         <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 rounded-lg bg-white border border-[#E0E0E0] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
+                            <div class="w-14 h-14 rounded-lg bg-white dark:bg-[#27272A] border border-[#E0E0E0] dark:border-[#3F3F46] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
                                 @if($imageFile)
                                     <img src="{{ $imageFile->temporaryUrl() }}" class="w-full h-full object-cover">
                                 @elseif($existing_image)
                                     <img src="{{ str_starts_with($existing_image, 'http') ? $existing_image : asset('storage/' . $existing_image) }}" class="w-full h-full object-cover">
                                 @else
-                                    <div class="w-full h-full flex flex-col items-center justify-center text-[#1a68f0] bg-[#EBF3FE]/60">
+                                    <div class="w-full h-full flex flex-col items-center justify-center text-[#1a68f0] dark:text-blue-400 bg-[#EBF3FE]/60 dark:bg-blue-950/40">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
                                         </svg>
@@ -505,14 +505,14 @@ new class extends Component
                             </div>
 
                             <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-1.5 text-xs font-semibold text-[#1a68f0]">
+                                <div class="flex items-center gap-1.5 text-xs font-semibold text-[#1a68f0] dark:text-blue-400">
                                     <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 0 1-.88-7.903A5 5 0 1 1 15.9 6L16 6a5 5 0 0 1 1 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                     </svg>
                                     <span>Klik atau seret file foto part ke sini</span>
                                 </div>
-                                <p class="text-[11px] text-[#828282] mt-0.5">JPG, PNG, atau WEBP (maks. 3MB)</p>
-                                <div wire:loading wire:target="imageFile" class="text-[11px] text-[#1a68f0] font-medium mt-1">Mengunggah foto...</div>
+                                <p class="text-[11px] text-[#828282] dark:text-[#9CA3AF] mt-0.5">JPG, PNG, atau WEBP (maks. 3MB)</p>
+                                <div wire:loading wire:target="imageFile" class="text-[11px] text-[#1a68f0] dark:text-blue-400 font-medium mt-1">Mengunggah foto...</div>
                             </div>
                         </div>
                     </div>
@@ -521,43 +521,43 @@ new class extends Component
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Tautan Shopee Produk</label>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Tautan Shopee Produk</label>
                         <input wire:model="shopee_url" 
                                type="url" 
                                placeholder="https://shopee.co.id/..." 
-                               class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-[#333338] border border-[#E0E0E0] dark:border-[#3F3F46] rounded-xl text-xs text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                         @error('shopee_url') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] mb-1.5">Tautan Tokopedia Produk</label>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1.5">Tautan Tokopedia Produk</label>
                         <input wire:model="tokopedia_url" 
                                type="url" 
                                placeholder="https://tokopedia.com/..." 
-                               class="w-full px-3.5 py-2.5 bg-white border border-[#E0E0E0] rounded-xl text-xs text-[#212121] placeholder-[#BDBDBD] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
+                               class="w-full px-3.5 py-2.5 bg-white dark:bg-[#333338] border border-[#E0E0E0] dark:border-[#3F3F46] rounded-xl text-xs text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all">
                         @error('tokopedia_url') <span class="text-[11px] text-rose-500 mt-1 block font-medium">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
-                <div class="p-3.5 rounded-xl border border-[#E0E0E0] bg-[#F8F9FA] flex items-center justify-between">
+                <div class="p-3.5 rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-[#F8F9FA] dark:bg-[#18181B] flex items-center justify-between">
                     <div>
-                        <label for="prod-is-active" class="text-xs font-semibold text-[#212121] cursor-pointer block">
+                        <label for="prod-is-active" class="text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] cursor-pointer block">
                             Status Aktif Katalog
                         </label>
-                        <span class="text-[11px] text-[#828282] block mt-0.5">Produk dapat ditemukan dan dibeli teknisi di aplikasi mobile</span>
+                        <span class="text-[11px] text-[#828282] dark:text-[#9CA3AF] block mt-0.5">Produk dapat ditemukan dan dibeli teknisi di aplikasi mobile</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="prod-is-active" wire:model="is_active" class="sr-only peer">
-                        <div class="w-11 h-6 bg-zinc-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a68f0]"></div>
+                        <div class="w-11 h-6 bg-zinc-300 dark:bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#1a68f0]"></div>
                     </label>
                 </div>
             </form>
 
             <!-- 3. Sticky Footer -->
-            <div class="sticky bottom-0 z-10 bg-white px-6 py-4 flex items-center justify-end gap-3 border-t border-[#E0E0E0]">
+            <div class="sticky bottom-0 z-10 bg-white dark:bg-[#242424] px-6 py-4 flex items-center justify-end gap-3 border-t border-[#E0E0E0] dark:border-[#3F3F46]">
                 <button type="button" 
                         wire:click="$set('showModal', false)" 
-                        class="px-5 py-2 text-xs font-semibold rounded-xl border border-[#E0E0E0] bg-white text-[#212121] hover:bg-zinc-50 hover:border-zinc-300 transition-colors">
+                        class="px-5 py-2 text-xs font-semibold rounded-xl border border-[#E0E0E0] dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] hover:bg-zinc-50 dark:hover:bg-[#3F3F46] transition-colors">
                     Batal
                 </button>
                 <button type="submit" 
