@@ -18,20 +18,14 @@
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 @fluxAppearance
 <script>
-    (function () {
-        // Default is light unless explicitly saved as 'dark'
-        const theme = localStorage.getItem('theme') || localStorage.getItem('flux.appearance');
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-            // If nothing is set yet, explicitly ensure light mode
-            if (!theme) {
-                try {
-                    localStorage.setItem('theme', 'light');
-                    localStorage.setItem('flux.appearance', 'light');
-                } catch (e) {}
-            }
-        }
-    })();
+(function () {
+    // Read saved theme from localStorage, apply if exists
+    const theme = localStorage.getItem('theme') || localStorage.getItem('flux.appearance');
+    if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else if (theme === 'light') {
+        document.documentElement.classList.remove('dark');
+    }
+    // If no theme saved yet, keep current html state (don't force light)
+})();
 </script>
