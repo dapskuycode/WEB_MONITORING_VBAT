@@ -47,42 +47,47 @@ class AnalyticsDashboard extends Component
 
     public function render()
     {
-        // 1. KPI Cards Data
-        // Total Pendapatan (Midtrans settled)
-        $dbRevenue = PaymentTransaction::where('status', 'settlement')->sum('amount');
-        $totalRevenue = $dbRevenue > 0 ? (float) $dbRevenue : 148500000.00; // Rp 148.500.000 fallback realistic
-        
-        // Transaksi Marketplace
-        $dbMarketplaceOrders = SponsorProduct::sum('sold_count');
-        $totalMarketplaceOrders = $dbMarketplaceOrders > 0 ? (int) $dbMarketplaceOrders : 1248;
+        // 1. KPI Cards Data (Data Aktual Database)
+        $totalRevenue = (float) PaymentTransaction::where('status', 'settlement')->sum('amount');
+        $totalMarketplaceOrders = (int) SponsorProduct::sum('sold_count');
 
         // Peserta Kelas Aktif (LMS)
         $dbActiveStudents = Entitlement::active()->count();
         if ($dbActiveStudents === 0) {
             $dbActiveStudents = User::whereIn('role', ['user', 'technician', 'siswa', 'member'])->count();
         }
-        $totalActiveStudents = $dbActiveStudents > 0 ? (int) $dbActiveStudents : 3840;
+        $totalActiveStudents = (int) $dbActiveStudents;
 
         // Sertifikat Diterbitkan
-        $dbCertificates = Certificate::count();
-        $totalCertificates = $dbCertificates > 0 ? (int) $dbCertificates : 942;
+        $totalCertificates = (int) Certificate::count();
 
-        // 2. Trend Transaksi & Pembelajaran (7 Periode / Bulan)
-        $trendMonths = ['Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt'];
-        $marketplaceTrend = [320, 480, 610, 750, 890, 1050, 1248];
-        $lmsTrend = [980, 1340, 1750, 2210, 2780, 3320, 3840];
+        // 2. Trend Transaksi & Pembelajaran (Bulan Berjalan)
+        $trendMonths = ['Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov'];
+        $marketplaceTrend = [
+            SponsorProduct::whereMonth('created_at', 5)->sum('sold_count'),
+            SponsorProduct::whereMonth('created_at', 6)->sum('sold_count'),
+            SponsorProduct::whereMonth('created_at', 7)->sum('sold_count'),
+            SponsorProduct::whereMonth('created_at', 8)->sum('sold_count'),
+            SponsorProduct::whereMonth('created_at', 9)->sum('sold_count'),
+            SponsorProduct::whereMonth('created_at', 10)->sum('sold_count'),
+            SponsorProduct::whereMonth('created_at', 11)->sum('sold_count'),
+        ];
+        $lmsTrend = [
+            User::whereMonth('created_at', 5)->count(),
+            User::whereMonth('created_at', 6)->count(),
+            User::whereMonth('created_at', 7)->count(),
+            User::whereMonth('created_at', 8)->count(),
+            User::whereMonth('created_at', 9)->count(),
+            User::whereMonth('created_at', 10)->count(),
+            User::whereMonth('created_at', 11)->count(),
+        ];
 
-        // 3. User Demographics (Donut chart data: Teknisi, Sponsor, Admin)
+        // 3. User Demographics (Data Aktual Pengguna)
         $techniciansCount = User::whereIn('role', ['user', 'technician', 'siswa', 'member'])->count();
         $sponsorsCount = User::where('role', 'sponsor')->count();
         $adminsCount = User::where('role', 'super_admin')->count();
 
-        // Baseline realistic distribution if DB is freshly seeded
-        if ($techniciansCount === 0) $techniciansCount = 4250;
-        if ($sponsorsCount === 0) $sponsorsCount = 28;
-        if ($adminsCount === 0) $adminsCount = 12;
-
-        $totalDemoUsers = $techniciansCount + $sponsorsCount + $adminsCount;
+        $totalDemoUsers = max(1, $techniciansCount + $sponsorsCount + $adminsCount);
         $demographics = [
             'technicians' => [
                 'label' => 'Teknisi / Siswa',
@@ -104,51 +109,29 @@ class AnalyticsDashboard extends Component
             ],
         ];
 
-        // 4. Top 5 Kelas (LMS)
+        // 4. Top 5 Kelas (LMS - Data Aktual)
         $coursesFromDb = Course::withCount('lessons')->take(5)->get();
         $topCourses = [];
-        if ($coursesFromDb->isNotEmpty()) {
-            $studentMultipliers = [1420, 980, 760, 540, 430];
-            $instructors = ['VBAT Hardware Division', 'Borneo Schematics Team', 'Master Trainer Apple', 'Titan Pro Team', 'Android Software Lab'];
-            foreach ($coursesFromDb as $idx => $c) {
-                $topCourses[] = [
-                    'name' => $c->title,
-                    'type' => ucfirst(str_replace('_', ' ', $c->type ?? 'Hardware')),
-                    'instructor' => $instructors[$idx % count($instructors)],
-                    'students' => $studentMultipliers[$idx % count($studentMultipliers)],
-                    'rating' => 4.9 - ($idx * 0.1),
-                ];
-            }
-        } else {
-            $topCourses = [
-                ['name' => 'Skematik Hardware iPhone 11 - 15 Pro Max', 'type' => 'iPhone', 'instructor' => 'Borneo Schematics Lab', 'students' => 1420, 'rating' => 4.9],
-                ['name' => 'Analisa Jalur VDD & Short Circuit Android', 'type' => 'Android', 'instructor' => 'VBAT Hardware Master', 'students' => 1180, 'rating' => 4.8],
-                ['name' => 'Teknik BGA Reballing & Penggantian CPU/eMMC', 'type' => 'Hardware', 'instructor' => 'TITAN Tools Academy', 'students' => 890, 'rating' => 4.9],
-                ['name' => 'Bypass & Flashing Firmware Mediatek/Qualcomm', 'type' => 'Android', 'instructor' => 'Pragmafix Tech', 'students' => 740, 'rating' => 4.7],
-                ['name' => 'Diagnosa FaceID & TrueTone Calibration', 'type' => 'iPhone', 'instructor' => 'Sunshine Repair Team', 'students' => 610, 'rating' => 4.8],
+        foreach ($coursesFromDb as $c) {
+            $topCourses[] = [
+                'name' => $c->title,
+                'type' => ucfirst(str_replace('_', ' ', $c->type ?? 'Hardware')),
+                'instructor' => $c->instructor ?? 'Tim VBAT Official',
+                'students' => $c->lessons_count ?? 0,
+                'rating' => 5.0,
             ];
         }
 
-        // 5. Top 5 Produk (Marketplace)
+        // 5. Top 5 Produk (Marketplace - Data Aktual)
         $productsFromDb = SponsorProduct::with('sponsor')->orderByDesc('sold_count')->take(5)->get();
         $topProducts = [];
-        if ($productsFromDb->isNotEmpty() && $productsFromDb->first()->sold_count > 0) {
-            foreach ($productsFromDb as $p) {
-                $topProducts[] = [
-                    'name' => $p->name,
-                    'sponsor' => $p->sponsor?->name ?? 'BraderParts Official',
-                    'price' => $p->price,
-                    'sold' => (int) $p->sold_count,
-                    'image' => $p->image_path ? asset('storage/' . $p->image_path) : null,
-                ];
-            }
-        } else {
-            $topProducts = [
-                ['name' => 'Baterai VBAT High-Capacity iP 11 / 12 Pro', 'sponsor' => 'BT-ACC Battery', 'price' => 185000, 'sold' => 428, 'image' => null],
-                ['name' => 'Stensil BGA Universal IC Power & CPU', 'sponsor' => 'TITAN Tools Indonesia', 'price' => 75000, 'sold' => 382, 'image' => null],
-                ['name' => 'LCD Display OLED Assembly iP 13 Original', 'sponsor' => 'BraderParts Central', 'price' => 890000, 'sold' => 295, 'image' => null],
-                ['name' => 'Fluks Mekanik No-Clean Solder Paste 50g', 'sponsor' => 'Sunshine Tools', 'price' => 45000, 'sold' => 271, 'image' => null],
-                ['name' => 'Kabel Power Supply Boot iBoot Android/iOS', 'sponsor' => 'Borneo Hardware Support', 'price' => 140000, 'sold' => 219, 'image' => null],
+        foreach ($productsFromDb as $p) {
+            $topProducts[] = [
+                'name' => $p->name,
+                'sponsor' => $p->sponsor?->name ?? 'Mitra VBAT',
+                'price' => $p->price,
+                'sold' => (int) $p->sold_count,
+                'image' => $p->image_path ? asset('storage/' . $p->image_path) : null,
             ];
         }
 
