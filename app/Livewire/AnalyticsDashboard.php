@@ -24,13 +24,25 @@ class AnalyticsDashboard extends Component
 
     public function mount()
     {
-        $this->dateStart = '2026-10-01';
-        $this->dateEnd = '2026-10-31';
+        $this->dateStart = request('start_date', '2026-10-01');
+        $this->dateEnd = request('end_date', '2026-10-31');
+
+        try {
+            $formattedStart = Carbon::parse($this->dateStart)->format('d M Y');
+            $formattedEnd = Carbon::parse($this->dateEnd)->format('d M Y');
+            $this->dateRange = "{$formattedStart} - {$formattedEnd}";
+        } catch (\Exception $e) {
+            $this->dateRange = '01 Oct 2026 - 31 Oct 2026';
+        }
     }
 
     public function exportReport()
     {
-        session()->flash('message', 'Laporan Analitik Aplikasi (Excel) periode ' . $this->dateRange . ' sedang diekspor...');
+        return redirect()->route('admin.export.analytics', [
+            'source' => 'analytics',
+            'start_date' => $this->dateStart,
+            'end_date' => $this->dateEnd,
+        ]);
     }
 
     public function render()
