@@ -1270,8 +1270,22 @@ new class extends Component
                             <div class="flex items-center gap-4">
                                 <!-- Preview Thumbnail -->
                                 <div class="w-16 h-16 rounded-xl bg-white dark:bg-[#242424] border border-[#E0E0E0] dark:border-[#3F3F46] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
-                                    @if ($logo && method_exists($logo, 'isPreviewable') && $logo->isPreviewable())
-                                        <img src="{{ $logo->temporaryUrl() }}" alt="Preview" class="w-full h-full object-contain p-1.5">
+                                    @php
+                                        $isLogoPreviewable = false;
+                                        $logoPreviewUrl = null;
+                                        if ($logo instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+                                            try {
+                                                if (is_file($logo->getRealPath()) && !is_dir($logo->getRealPath()) && $logo->isPreviewable()) {
+                                                    $logoPreviewUrl = $logo->temporaryUrl();
+                                                    $isLogoPreviewable = true;
+                                                }
+                                            } catch (\Throwable $e) {
+                                                $isLogoPreviewable = false;
+                                            }
+                                        }
+                                    @endphp
+                                    @if ($isLogoPreviewable && $logoPreviewUrl)
+                                        <img src="{{ $logoPreviewUrl }}" alt="Preview" class="w-full h-full object-contain p-1.5">
                                     @elseif ($existingLogoPath)
                                         @php
                                             $existingLogoUrl = str_starts_with($existingLogoPath, 'http') 
@@ -1326,8 +1340,22 @@ new class extends Component
                             
                             <div class="flex items-center gap-4">
                                 <div class="w-20 h-14 rounded-lg bg-white dark:bg-[#18181B] border border-[#E0E0E0] dark:border-[#3F3F46] flex items-center justify-center overflow-hidden shrink-0 shadow-xs relative">
-                                    @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
-                                        <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
+                                    @php
+                                        $isHeaderPreviewable = false;
+                                        $headerPreviewUrl = null;
+                                        if ($headerImage instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+                                            try {
+                                                if (is_file($headerImage->getRealPath()) && !is_dir($headerImage->getRealPath()) && $headerImage->isPreviewable()) {
+                                                    $headerPreviewUrl = $headerImage->temporaryUrl();
+                                                    $isHeaderPreviewable = true;
+                                                }
+                                            } catch (\Throwable $e) {
+                                                $isHeaderPreviewable = false;
+                                            }
+                                        }
+                                    @endphp
+                                    @if ($isHeaderPreviewable && $headerPreviewUrl)
+                                        <img src="{{ $headerPreviewUrl }}" alt="Preview Header" class="w-full h-full object-cover">
                                     @elseif ($existingHeaderImagePath)
                                         @php
                                             $existingHeaderUrl = str_starts_with($existingHeaderImagePath, 'http') 

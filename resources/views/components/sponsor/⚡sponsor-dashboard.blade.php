@@ -542,8 +542,22 @@ new class extends Component
 
                     <div class="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-[#3F3F46] bg-slate-50/60 dark:bg-[#18181B]">
                         <div class="w-24 h-24 rounded-xl bg-white dark:bg-[#27272A] border border-slate-200 dark:border-[#3F3F46] flex items-center justify-center overflow-hidden mb-3 shadow-xs">
-                            @if ($logo && method_exists($logo, 'isPreviewable') && $logo->isPreviewable())
-                                <img src="{{ $logo->temporaryUrl() }}" alt="Preview Baru" class="w-full h-full object-contain p-2">
+                            @php
+                                $isDashLogoPreviewable = false;
+                                $dashLogoPreviewUrl = null;
+                                if ($logo instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+                                    try {
+                                        if (is_file($logo->getRealPath()) && !is_dir($logo->getRealPath()) && $logo->isPreviewable()) {
+                                            $dashLogoPreviewUrl = $logo->temporaryUrl();
+                                            $isDashLogoPreviewable = true;
+                                        }
+                                    } catch (\Throwable $e) {
+                                        $isDashLogoPreviewable = false;
+                                    }
+                                }
+                            @endphp
+                            @if ($isDashLogoPreviewable && $dashLogoPreviewUrl)
+                                <img src="{{ $dashLogoPreviewUrl }}" alt="Preview Baru" class="w-full h-full object-contain p-2">
                             @elseif ($sponsor?->logo_url)
                                 <img src="{{ $sponsor->logo_url }}" alt="Logo Saat Ini" class="w-full h-full object-contain p-2" onerror="this.style.display='none';">
                             @else
@@ -635,8 +649,22 @@ new class extends Component
 
                     <div class="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-[#3F3F46] bg-slate-50/60 dark:bg-[#18181B]">
                         <div class="w-full h-24 rounded-xl bg-white dark:bg-[#27272A] border border-slate-200 dark:border-[#3F3F46] flex items-center justify-center overflow-hidden mb-3 shadow-xs">
-                            @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
-                                <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
+                            @php
+                                $isDashHeaderPreviewable = false;
+                                $dashHeaderPreviewUrl = null;
+                                if ($headerImage instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+                                    try {
+                                        if (is_file($headerImage->getRealPath()) && !is_dir($headerImage->getRealPath()) && $headerImage->isPreviewable()) {
+                                            $dashHeaderPreviewUrl = $headerImage->temporaryUrl();
+                                            $isDashHeaderPreviewable = true;
+                                        }
+                                    } catch (\Throwable $e) {
+                                        $isDashHeaderPreviewable = false;
+                                    }
+                                }
+                            @endphp
+                            @if ($isDashHeaderPreviewable && $dashHeaderPreviewUrl)
+                                <img src="{{ $dashHeaderPreviewUrl }}" alt="Preview Header" class="w-full h-full object-cover">
                             @elseif ($sponsor?->header_image_url_full)
                                 <img src="{{ $sponsor->header_image_url_full }}" alt="Header Saat Ini" class="w-full h-full object-cover" onerror="this.style.display='none';">
                             @else

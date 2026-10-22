@@ -567,9 +567,23 @@ new class extends Component
                 <div>
                     <label class="block text-xs font-bold text-[#212121] dark:text-zinc-300 mb-1">Foto Thumbnail Produk</label>
                     <div class="flex items-center gap-3">
-                        @if($imageFile)
+                        @php
+                            $isSpProdPreviewable = false;
+                            $spProdPreviewUrl = null;
+                            if ($imageFile instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+                                try {
+                                    if (is_file($imageFile->getRealPath()) && !is_dir($imageFile->getRealPath()) && $imageFile->isPreviewable()) {
+                                        $spProdPreviewUrl = $imageFile->temporaryUrl();
+                                        $isSpProdPreviewable = true;
+                                    }
+                                } catch (\Throwable $e) {
+                                    $isSpProdPreviewable = false;
+                                }
+                            }
+                        @endphp
+                        @if($isSpProdPreviewable && $spProdPreviewUrl)
                             <div class="w-12 h-12 rounded-xl border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0">
-                                <img src="{{ $imageFile->temporaryUrl() }}" class="w-full h-full object-cover">
+                                <img src="{{ $spProdPreviewUrl }}" class="w-full h-full object-cover">
                             </div>
                         @elseif($existing_image)
                             <div class="w-12 h-12 rounded-xl border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0">
