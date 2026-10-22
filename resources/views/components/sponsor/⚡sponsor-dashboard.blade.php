@@ -519,41 +519,41 @@ new class extends Component
         </div>
     </div>
 
-    {{-- MODAL GANTI LOGO RESMI SPONSOR (Light Mode Clean Shopee Style) --}}
+    {{-- MODAL GANTI LOGO RESMI SPONSOR (Light/Dark Mode Shopee Style) --}}
     @if ($showLogoModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-            <div class="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/70 backdrop-blur-xs p-4 animate-fade-in">
+            <div class="bg-white dark:bg-[#242424] border border-slate-200/90 dark:border-[#3F3F46] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col text-[#212121] dark:text-[#F3F4F6]">
                 <!-- Sticky Header -->
-                <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-zinc-800">
+                <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-[#3F3F46]">
                     <div class="flex items-center gap-2.5">
-                        <i class="fas fa-image text-[#1a68f0] text-base"></i>
-                        <h2 class="text-base font-bold text-[#212121] dark:text-white">Unggah Logo Resmi Sponsor</h2>
+                        <i class="fas fa-image text-[#1a68f0] dark:text-blue-400 text-base"></i>
+                        <h2 class="text-base font-bold text-[#212121] dark:text-[#F3F4F6]">Unggah Logo Resmi Sponsor</h2>
                     </div>
-                    <button type="button" wire:click="$set('showLogoModal', false)" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer">
+                    <button type="button" wire:click="$set('showLogoModal', false)" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] dark:text-[#9CA3AF] hover:text-[#212121] dark:hover:text-[#F3F4F6] hover:bg-slate-100 dark:hover:bg-[#333338] transition cursor-pointer">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
 
                 <!-- Body -->
                 <div class="p-6 space-y-4">
-                    <p class="text-xs text-[#828282] dark:text-zinc-400">
+                    <p class="text-xs text-[#828282] dark:text-[#9CA3AF]">
                         Logo ini akan ditampilkan di Beranda, katalog produk, dan kartu identitas sponsor pada aplikasi VBAT.
                     </p>
 
-                    <div class="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-800/40">
-                        <div class="w-24 h-24 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden mb-3 shadow-xs">
+                    <div class="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-[#3F3F46] bg-slate-50/60 dark:bg-[#18181B]">
+                        <div class="w-24 h-24 rounded-xl bg-white dark:bg-[#27272A] border border-slate-200 dark:border-[#3F3F46] flex items-center justify-center overflow-hidden mb-3 shadow-xs">
                             @if ($logo && method_exists($logo, 'isPreviewable') && $logo->isPreviewable())
                                 <img src="{{ $logo->temporaryUrl() }}" alt="Preview Baru" class="w-full h-full object-contain p-2">
                             @elseif ($sponsor?->logo_path)
                                 <img src="{{ asset('storage/' . $sponsor->logo_path) }}" alt="Logo Saat Ini" class="w-full h-full object-contain p-2">
                             @else
-                                <span class="text-lg font-bold text-[#1a68f0] uppercase">{{ substr($sponsor?->name ?? 'SP', 0, 2) }}</span>
+                                <span class="text-lg font-bold text-[#1a68f0] dark:text-blue-400 uppercase">{{ substr($sponsor?->name ?? 'SP', 0, 2) }}</span>
                             @endif
                         </div>
 
-                        <input type="file" wire:model="logo" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-[#828282] file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#1a68f0] file:text-white hover:file:bg-blue-600 cursor-pointer">
-                        <span class="text-[11px] text-[#828282] mt-2">Format: JPG, PNG, atau WEBP (Maksimal 2MB)</span>
-                        <div wire:loading wire:target="logo" class="text-xs text-[#1a68f0] font-semibold mt-1">Mengunggah berkas...</div>
+                        <input type="file" wire:model="logo" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-[#828282] dark:text-[#9CA3AF] file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#1a68f0] file:text-white hover:file:bg-blue-600 cursor-pointer">
+                        <span class="text-[11px] text-[#828282] dark:text-[#9CA3AF] mt-2">Format: JPG, PNG, atau WEBP (Maksimal 2MB)</span>
+                        <div wire:loading wire:target="logo" class="text-xs text-[#1a68f0] dark:text-blue-400 font-semibold mt-1">Mengunggah berkas...</div>
                         @error('logo')
                             <span class="text-xs text-rose-500 font-medium mt-1">{{ $message }}</span>
                         @enderror
@@ -561,8 +561,8 @@ new class extends Component
                 </div>
 
                 <!-- Footer -->
-                <div class="flex justify-end gap-2.5 p-4 border-t border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-850">
-                    <button type="button" wire:click="$set('showLogoModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-[#212121] hover:bg-slate-100 transition cursor-pointer">
+                <div class="flex justify-end gap-2.5 p-4 border-t border-slate-200 dark:border-[#3F3F46] bg-slate-50/50 dark:bg-[#242424]">
+                    <button type="button" wire:click="$set('showLogoModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#333338] border border-slate-200 dark:border-[#3F3F46] text-[#212121] dark:text-[#F3F4F6] hover:bg-slate-100 dark:hover:bg-[#3F3F46] transition cursor-pointer">
                         Batal
                     </button>
                     <button type="button" wire:click="saveLogo" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-[#1a68f0] hover:bg-blue-600 text-white shadow-xs transition disabled:opacity-50 cursor-pointer">
@@ -573,84 +573,84 @@ new class extends Component
         </div>
     @endif
 
-    {{-- MODAL UBAH PROFIL SPONSOR (Light Mode Clean Shopee Style) --}}
+    {{-- MODAL UBAH PROFIL SPONSOR (Light/Dark Mode Shopee Style) --}}
     @if ($showProfileModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-            <div class="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
-                <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-zinc-800">
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/70 backdrop-blur-xs p-4 animate-fade-in">
+            <div class="bg-white dark:bg-[#242424] border border-slate-200/90 dark:border-[#3F3F46] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col text-[#212121] dark:text-[#F3F4F6]">
+                <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-[#3F3F46]">
                     <div class="flex items-center gap-2.5">
-                        <i class="fas fa-store text-[#1a68f0] text-base"></i>
-                        <h2 class="text-base font-bold text-[#212121] dark:text-white">Ubah Profil Sponsor</h2>
+                        <i class="fas fa-store text-[#1a68f0] dark:text-blue-400 text-base"></i>
+                        <h2 class="text-base font-bold text-[#212121] dark:text-[#F3F4F6]">Ubah Profil Sponsor</h2>
                     </div>
-                    <button type="button" wire:click="$set('showProfileModal', false)" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer">
+                    <button type="button" wire:click="$set('showProfileModal', false)" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] dark:text-[#9CA3AF] hover:text-[#212121] dark:hover:text-[#F3F4F6] hover:bg-slate-100 dark:hover:bg-[#333338] transition cursor-pointer">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
 
                 <div class="p-6 space-y-4">
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] dark:text-zinc-200 mb-1">Deskripsi Singkat</label>
-                        <textarea wire:model="description" rows="3" class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-white focus:outline-none focus:border-[#1a68f0]" placeholder="Ceritakan singkat tentang toko atau produk Anda"></textarea>
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1">Deskripsi Singkat</label>
+                        <textarea wire:model="description" rows="3" class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0]" placeholder="Ceritakan singkat tentang toko atau produk Anda"></textarea>
                         @error('description') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] dark:text-zinc-200 mb-1">Website Resmi</label>
-                        <input type="url" wire:model="website_url" class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-white focus:outline-none focus:border-[#1a68f0]" placeholder="https://website-toko.com">
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1">Website Resmi</label>
+                        <input type="url" wire:model="website_url" class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0]" placeholder="https://website-toko.com">
                         @error('website_url') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-[#212121] dark:text-zinc-200 mb-1">Tautan Marketplace (Shopee / Tokopedia)</label>
-                        <input type="url" wire:model="marketplace_url" class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-white focus:outline-none focus:border-[#1a68f0]" placeholder="https://shopee.co.id/nama-toko">
+                        <label class="block text-xs font-semibold text-[#212121] dark:text-[#F3F4F6] mb-1">Tautan Marketplace (Shopee / Tokopedia)</label>
+                        <input type="url" wire:model="marketplace_url" class="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-[#3F3F46] bg-white dark:bg-[#333338] text-[#212121] dark:text-[#F3F4F6] placeholder-[#BDBDBD] dark:placeholder-[#9CA3AF] focus:outline-none focus:border-[#1a68f0]" placeholder="https://shopee.co.id/nama-toko">
                         @error('marketplace_url') <span class="text-xs text-rose-500 mt-1 block">{{ $message }}</span> @enderror
-                        <span class="text-[11px] text-[#828282] mt-1 block">Tombol di aplikasi hanya muncul untuk tautan yang terisi.</span>
+                        <span class="text-[11px] text-[#828282] dark:text-[#9CA3AF] mt-1 block">Tombol di aplikasi hanya muncul untuk tautan yang terisi.</span>
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-2.5 p-4 border-t border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-850">
-                    <button type="button" wire:click="$set('showProfileModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-[#212121] hover:bg-slate-100 transition cursor-pointer">Batal</button>
+                <div class="flex justify-end gap-2.5 p-4 border-t border-slate-200 dark:border-[#3F3F46] bg-slate-50/50 dark:bg-[#242424]">
+                    <button type="button" wire:click="$set('showProfileModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#333338] border border-slate-200 dark:border-[#3F3F46] text-[#212121] dark:text-[#F3F4F6] hover:bg-slate-100 dark:hover:bg-[#3F3F46] transition cursor-pointer">Batal</button>
                     <button type="button" wire:click="saveProfile" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-[#1a68f0] hover:bg-blue-600 text-white shadow-xs transition disabled:opacity-50 cursor-pointer">Simpan Profil</button>
                 </div>
             </div>
         </div>
     @endif
 
-    {{-- MODAL UNGGAH GAMBAR HEADER (Light Mode Clean Shopee Style) --}}
+    {{-- MODAL UNGGAH GAMBAR HEADER (Light/Dark Mode Shopee Style) --}}
     @if ($showHeaderModal)
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-            <div class="bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col">
-                <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-zinc-800">
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 dark:bg-black/70 backdrop-blur-xs p-4 animate-fade-in">
+            <div class="bg-white dark:bg-[#242424] border border-slate-200/90 dark:border-[#3F3F46] rounded-2xl w-full max-w-md shadow-2xl overflow-hidden flex flex-col text-[#212121] dark:text-[#F3F4F6]">
+                <div class="flex items-center justify-between p-5 border-b border-slate-200 dark:border-[#3F3F46]">
                     <div class="flex items-center gap-2.5">
-                        <i class="fas fa-panorama text-[#1a68f0] text-base"></i>
-                        <h2 class="text-base font-bold text-[#212121] dark:text-white">Gambar Header Halaman Sponsor</h2>
+                        <i class="fas fa-panorama text-[#1a68f0] dark:text-blue-400 text-base"></i>
+                        <h2 class="text-base font-bold text-[#212121] dark:text-[#F3F4F6]">Gambar Header Halaman Sponsor</h2>
                     </div>
-                    <button type="button" wire:click="$set('showHeaderModal', false)" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] hover:text-[#212121] hover:bg-slate-100 dark:hover:bg-zinc-800 cursor-pointer">
+                    <button type="button" wire:click="$set('showHeaderModal', false)" class="w-8 h-8 rounded-lg flex items-center justify-center text-[#828282] dark:text-[#9CA3AF] hover:text-[#212121] dark:hover:text-[#F3F4F6] hover:bg-slate-100 dark:hover:bg-[#333338] transition cursor-pointer">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
 
                 <div class="p-6 space-y-4">
-                    <p class="text-xs text-[#828282] dark:text-zinc-400">
+                    <p class="text-xs text-[#828282] dark:text-[#9CA3AF]">
                         Gambar ini menjadi banner latar atas halaman toko sponsor Anda. Bila dikosongkan, halaman memakai warna standar.
                     </p>
 
-                    <div class="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-zinc-700 bg-slate-50/60 dark:bg-zinc-800/40">
-                        <div class="w-full h-24 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden mb-3 shadow-xs">
+                    <div class="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-slate-300 dark:border-[#3F3F46] bg-slate-50/60 dark:bg-[#18181B]">
+                        <div class="w-full h-24 rounded-xl bg-white dark:bg-[#27272A] border border-slate-200 dark:border-[#3F3F46] flex items-center justify-center overflow-hidden mb-3 shadow-xs">
                             @if ($headerImage && method_exists($headerImage, 'isPreviewable') && $headerImage->isPreviewable())
                                 <img src="{{ $headerImage->temporaryUrl() }}" alt="Preview Header" class="w-full h-full object-cover">
                             @elseif ($sponsor?->header_image_url)
                                 <img src="{{ asset('storage/' . $sponsor->header_image_url) }}" alt="Header Saat Ini" class="w-full h-full object-cover">
                             @else
-                                <span class="text-xs font-semibold text-[#828282]">BELUM ADA GAMBAR HEADER</span>
+                                <span class="text-xs font-semibold text-[#828282] dark:text-[#9CA3AF]">BELUM ADA GAMBAR HEADER</span>
                             @endif
                         </div>
-                        <input type="file" wire:model="headerImage" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-[#828282] file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#1a68f0] file:text-white hover:file:bg-blue-600 cursor-pointer">
-                        <span class="text-[11px] text-[#828282] mt-2">Format: JPG, PNG, atau WEBP (Maksimal 4MB)</span>
+                        <input type="file" wire:model="headerImage" accept="image/png,image/jpeg,image/jpg,image/webp" class="text-xs text-[#828282] dark:text-[#9CA3AF] file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-[#1a68f0] file:text-white hover:file:bg-blue-600 cursor-pointer">
+                        <span class="text-[11px] text-[#828282] dark:text-[#9CA3AF] mt-2">Format: JPG, PNG, atau WEBP (Maksimal 4MB)</span>
                         @error('headerImage') <span class="text-xs text-rose-500 font-medium mt-1">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-2.5 p-4 border-t border-slate-200 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-850">
-                    <button type="button" wire:click="$set('showHeaderModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 text-[#212121] hover:bg-slate-100 transition cursor-pointer">Batal</button>
+                <div class="flex justify-end gap-2.5 p-4 border-t border-slate-200 dark:border-[#3F3F46] bg-slate-50/50 dark:bg-[#242424]">
+                    <button type="button" wire:click="$set('showHeaderModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-[#333338] border border-slate-200 dark:border-[#3F3F46] text-[#212121] dark:text-[#F3F4F6] hover:bg-slate-100 dark:hover:bg-[#3F3F46] transition cursor-pointer">Batal</button>
                     <button type="button" wire:click="saveHeaderImage" wire:loading.attr="disabled" class="px-4 py-2 text-xs font-bold rounded-xl bg-[#1a68f0] hover:bg-blue-600 text-white shadow-xs transition disabled:opacity-50 cursor-pointer">Simpan Gambar Header</button>
                 </div>
             </div>
