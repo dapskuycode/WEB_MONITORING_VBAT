@@ -152,58 +152,52 @@
 
                     <!-- Subtle Horizontal Guidelines -->
                     <line x1="30" y1="40" x2="680" y2="40" stroke="#f1f5f9" stroke-width="1" class="dark:stroke-zinc-800" />
-                    <line x1="30" y1="100" x2="680" y2="100" stroke="#f1f5f9" stroke-width="1" class="dark:stroke-zinc-800" />
-                    <line x1="30" y1="160" x2="680" y2="160" stroke="#f1f5f9" stroke-width="1" class="dark:stroke-zinc-800" />
-                    <line x1="30" y1="210" x2="680" y2="210" stroke="#e2e8f0" stroke-width="1" class="dark:stroke-zinc-700" />
+                    <line x1="30" y1="93" x2="680" y2="93" stroke="#f1f5f9" stroke-width="1" class="dark:stroke-zinc-800" />
+                    <line x1="30" y1="146" x2="680" y2="146" stroke="#f1f5f9" stroke-width="1" class="dark:stroke-zinc-800" />
+                    <line x1="30" y1="200" x2="680" y2="200" stroke="#e2e8f0" stroke-width="1" class="dark:stroke-zinc-700" />
 
                     <!-- Axis Value Labels -->
-                    <text x="5" y="44" class="text-[10px] fill-[#828282]">4k</text>
-                    <text x="5" y="104" class="text-[10px] fill-[#828282]">2.5k</text>
-                    <text x="5" y="164" class="text-[10px] fill-[#828282]">1k</text>
-                    <text x="12" y="214" class="text-[10px] fill-[#828282]">0</text>
+                    <text x="5" y="44" class="text-[10px] fill-[#828282]">{{ $yLabels[0] }}</text>
+                    <text x="5" y="97" class="text-[10px] fill-[#828282]">{{ $yLabels[1] }}</text>
+                    <text x="5" y="150" class="text-[10px] fill-[#828282]">{{ $yLabels[2] }}</text>
+                    <text x="12" y="204" class="text-[10px] fill-[#828282]">{{ $yLabels[3] }}</text>
 
                     <!-- LMS Enrollments (Calm Sky Blue / Teal) Area & Line -->
-                    <!-- Points: (60,165), (160,140), (260,115), (360,85), (460,55), (560,35), (660,20) -->
-                    <polygon points="60,165 160,140 260,115 360,85 460,55 560,35 660,20 660,210 60,210" fill="url(#tealGradient)" />
+                    <polygon points="{{ $lmsPolygon }}" fill="url(#tealGradient)" />
                     <polyline 
                         fill="none" 
                         stroke="#0ea5e9" 
                         stroke-width="3" 
                         stroke-linecap="round" 
                         stroke-linejoin="round"
-                        points="60,165 160,140 260,115 360,85 460,55 560,35 660,20" 
+                        points="{{ $lmsPoints }}" 
                     />
 
                     <!-- Marketplace Orders (Solid Blue) Area & Line -->
-                    <!-- Points: (60,195), (160,185), (260,175), (360,165), (460,150), (560,135), (660,120) -->
-                    <polygon points="60,195 160,185 260,175 360,165 460,150 560,135 660,120 660,210 60,210" fill="url(#blueGradient)" />
+                    <polygon points="{{ $marketplacePolygon }}" fill="url(#blueGradient)" />
                     <polyline 
                         fill="none" 
                         stroke="#1a68f0" 
                         stroke-width="3" 
                         stroke-linecap="round" 
                         stroke-linejoin="round"
-                        points="60,195 160,185 260,175 360,165 460,150 560,135 660,120" 
+                        points="{{ $marketplacePoints }}" 
                     />
 
                     <!-- Interactive Data Points (Dots on lines) -->
                     <!-- LMS Dots -->
-                    <circle cx="60" cy="165" r="4" fill="#0ea5e9" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="160" cy="140" r="4" fill="#0ea5e9" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="260" cy="115" r="4" fill="#0ea5e9" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="360" cy="85" r="4" fill="#0ea5e9" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="460" cy="55" r="4" fill="#0ea5e9" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="560" cy="35" r="4" fill="#0ea5e9" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="660" cy="20" r="5" fill="#0ea5e9" class="stroke-white dark:stroke-zinc-900 shadow" stroke-width="2.5" />
+                    @foreach($lmsDots as $dot)
+                        <circle cx="{{ $dot['x'] }}" cy="{{ $dot['y'] }}" r="4" fill="#0ea5e9" class="stroke-white dark:stroke-zinc-900 transition-all hover:r-6 cursor-pointer" stroke-width="2">
+                            <title>{{ $dot['month'] }}: {{ number_format($dot['val']) }} Pendaftaran LMS</title>
+                        </circle>
+                    @endforeach
 
                     <!-- Marketplace Dots -->
-                    <circle cx="60" cy="195" r="4" fill="#1a68f0" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="160" cy="185" r="4" fill="#1a68f0" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="260" cy="175" r="4" fill="#1a68f0" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="360" cy="165" r="4" fill="#1a68f0" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="460" cy="150" r="4" fill="#1a68f0" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="560" cy="135" r="4" fill="#1a68f0" class="stroke-white dark:stroke-zinc-900" stroke-width="2" />
-                    <circle cx="660" cy="120" r="5" fill="#1a68f0" class="stroke-white dark:stroke-zinc-900 shadow" stroke-width="2.5" />
+                    @foreach($marketplaceDots as $dot)
+                        <circle cx="{{ $dot['x'] }}" cy="{{ $dot['y'] }}" r="4" fill="#1a68f0" class="stroke-white dark:stroke-zinc-900 transition-all hover:r-6 cursor-pointer" stroke-width="2">
+                            <title>{{ $dot['month'] }}: {{ number_format($dot['val']) }} Pesanan Marketplace</title>
+                        </circle>
+                    @endforeach
                 </svg>
 
                 <!-- Month Labels on Bottom Axis -->
@@ -229,15 +223,13 @@
                 <svg viewBox="0 0 160 160" class="w-44 h-44 -rotate-90 transform">
                     <!-- Background Circle -->
                     <circle cx="80" cy="80" r="60" stroke="#f1f5f9" stroke-width="18" fill="transparent" class="dark:stroke-zinc-800" />
-                    <!-- Technicians (Solid Blue: ~90%) -->
-                    <circle cx="80" cy="80" r="60" stroke="#1a68f0" stroke-width="18" fill="transparent"
-                            stroke-dasharray="340 377" stroke-dashoffset="0" stroke-linecap="round" />
-                    <!-- Sponsors (Sky Blue: ~7%) -->
-                    <circle cx="80" cy="80" r="60" stroke="#0ea5e9" stroke-width="18" fill="transparent"
-                            stroke-dasharray="26 377" stroke-dashoffset="-342" stroke-linecap="round" />
-                    <!-- Admins (Slate: ~3%) -->
-                    <circle cx="80" cy="80" r="60" stroke="#64748b" stroke-width="18" fill="transparent"
-                            stroke-dasharray="12 377" stroke-dashoffset="-370" stroke-linecap="round" />
+                    
+                    @foreach ($demographics as $d)
+                        @if($d['count'] > 0)
+                            <circle cx="80" cy="80" r="60" stroke="{{ $d['color'] }}" stroke-width="18" fill="transparent"
+                                    stroke-dasharray="{{ $d['dasharray'] }}" stroke-dashoffset="{{ $d['dashoffset'] }}" stroke-linecap="round" />
+                        @endif
+                    @endforeach
                 </svg>
 
                 <!-- Center Metric Text -->

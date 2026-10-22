@@ -39,25 +39,28 @@ new class extends Component
         $this->loadNotifications();
     }
 
-    public function markAsRead($id)
+    public function openNotification($id)
     {
-        $service = app(AdminNotificationService::class);
-        $service->markAsRead($id, auth()->id());
-        $this->loadNotifications();
+        $notif = AdminNotification::find($id);
+        if ($notif) {
+            $notif->markAsRead();
+            $this->loadNotifications();
+
+            if (!empty($notif->deep_link)) {
+                return $this->redirect($notif->deep_link, navigate: true);
+            }
+        }
     }
 
-    public function markAllAsRead()
+    public function deleteNotification($id)
     {
-        AdminNotification::where('is_read', false)->update([
-            'is_read' => true,
-            'read_at' => now(),
-        ]);
+        AdminNotification::where('id', $id)->delete();
         $this->loadNotifications();
     }
 };
 ?>
 
-<div class="relative" x-data="{ open: false }">
+<div class="relative" x-data="{ open: false }" wire:poll.15s="loadNotifications">
     <!-- Bell Button -->
     <button 
         type="button" 
@@ -132,8 +135,8 @@ new class extends Component
         <div class="max-h-[360px] overflow-y-auto divide-y divide-slate-100 dark:divide-[#3F3F46]/60">
             @forelse($notifications as $notif)
                 <div 
-                    class="p-3.5 hover:bg-slate-50/80 dark:hover:bg-[#333338]/60 transition-colors flex items-start gap-3 cursor-pointer {{ !$notif['is_read'] ? 'bg-blue-50/30 dark:bg-blue-950/20' : '' }}"
-                    wire:click="markAsRead({{ $notif['id'] }})"
+                    class="p-3.5 hover:bg-slate-50/80 dark:hover:bg-[#333338]/60 transition-colors flex items-start gap-3 cursor-pointer group {{ !$notif['is_read'] ? 'bg-blue-50/30 dark:bg-blue-950/20' : '' }}"
+                    wire:click="openNotification({{ $notif['id'] }})"
                 >
                     <!-- Icon based on type -->
                     <div class="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs {{ !$notif['is_read'] ? 'bg-blue-100 text-[#1a68f0] dark:bg-blue-950 dark:text-blue-300' : 'bg-slate-100 text-slate-500 dark:bg-zinc-800 dark:text-zinc-400' }}">
@@ -143,8 +146,12 @@ new class extends Component
                             <i class="fas fa-bullhorn"></i>
                         @elseif(str_contains($notif['type'], 'payment'))
                             <i class="fas fa-wallet"></i>
+                        @elseif(str_contains($notif['type'], 'sponsor'))
+                            <i class="fas fa-handshake"></i>
+                        @elseif(str_contains($notif['type'], 'push_notification'))
+                            <i class="fas fa-paper-plane"></i>
                         @else
-                            <i class="fas fa-info-circle"></i>
+                            <i class="fas fa-bell"></i>
                         @endif
                     </div>
 
@@ -153,9 +160,19 @@ new class extends Component
                             <p class="text-xs font-bold text-[#212121] dark:text-[#F3F4F6] line-clamp-1 leading-snug">
                                 {{ $notif['title'] }}
                             </p>
-                            @if(!$notif['is_read'])
-                                <span class="w-2 h-2 rounded-full bg-[#1a68f0] shrink-0 mt-1"></span>
-                            @endif
+                            <div class="flex items-center gap-1 shrink-0">
+                                @if(!$notif['is_read'])
+                                    <span class="w-2 h-2 rounded-full bg-[#1a68f0]"></span>
+                                @endif
+                                <button 
+                                    type="button" 
+                                    wire:click.stop="deleteNotification({{ $notif['id'] }})"
+                                    class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-opacity p-0.5 cursor-pointer"
+                                    title="Hapus notifikasi"
+                                >
+                                    <i class="fas fa-trash text-[10px]"></i>
+                                </button>
+                            </div>
                         </div>
                         @if(!empty($notif['body']))
                             <p class="text-[11px] text-slate-500 dark:text-[#9CA3AF] mt-0.5 line-clamp-2 leading-relaxed">

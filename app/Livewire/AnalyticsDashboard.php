@@ -66,8 +66,8 @@ class AnalyticsDashboard extends Component
             $last7Months->push([
                 'month' => $date->format('M'),
                 'year' => $date->format('Y'),
-                'start' => $date->startOfMonth()->toDateString(),
-                'end' => $date->endOfMonth()->toDateString(),
+                'start' => $date->copy()->startOfMonth()->toDateTimeString(),
+                'end' => $date->copy()->endOfMonth()->toDateTimeString(),
             ]);
         }
 
@@ -76,40 +76,102 @@ class AnalyticsDashboard extends Component
         $lmsTrend = [];
         
         foreach ($last7Months as $period) {
-            $marketplaceTrend[] = (int) SponsorProduct::whereBetween('created_at', [$period['start'], $period['end']])
-                ->sum('sold_count');
+            // Marketplace: jumlah produk terjual yang dibuat pada periode ini
+            $sold = (int) SponsorProduct::whereBetween('created_at', [$period['start'], $period['end']])->sum('sold_count');
+            $marketplaceTrend[] = $sold;
             
+            // LMS: pendaftaran materi / siswa aktif yang dibuat pada periode ini
             $entitlementsCount = (int) Entitlement::whereBetween('created_at', [$period['start'], $period['end']])->count();
             if ($entitlementsCount === 0) {
-                $entitlementsCount = (int) User::whereBetween('created_at', [$period['start'], $period['end']])->count();
+                $entitlementsCount = (int) User::whereIn('role', ['user', 'technician', 'siswa', 'member'])
+                    ->whereBetween('created_at', [$period['start'], $period['end']])
+                    ->count();
             }
             $lmsTrend[] = $entitlementsCount;
         }
+
+        // Hitung batas maksimum dan skala SVG untuk Chart Tren
+        $maxRaw = max(array_merge($marketplaceTrend, $lmsTrend));
+        $chartMaxVal = $maxRaw > 0 ? (int) ceil($maxRaw * 1.25) : 10;
+        if ($chartMaxVal < 10) {
+            $chartMaxVal = 10;
+        }
+
+        $yLabels = [
+            $chartMaxVal >= 1000 ? round($chartMaxVal / 1000, 1) . 'k' : $chartMaxVal,
+            $chartMaxVal >= 1000 ? round(($chartMaxVal * 0.66) / 1000, 1) . 'k' : round($chartMaxVal * 0.66),
+            $chartMaxVal >= 1000 ? round(($chartMaxVal * 0.33) / 1000, 1) . 'k' : round($chartMaxVal * 0.33),
+            '0',
+        ];
+
+        // Hitung koordinat (x, y) garis SVG secara dinamis
+        $marketplacePointsArr = [];
+        $marketplaceDots = [];
+        $lmsPointsArr = [];
+        $lmsDots = [];
+
+        foreach ($trendMonths as $idx => $mName) {
+            $x = 60 + ($idx * 100);
+            
+            // Marketplace coordinate
+            $mVal = $marketplaceTrend[$idx] ?? 0;
+            $mY = 200 - (int) round(($mVal / $chartMaxVal) * 160);
+            $marketplacePointsArr[] = "{$x},{$mY}";
+            $marketplaceDots[] = ['x' => $x, 'y' => $mY, 'val' => $mVal, 'month' => $mName];
+
+            // LMS coordinate
+            $lVal = $lmsTrend[$idx] ?? 0;
+            $lY = 200 - (int) round(($lVal / $chartMaxVal) * 160);
+            $lmsPointsArr[] = "{$x},{$lY}";
+            $lmsDots[] = ['x' => $x, 'y' => $lY, 'val' => $lVal, 'month' => $mName];
+        }
+
+        $marketplacePoints = implode(' ', $marketplacePointsArr);
+        $marketplacePolygon = "60," . (200 - (int)round((($marketplaceTrend[0] ?? 0) / $chartMaxVal) * 160)) . " " . $marketplacePoints . " 660,200 60,200";
+
+        $lmsPoints = implode(' ', $lmsPointsArr);
+        $lmsPolygon = "60," . (200 - (int)round((($lmsTrend[0] ?? 0) / $chartMaxVal) * 160)) . " " . $lmsPoints . " 660,200 60,200";
 
         // 3. User Demographics (Data Aktual Pengguna)
         $techniciansCount = User::whereIn('role', ['user', 'technician', 'siswa', 'member'])->count();
         $sponsorsCount = User::where('role', 'sponsor')->count();
         $adminsCount = User::where('role', 'super_admin')->count();
         
-        $totalDemoUsers = max(1, $techniciansCount + $sponsorsCount + $adminsCount);
+        $totalDemoUsers = $techniciansCount + $sponsorsCount + $adminsCount;
+        $circumference = 377; // 2 * pi * 60 approx 376.99
+
+        $techPct = $totalDemoUsers > 0 ? round(($techniciansCount / $totalDemoUsers) * 100, 1) : 0;
+        $sponPct = $totalDemoUsers > 0 ? round(($sponsorsCount / $totalDemoUsers) * 100, 1) : 0;
+        $admPct  = $totalDemoUsers > 0 ? round(($adminsCount / $totalDemoUsers) * 100, 1) : 0;
+
+        $techLen = $totalDemoUsers > 0 ? round(($techniciansCount / $totalDemoUsers) * $circumference, 1) : 0;
+        $sponLen = $totalDemoUsers > 0 ? round(($sponsorsCount / $totalDemoUsers) * $circumference, 1) : 0;
+        $admLen  = $totalDemoUsers > 0 ? round(($adminsCount / $totalDemoUsers) * $circumference, 1) : 0;
+
         $demographics = [
             'technicians' => [
                 'label' => 'Teknisi / Siswa',
                 'count' => $techniciansCount,
-                'pct' => $totalDemoUsers > 0 ? round(($techniciansCount / $totalDemoUsers) * 100, 1) : 0,
+                'pct' => $techPct,
                 'color' => '#1a68f0',
+                'dasharray' => "{$techLen} {$circumference}",
+                'dashoffset' => 0,
             ],
             'sponsors' => [
                 'label' => 'Mitra Sponsor',
                 'count' => $sponsorsCount,
-                'pct' => $totalDemoUsers > 0 ? round(($sponsorsCount / $totalDemoUsers) * 100, 1) : 0,
+                'pct' => $sponPct,
                 'color' => '#0ea5e9',
+                'dasharray' => "{$sponLen} {$circumference}",
+                'dashoffset' => -$techLen,
             ],
             'admins' => [
                 'label' => 'Administrator',
                 'count' => $adminsCount,
-                'pct' => $totalDemoUsers > 0 ? round(($adminsCount / $totalDemoUsers) * 100, 1) : 0,
+                'pct' => $admPct,
                 'color' => '#64748b',
+                'dasharray' => "{$admLen} {$circumference}",
+                'dashoffset' => -($techLen + $sponLen),
             ],
         ];
 
@@ -151,6 +213,13 @@ class AnalyticsDashboard extends Component
             'trendMonths' => $trendMonths,
             'marketplaceTrend' => $marketplaceTrend,
             'lmsTrend' => $lmsTrend,
+            'yLabels' => $yLabels,
+            'marketplacePoints' => $marketplacePoints,
+            'marketplacePolygon' => $marketplacePolygon,
+            'marketplaceDots' => $marketplaceDots,
+            'lmsPoints' => $lmsPoints,
+            'lmsPolygon' => $lmsPolygon,
+            'lmsDots' => $lmsDots,
             'demographics' => $demographics,
             'totalDemoUsers' => $totalDemoUsers,
             'topCourses' => $topCourses,
