@@ -603,58 +603,53 @@ new class extends Component
 <div class="space-y-6">
     <!-- Unified Action/Tab Bar: 4 Inline Items -->
     <div class="border-b border-slate-200 dark:border-zinc-800 -mt-2">
-            <!-- Tab items on the left -->
-            <div class="flex items-center gap-1 sm:gap-2">
-                <!-- 1. DAFTAR SPONSOR -->
-                <button 
-                    type="button"
-                    wire:click="$set('activeTab', 'sponsors')" 
-                    class="inline-flex items-center gap-2 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer {{ $activeTab === 'sponsors' ? 'border-[#1a68f0] text-[#1a68f0] dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200' }}"
-                >
-                    <span>DAFTAR SPONSOR</span>
-                    <span class="text-[11px] px-2 py-0.5 rounded-full font-semibold {{ $activeTab === 'sponsors' ? 'bg-blue-50 text-[#1a68f0] dark:bg-blue-950/50 dark:text-blue-300' : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400' }}">
-                        {{ count($this->sponsors) }}
-                    </span>
-                </button>
+        <nav class="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
+            <!-- 1. DAFTAR SPONSOR (Active tab) -->
+            <button 
+                type="button"
+                wire:click="$set('activeTab', 'sponsors')" 
+                class="inline-flex items-center gap-2 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer {{ $activeTab === 'sponsors' ? 'border-[#1a68f0] text-[#1a68f0] dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200' }}"
+            >
+                <span>DAFTAR SPONSOR</span>
+                <span class="text-[11px] px-2 py-0.5 rounded-full font-semibold {{ $activeTab === 'sponsors' ? 'bg-blue-50 text-[#1a68f0] dark:bg-blue-950/50 dark:text-blue-300' : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400' }}">
+                    {{ count($this->sponsors) }}
+                </span>
+            </button>
 
-                <!-- 2. KELOLA BENEFIT -->
-                <button 
-                    type="button"
-                    wire:click="$set('activeTab', 'matrix')" 
-                    class="inline-flex items-center gap-2 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer {{ $activeTab === 'matrix' ? 'border-[#1a68f0] text-[#1a68f0] dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200' }}"
-                >
-                    <span>KELOLA BENEFIT</span>
-                </button>
-            </div>
+            <!-- 2. KELOLA BENEFIT -->
+            <button 
+                type="button"
+                wire:click="$set('activeTab', 'matrix')" 
+                class="inline-flex items-center gap-2 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer {{ $activeTab === 'matrix' ? 'border-[#1a68f0] text-[#1a68f0] dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200' }}"
+            >
+                <span>KELOLA BENEFIT</span>
+            </button>
 
-            <!-- Action buttons on the right -->
-            <div class="flex items-center gap-2 ml-auto pb-2 sm:pb-0">
-                <!-- 3. TAMBAH TIER -->
-                <button 
-                    type="button"
-                    wire:click="openTierModal" 
-                    class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600 transition-all shadow-xs cursor-pointer active:scale-95"
-                    title="Tambah tingkatan tier sponsor baru"
-                >
-                    <svg class="w-3.5 h-3.5 text-[#1a68f0]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    <span>TAMBAH TIER</span>
-                </button>
+            <!-- 3. TAMBAH TIER -->
+            <button 
+                type="button"
+                wire:click="openTierModal" 
+                class="inline-flex items-center gap-1.5 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 hover:text-[#1a68f0] dark:text-zinc-400 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                title="Tambah atau kelola tingkatan tier sponsor"
+            >
+                <svg class="w-4 h-4 text-[#1a68f0]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span>TAMBAH TIER</span>
+            </button>
 
-                <!-- 4. TAMBAH SPONSOR BARU -->
-                <button 
-                    type="button"
-                    wire:click="openCreateModal" 
-                    class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white transition-all shadow-xs cursor-pointer active:scale-95"
-                    title="Daftarkan mitra sponsor baru"
-                >
-                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                    <span>TAMBAH SPONSOR</span>
-                </button>
-            </div>
+            <!-- 4. TAMBAH SPONSOR BARU -->
+            <button 
+                type="button"
+                wire:click="openCreateModal" 
+                class="inline-flex items-center gap-1.5 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 hover:text-[#1a68f0] dark:text-zinc-400 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                title="Daftarkan mitra sponsor baru"
+            >
+                <svg class="w-4 h-4 text-[#1a68f0]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                <span>TAMBAH SPONSOR BARU</span>
+            </button>
         </nav>
     </div>
 
