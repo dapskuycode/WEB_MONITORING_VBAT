@@ -349,8 +349,49 @@ new class extends Component
         $this->existingHeaderImagePath = null;
     }
 
+    protected function isValidUploadedFile($file): bool
+    {
+        if (!$file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+            return false;
+        }
+        try {
+            $realPath = $file->getRealPath();
+            return $file->exists() && !empty($realPath) && is_file($realPath) && !is_dir($realPath);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function updatedLogo()
+    {
+        if ($this->logo && !$this->isValidUploadedFile($this->logo)) {
+            $this->logo = null;
+            $this->addError('logo', 'Berkas logo gagal diproses oleh server. Pastikan ukuran dan format berkas sesuai.');
+        }
+    }
+
+    public function updatedHeaderImage()
+    {
+        if ($this->headerImage && !$this->isValidUploadedFile($this->headerImage)) {
+            $this->headerImage = null;
+            $this->addError('headerImage', 'Berkas gambar header gagal diproses oleh server. Pastikan ukuran dan format berkas sesuai.');
+        }
+    }
+
     public function save()
     {
+        if ($this->logo && !$this->isValidUploadedFile($this->logo)) {
+            $this->logo = null;
+            $this->addError('logo', 'Berkas logo tidak valid atau gagal terunggah ke server.');
+            return;
+        }
+
+        if ($this->headerImage && !$this->isValidUploadedFile($this->headerImage)) {
+            $this->headerImage = null;
+            $this->addError('headerImage', 'Berkas gambar header tidak valid atau gagal terunggah ke server.');
+            return;
+        }
+
         $this->validate([
             'name' => 'required|string|max:255',
             'tier' => 'required|in:kontribusi,bronze,silver,gold,platinum,diamond',

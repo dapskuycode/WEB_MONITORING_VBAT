@@ -67,8 +67,36 @@ new class extends Component
     }
 
     /** WR-02: unggah gambar header halaman sponsor. */
+    protected function isValidUploadedFile($file): bool
+    {
+        if (!$file instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile) {
+            return false;
+        }
+        try {
+            $realPath = $file->getRealPath();
+            return $file->exists() && !empty($realPath) && is_file($realPath) && !is_dir($realPath);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    public function updatedHeaderImage()
+    {
+        if ($this->headerImage && !$this->isValidUploadedFile($this->headerImage)) {
+            $this->headerImage = null;
+            $this->addError('headerImage', 'Berkas gambar header gagal diproses oleh server.');
+        }
+    }
+
+    /** WR-02: unggah gambar header halaman sponsor. */
     public function saveHeaderImage()
     {
+        if (!$this->headerImage || !$this->isValidUploadedFile($this->headerImage)) {
+            $this->headerImage = null;
+            $this->addError('headerImage', 'Berkas gambar header tidak valid atau gagal terunggah ke server.');
+            return;
+        }
+
         $this->validate([
             'headerImage' => 'required|image|mimes:jpeg,png,jpg,webp|max:4096',
         ], [
@@ -92,6 +120,12 @@ new class extends Component
 
     public function updatedLogo()
     {
+        if ($this->logo && !$this->isValidUploadedFile($this->logo)) {
+            $this->logo = null;
+            $this->addError('logo', 'Berkas logo gagal diproses oleh server.');
+            return;
+        }
+
         $this->validate([
             'logo' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
         ], [
@@ -103,6 +137,12 @@ new class extends Component
 
     public function saveLogo()
     {
+        if (!$this->logo || !$this->isValidUploadedFile($this->logo)) {
+            $this->logo = null;
+            $this->addError('logo', 'Berkas logo tidak valid atau gagal terunggah ke server.');
+            return;
+        }
+
         $this->validate([
             'logo' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
         ], [
