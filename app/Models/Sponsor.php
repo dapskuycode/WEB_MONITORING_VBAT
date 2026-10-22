@@ -74,6 +74,7 @@ class Sponsor extends Model
 
     protected $appends = [
         'logo_url',
+        'header_image_url_full',
     ];
 
     public function getLogoUrlAttribute(): ?string
@@ -86,7 +87,28 @@ class Sponsor extends Model
             return $this->logo_path;
         }
 
-        return url('storage/' . ltrim($this->logo_path, '/'));
+        if (str_starts_with($this->logo_path, 'assets/')) {
+            return asset($this->logo_path);
+        }
+
+        return asset('storage/' . ltrim($this->logo_path, '/'));
+    }
+
+    public function getHeaderImageUrlFullAttribute(): ?string
+    {
+        if (!$this->header_image_url) {
+            return null;
+        }
+
+        if (str_starts_with($this->header_image_url, 'http://') || str_starts_with($this->header_image_url, 'https://')) {
+            return $this->header_image_url;
+        }
+
+        if (str_starts_with($this->header_image_url, 'assets/')) {
+            return asset($this->header_image_url);
+        }
+
+        return asset('storage/' . ltrim($this->header_image_url, '/'));
     }
 
     /**
