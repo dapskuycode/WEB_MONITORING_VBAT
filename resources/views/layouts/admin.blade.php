@@ -137,6 +137,12 @@
                         <div 
                             x-data="{
                                 isDark: document.documentElement.classList.contains('dark'),
+                                init() {
+                                    this.isDark = document.documentElement.classList.contains('dark');
+                                    document.addEventListener('livewire:navigated', () => {
+                                        this.isDark = document.documentElement.classList.contains('dark');
+                                    });
+                                },
                                 toggle() {
                                     this.isDark = !this.isDark;
                                     if (this.isDark) {

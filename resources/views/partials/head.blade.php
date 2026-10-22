@@ -18,13 +18,18 @@
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 <script>
     (function () {
-        // Read saved theme from localStorage
-        const theme = localStorage.getItem('theme') || localStorage.getItem('flux.appearance');
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else if (theme === 'light') {
-            document.documentElement.classList.remove('dark');
+        function applyTheme() {
+            const savedTheme = localStorage.getItem('theme') || localStorage.getItem('flux.appearance');
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                // Default pertama kali membuka website adalah Light Mode jika belum pernah diubah
+                document.documentElement.classList.remove('dark');
+            }
         }
-        // First visit: use system preference (keep browser default)
+        applyTheme();
+        document.addEventListener('livewire:navigated', applyTheme);
     })();
 </script>
