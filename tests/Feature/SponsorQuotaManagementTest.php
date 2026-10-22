@@ -25,6 +25,9 @@ class SponsorQuotaManagementTest extends TestCase
     {
         parent::setUp();
         
+        // Force fresh tier_benefits - delete and reseed
+        \DB::table('tier_benefits')->delete();
+        
         // Seed tier benefits for quota calculations
         $this->seed(\Database\Seeders\SponsorTierSeeder::class);
         
@@ -124,9 +127,22 @@ class SponsorQuotaManagementTest extends TestCase
 
     public function test_multiple_tiers_have_different_quotas(): void
     {
+        // Force reload tier_benefits - other tests may have polluted cache
+        \DB::table('tier_benefits')->delete();
+        $this->seed(\Database\Seeders\SponsorTierSeeder::class);
+        \Cache::flush();
+        
+        // Clear model cache - force fresh DB query
+        SponsorTier::clearBootedModels();
+        
         $free = Sponsor::factory()->create(['tier' => 'free']);
         $bronze = Sponsor::factory()->create(['tier' => 'bronze']);
         $platinum = Sponsor::factory()->create(['tier' => 'platinum']);
+
+        // Force fresh load from DB
+        $free->refresh();
+        $bronze->refresh();
+        $platinum->refresh();
 
         $freeQuota = $free->getQuota('hero_slider');
         $bronzeQuota = $bronze->getQuota('hero_slider');

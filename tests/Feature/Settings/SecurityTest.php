@@ -40,8 +40,9 @@ class SecurityTest extends TestCase
 
         $response->assertSee('Passkey');
         $response->assertSee('Belum ada passkey');
-        $response->assertSee('Two-factor authentication');
-        $response->assertSee('Enable 2FA');
+        // 2FA disabled - only Passkey authentication shown
+        $response->assertDontSee('Two-factor authentication');
+        $response->assertDontSee('Enable 2FA');
     }
 
     public function test_security_settings_page_requires_password_confirmation_when_enabled(): void

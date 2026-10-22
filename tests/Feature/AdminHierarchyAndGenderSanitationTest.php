@@ -31,10 +31,10 @@ class AdminHierarchyAndGenderSanitationTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Dashboard Utama');
-        // Verify KPI cards on analytics dashboard
-        $response->assertSee('Total Tayangan Iklan');
-        $response->assertSee('Total Klik Sponsor');
-        $response->assertSee('Rata-rata CTR');
+        // Verify KPI cards on analytics dashboard (current metrics)
+        $response->assertSee('Total Pendapatan');
+        $response->assertSee('Transaksi Marketplace');
+        $response->assertSee('Peserta Kelas Aktif');
         // Pastikan tidak ada judul ganda versi lama
         $response->assertDontSee('Dashboard Analitik Super Admin & Owner');
     }
