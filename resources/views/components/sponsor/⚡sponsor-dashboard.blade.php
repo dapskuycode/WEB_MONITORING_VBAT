@@ -285,7 +285,10 @@ new class extends Component
             <div class="relative shrink-0">
                 <div class="w-16 h-16 rounded-[12px] bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden shadow-xs">
                     @if ($sponsor?->logo_url)
-                        <img src="{{ $sponsor->logo_url }}" alt="{{ $sponsor->name }}" class="w-full h-full object-contain p-1" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'text-xl font-extrabold text-[#1a68f0] tracking-wider uppercase\'>{{ strtoupper(substr($sponsor?->name ?? \'SP\', 0, 2)) }}</span>';">
+                        <img src="{{ $sponsor->logo_url }}" alt="{{ $sponsor->name }}" class="w-full h-full object-contain p-1" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');">
+                        <span class="hidden text-xl font-extrabold text-[#1a68f0] tracking-wider uppercase">
+                            {{ strtoupper(substr($sponsor?->name ?? 'SP', 0, 2)) }}
+                        </span>
                     @else
                         <span class="text-xl font-extrabold text-[#1a68f0] tracking-wider uppercase">
                             {{ strtoupper(substr($sponsor?->name ?? 'SP', 0, 2)) }}

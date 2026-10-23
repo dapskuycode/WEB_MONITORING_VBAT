@@ -85,24 +85,24 @@ new #[Layout('layouts.admin')] #[Title('Pengaturan Profil')] class extends Compo
     ])
 
     <!-- Settings Navigation Tabs -->
-    <div class="flex gap-1 mb-6 border-b border-gray-200">
-        <a href="{{ route('profile.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('profile.edit') ? 'border-b-2 border-[#1a73e8] text-[#1a73e8]' : 'text-[#828282] hover:text-[#212121]' }}">
+    <div class="flex gap-1 mb-6 border-b border-gray-200 dark:border-zinc-800">
+        <a href="{{ route('profile.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('profile.edit') ? 'border-b-2 border-[#1a73e8] dark:border-blue-500 text-[#1a73e8] dark:text-blue-400 font-semibold' : 'text-[#828282] dark:text-zinc-400 hover:text-[#212121] dark:hover:text-zinc-200' }}">
             {{ __('Profil') }}
         </a>
-        <a href="{{ route('security.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('security.edit') ? 'border-b-2 border-[#1a73e8] text-[#1a73e8]' : 'text-[#828282] hover:text-[#212121]' }}">
+        <a href="{{ route('security.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('security.edit') ? 'border-b-2 border-[#1a73e8] dark:border-blue-500 text-[#1a73e8] dark:text-blue-400 font-semibold' : 'text-[#828282] dark:text-zinc-400 hover:text-[#212121] dark:hover:text-zinc-200' }}">
             {{ __('Keamanan') }}
         </a>
-        <a href="{{ route('appearance.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('appearance.edit') ? 'border-b-2 border-[#1a73e8] text-[#1a73e8]' : 'text-[#828282] hover:text-[#212121]' }}">
+        <a href="{{ route('appearance.edit') }}" wire:navigate class="px-4 py-3 text-sm font-medium {{ request()->routeIs('appearance.edit') ? 'border-b-2 border-[#1a73e8] dark:border-blue-500 text-[#1a73e8] dark:text-blue-400 font-semibold' : 'text-[#828282] dark:text-zinc-400 hover:text-[#212121] dark:hover:text-zinc-200' }}">
             {{ __('Tampilan') }}
         </a>
     </div>
 
-    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+    <div class="bg-white dark:bg-zinc-900 rounded-xl border border-slate-200/80 dark:border-zinc-800 shadow-sm overflow-hidden">
         <div class="px-6 py-6">
         <form wire:submit="updateProfileInformation" class="space-y-5">
             <!-- Name Input -->
             <div>
-                <label for="name" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Nama') }}</label>
+                <label for="name" class="block text-sm font-medium text-[#212121] dark:text-zinc-200 mb-2">{{ __('Nama') }}</label>
                 <input 
                     id="name"
                     wire:model="name" 
@@ -110,39 +110,39 @@ new #[Layout('layouts.admin')] #[Title('Pengaturan Profil')] class extends Compo
                     required 
                     autofocus 
                     autocomplete="name"
-                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] placeholder-[#828282] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
+                    class="w-full px-4 py-2.5 border border-gray-200 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-100 placeholder-[#828282] dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
                 >
                 @error('name')
-                    <p class="text-red-600 text-xs mt-1.5">{{ $message }}</p>
+                    <p class="text-red-600 dark:text-rose-400 text-xs mt-1.5">{{ $message }}</p>
                 @enderror
             </div>
 
             <!-- Email Input -->
             <div>
-                <label for="email" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Email') }}</label>
+                <label for="email" class="block text-sm font-medium text-[#212121] dark:text-zinc-200 mb-2">{{ __('Email') }}</label>
                 <input 
                     id="email"
                     wire:model="email" 
                     type="email"
                     required 
                     autocomplete="email"
-                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] placeholder-[#828282] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
+                    class="w-full px-4 py-2.5 border border-gray-200 dark:border-zinc-700 rounded-lg text-sm bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-100 placeholder-[#828282] dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
                 >
                 @error('email')
-                    <p class="text-red-600 text-xs mt-1.5">{{ $message }}</p>
+                    <p class="text-red-600 dark:text-rose-400 text-xs mt-1.5">{{ $message }}</p>
                 @enderror
 
                 @if ($this->hasUnverifiedEmail)
-                    <div class="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-                        <p class="text-sm text-[#212121]">
+                    <div class="mt-3 p-3 bg-yellow-50 dark:bg-amber-950/40 rounded-lg border border-yellow-100 dark:border-amber-900/60">
+                        <p class="text-sm text-[#212121] dark:text-amber-200">
                             {{ __('Alamat email Anda belum diverifikasi.') }}
-                            <button type="button" wire:click.prevent="resendVerificationNotification" class="text-[#1a73e8] font-medium hover:underline">
+                            <button type="button" wire:click.prevent="resendVerificationNotification" class="text-[#1a73e8] dark:text-blue-400 font-medium hover:underline">
                                 {{ __('Klik di sini untuk mengirim ulang email verifikasi.') }}
                             </button>
                         </p>
 
                         @if (session('status') === 'verification-link-sent')
-                            <p class="text-sm text-green-600 font-medium mt-2">
+                            <p class="text-sm text-green-600 dark:text-emerald-400 font-medium mt-2">
                                 {{ __('Tautan verifikasi baru telah dikirim ke alamat email Anda.') }}
                             </p>
                         @endif
@@ -154,7 +154,7 @@ new #[Layout('layouts.admin')] #[Title('Pengaturan Profil')] class extends Compo
             <div class="flex pt-4">
                 <button 
                     type="submit"
-                    class="px-6 py-2.5 bg-[#1a73e8] text-white rounded-lg font-medium text-sm transition-all hover:bg-[#1a5fc0] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:ring-offset-2"
+                    class="px-6 py-2.5 bg-[#1a73e8] hover:bg-[#1a5fc0] text-white rounded-lg font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:ring-offset-2"
                     data-test="update-profile-button"
                 >
                     {{ __('Simpan') }}

@@ -19,7 +19,7 @@
             @csrf
 
             <div>
-                <label for="password" class="block text-sm font-medium text-[#212121] mb-2">{{ __('Password') }}</label>
+                <label for="password" class="block text-sm font-medium text-[#212121] dark:text-zinc-200 mb-2">{{ __('Password') }}</label>
                 <input 
                     id="password"
                     name="password"
@@ -27,16 +27,16 @@
                     required
                     autocomplete="current-password"
                     placeholder="{{ __('Masukkan password Anda') }}"
-                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-[#212121] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
+                    class="w-full px-4 py-2.5 border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 rounded-lg text-sm text-[#212121] dark:text-zinc-100 placeholder-[#828282] dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:border-transparent transition-colors"
                 />
                 @error('password')
-                    <p class="text-red-600 text-xs mt-1.5">{{ $message }}</p>
+                    <p class="text-red-600 dark:text-rose-400 text-xs mt-1.5">{{ $message }}</p>
                 @enderror
             </div>
 
             <button 
                 type="submit"
-                class="w-full px-4 py-2.5 bg-[#1a73e8] text-white rounded-lg font-medium text-sm transition-all hover:bg-[#1a5fc0] focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:ring-offset-2"
+                class="w-full px-4 py-2.5 bg-[#1a73e8] hover:bg-[#1a5fc0] text-white rounded-lg font-medium text-sm transition-all focus:outline-none focus:ring-2 focus:ring-[#1a73e8] focus:ring-offset-2"
                 data-test="confirm-password-button"
             >
                 {{ __('Konfirmasi') }}
