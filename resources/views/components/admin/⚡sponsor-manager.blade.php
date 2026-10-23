@@ -2,6 +2,7 @@
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Livewire\Attributes\Url;
 use App\Models\Sponsor;
 use App\Models\SponsorTier;
 use App\Models\BenefitCategory;
@@ -50,6 +51,7 @@ new class extends Component
 
     // Detail modal state
     public $showDetailModal = false;
+    #[Url(as: 'sponsor_id')]
     public $detailSponsorId = null;
     public $detailActiveTab = 'profile'; // 'profile' | 'benefits' | 'products'
 
@@ -77,7 +79,7 @@ new class extends Component
     {
         $this->loadMatrix();
 
-        $targetSponsorId = request('sponsor_id') ?? request('detail') ?? request('id');
+        $targetSponsorId = $this->detailSponsorId ?: (request('sponsor_id') ?? request('detail') ?? request('id'));
         if ($targetSponsorId && Sponsor::where('id', $targetSponsorId)->exists()) {
             $this->openDetailModal((int) $targetSponsorId);
         }
@@ -303,6 +305,12 @@ new class extends Component
         $this->detailSponsorId = $id;
         $this->detailActiveTab = 'profile';
         $this->showDetailModal = true;
+    }
+
+    public function closeDetailModal()
+    {
+        $this->showDetailModal = false;
+        $this->detailSponsorId = null;
     }
 
     public function getDetailSponsorProperty()
@@ -1111,7 +1119,7 @@ new class extends Component
     <!-- MODAL DETAIL SPONSOR (Profil, Benefit, Produk) -->
     @if ($showDetailModal && $this->detailSponsor)
         @php $s = $this->detailSponsor; @endphp
-        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" wire:click.self="closeDetailModal">
             <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
                 <div class="flex items-center justify-between border-b pb-3 dark:border-zinc-800">
                     <div class="flex items-center gap-3">
@@ -1127,7 +1135,7 @@ new class extends Component
                             <span class="text-xs font-semibold text-zinc-500 uppercase">{{ $s->sponsorTier?->name ?? $s->tier }}</span>
                         </div>
                     </div>
-                    <button wire:click="$set('showDetailModal', false)" class="text-zinc-400 hover:text-zinc-600 font-bold">✕</button>
+                    <button wire:click="closeDetailModal" class="text-zinc-400 hover:text-zinc-600 font-bold cursor-pointer">✕</button>
                 </div>
 
                 <!-- Sub Tabs in Detail Modal -->
@@ -1205,7 +1213,7 @@ new class extends Component
                 @endif
 
                 <div class="flex justify-end pt-3 border-t dark:border-zinc-800">
-                    <button wire:click="$set('showDetailModal', false)" class="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
+                    <button wire:click="closeDetailModal" class="px-4 py-2 text-xs font-semibold rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition cursor-pointer">
                         Tutup
                     </button>
                 </div>
