@@ -44,36 +44,62 @@
             <div 
                 x-show="mobileOpen" 
                 x-cloak 
-                @click="closeMobile()" 
-                x-transition:enter="transition-opacity ease-linear duration-200"
-                x-transition:enter-start="opacity-0"
-                x-transition:enter-end="opacity-100"
-                x-transition:leave="transition-opacity ease-linear duration-200"
-                x-transition:leave-start="opacity-100"
-                x-transition:leave-end="opacity-0"
-                class="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
+                @click="mobileOpen = false" 
+                class="fixed inset-0 z-50 bg-black/60 lg:hidden"
+                style="display: none;"
                 aria-hidden="true"
             ></div>
 
-            <!-- Sidebar (Left) -->
+            <!-- Mobile Drawer (Off-Canvas) -->
             <aside 
-                class="fixed inset-y-0 left-0 z-50 lg:z-40 bg-white dark:bg-zinc-900 border-r border-slate-200/80 dark:border-zinc-800 transition-all duration-300 flex flex-col justify-between"
-                :class="{
-                    /* Mobile Drawer Behavior */
-                    'translate-x-0 w-72 shadow-2xl': mobileOpen,
-                    '-translate-x-full lg:translate-x-0': !mobileOpen,
-                    /* Desktop Collapsible Width */
-                    'lg:w-64': sidebarOpen,
-                    'lg:w-20': !sidebarOpen
-                }"
-                @mouseenter="if(!isMobile && !sidebarPinned) sidebarOpen = true"
-                @mouseleave="if(!isMobile && !sidebarPinned) sidebarOpen = false"
+                x-show="mobileOpen" 
+                x-cloak 
+                class="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white dark:bg-zinc-900 border-r border-slate-200/80 dark:border-zinc-800 flex flex-col justify-between shadow-2xl lg:hidden"
+                style="display: none;"
+            >
+                <!-- Top Brand Header with explicit Close (✕) Button -->
+                <div class="flex items-center justify-between p-4 border-b border-slate-100 dark:border-zinc-800 min-h-[73px]">
+                    <a href="{{ $homeUrl }}" wire:navigate @click="mobileOpen = false" class="flex items-center overflow-hidden select-none">
+                        <img src="{{ asset('assets/images/vbat_logo_shadow.png') }}" alt="VBAT Ponsel" class="h-8 w-auto object-contain shrink-0" />
+                    </a>
+
+                    <!-- Mobile Close Button (✕) -->
+                    <button 
+                        type="button" 
+                        @click="mobileOpen = false" 
+                        class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white bg-slate-100 dark:bg-zinc-800 hover:bg-slate-200 dark:hover:bg-zinc-700 transition cursor-pointer shrink-0"
+                        title="Tutup Menu"
+                        aria-label="Tutup Menu Navigasi"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Mobile Navigation List -->
+                <div class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4" @click="if($event.target.closest('a')) mobileOpen = false">
+                    @include('partials.sidebar-nav')
+                </div>
+
+                <!-- Bottom User Profile -->
+                <div class="p-3 border-t border-slate-100 dark:border-zinc-800">
+                    <x-desktop-user-menu />
+                </div>
+            </aside>
+
+            <!-- Desktop Sidebar (Left, only rendered on lg screens and up) -->
+            <aside 
+                class="hidden lg:flex fixed inset-y-0 left-0 z-40 bg-white dark:bg-zinc-900 border-r border-slate-200/80 dark:border-zinc-800 transition-all duration-300 flex-col justify-between"
+                :class="sidebarOpen ? 'w-64' : 'w-20'"
+                @mouseenter="if(!sidebarPinned) sidebarOpen = true"
+                @mouseleave="if(!sidebarPinned) sidebarOpen = false"
             >
                 <!-- Subtle Collapse / Minimize Icon floating on sidebar border edge (Desktop only) -->
                 <button 
                     type="button"
                     @click="toggleSidebar()"
-                    class="hidden lg:flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border-2 border-slate-300 dark:border-zinc-700 text-slate-600 hover:text-[#1a73e8] dark:text-zinc-400 dark:hover:text-blue-400 transition-all cursor-pointer focus:outline-none shadow-md z-50 absolute -right-4 top-6"
+                    class="flex items-center justify-center w-8 h-8 rounded-full bg-white dark:bg-zinc-800 border-2 border-slate-300 dark:border-zinc-700 text-slate-600 hover:text-[#1a73e8] dark:text-zinc-400 dark:hover:text-blue-400 transition-all cursor-pointer focus:outline-none shadow-md z-50 absolute -right-4 top-6"
                     @mouseenter="if(!sidebarPinned) sidebarOpen = true"
                     :title="sidebarOpen ? 'Perkecil Sidebar' : 'Perluas Sidebar'"
                     aria-label="Toggle collapse sidebar"
@@ -82,36 +108,20 @@
                 </button>
 
                 <!-- Top Brand Header -->
-                @php
-                    $homeUrl = auth()->user()?->isSponsor() ? route('sponsor.dashboard') : route('dashboard');
-                @endphp
-                <div class="relative flex items-center justify-between lg:justify-center p-4 border-b border-slate-100 dark:border-zinc-800/80 min-h-[73px] overflow-hidden">
-                    <!-- Expanded Brand / Mobile Brand: vbat_logo_shadow.png -->
-                    <a href="{{ $homeUrl }}" wire:navigate x-show="sidebarOpen || mobileOpen" x-transition.opacity class="flex items-center overflow-hidden select-none focus:outline-none flex-1">
+                <div class="relative flex items-center justify-center p-4 border-b border-slate-100 dark:border-zinc-800/80 min-h-[73px] overflow-hidden">
+                    <!-- Expanded Brand: vbat_logo_shadow.png -->
+                    <a href="{{ $homeUrl }}" wire:navigate x-show="sidebarOpen" x-transition.opacity class="flex items-center overflow-hidden select-none focus:outline-none w-full">
                         <img src="{{ asset('assets/images/vbat_logo_shadow.png') }}" alt="VBAT Ponsel" class="h-9 w-auto object-contain shrink-0" />
                     </a>
 
                     <!-- Collapsed Brand: vbat_logo_simple.png (Desktop only when minimized) -->
-                    <a href="{{ $homeUrl }}" wire:navigate x-show="!sidebarOpen && !mobileOpen" x-transition.opacity class="hidden lg:flex items-center justify-center w-full select-none focus:outline-none">
+                    <a href="{{ $homeUrl }}" wire:navigate x-show="!sidebarOpen" x-transition.opacity class="flex items-center justify-center w-full select-none focus:outline-none">
                         <img src="{{ asset('assets/images/vbat_logo_simple.png') }}" alt="VBAT" class="h-8 w-auto object-contain shrink-0" />
                     </a>
-
-                    <!-- Mobile Close Button (✕) -->
-                    <button 
-                        type="button" 
-                        @click="closeMobile()" 
-                        class="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer shrink-0 ml-2"
-                        title="Tutup Menu"
-                        aria-label="Tutup Menu"
-                    >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
                 </div>
 
                 <!-- Navigation List -->
-                <div class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4" @click="if(isMobile && $event.target.closest('a')) closeMobile()">
+                <div class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
                     @include('partials.sidebar-nav')
                 </div>
 
@@ -133,12 +143,12 @@
                         <!-- Hamburger Menu Button for Mobile/Tablet -->
                         <button 
                             type="button" 
-                            @click="toggleSidebar()" 
+                            @click="mobileOpen = true" 
                             class="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 transition cursor-pointer shrink-0 shadow-xs"
                             title="Buka Menu Navigasi"
                             aria-label="Toggle Sidebar Menu"
                         >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                             </svg>
                         </button>
