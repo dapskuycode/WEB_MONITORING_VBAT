@@ -76,6 +76,11 @@ new class extends Component
     public function mount()
     {
         $this->loadMatrix();
+
+        $targetSponsorId = request('sponsor_id') ?? request('detail') ?? request('id');
+        if ($targetSponsorId && Sponsor::where('id', $targetSponsorId)->exists()) {
+            $this->openDetailModal((int) $targetSponsorId);
+        }
     }
 
     /** TIER-01: buka form tier untuk tambah atau ubah. */
