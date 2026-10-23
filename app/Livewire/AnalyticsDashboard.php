@@ -225,8 +225,10 @@ class AnalyticsDashboard extends Component
             'topCourses' => $topCourses,
             'topProducts' => $topProducts,
         ])->layout('layouts.admin', [
-            'title' => 'Analitik Aplikasi - Overview',
-            'pageTitle' => 'Analitik Aplikasi - Overview',
+            'title' => 'Analitik Aplikasi',
+            'pageTitle' => 'Analitik Aplikasi',
+            'pageIcon' => 'fa-chart-line',
+            'pageDescription' => 'Pantau kinerja aplikasi, engagement user, dan performa sponsor secara real‑time.',
         ]);
     }
 }

@@ -228,21 +228,18 @@ new class extends Component
     <!-- Load SortableJS Library -->
     <script src="{{ asset('assets/js/sortable.min.js') }}"></script>
 
-    <!-- Header Halaman -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-700 pb-5">
+    <!-- Action Bar -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-700 pb-4">
         <div>
             <div class="flex items-center gap-3">
-                <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-                    <flux:icon name="sparkles" class="w-7 h-7 text-amber-500" />
-                    Katalog & Urutan Produk Best Deal
-                </h1>
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                    <flux:icon name="sparkles" class="w-4 h-4 text-amber-500 mr-1.5" />
                     {{ $dealProducts->count() }} Produk di Best Deal
                 </span>
+                <span class="text-xs text-zinc-500 dark:text-zinc-400">
+                    (Klik tahan &amp; geser kartu untuk mengubah urutan tampil di aplikasi)
+                </span>
             </div>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                Atur kartu barang yang tampil di baris Best Deal aplikasi ponsel. Anda dapat <strong>klik tahan kartu/gambar dan menggesernya langsung (Drag and Drop)</strong> untuk mengubah urutan tampil di aplikasi ponsel.
-            </p>
         </div>
 
         <!-- Action Buttons -->

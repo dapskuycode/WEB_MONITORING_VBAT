@@ -1,3 +1,11 @@
+@props([
+    'title' => null,
+    'pageTitle' => null,
+    'pageIcon' => null,
+    'pageDescription' => null,
+    'breadcrumb' => null,
+    'actions' => null,
+])
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
@@ -140,7 +148,7 @@
                 :class="sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'"
             >
                 <!-- Top Bar -->
-                <header class="sticky top-0 z-30 flex items-center justify-between min-h-16 py-2.5 px-4 sm:px-6 md:px-8 bg-[#F4F6F8]/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-slate-200/50 dark:border-zinc-800/50">
+                <header class="sticky top-0 z-30 flex items-center justify-between min-h-20 py-3 sm:py-4 px-4 sm:px-6 md:px-8 bg-[#F4F6F8]/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-slate-200/50 dark:border-zinc-800/50">
                     <!-- Left: Hamburger Button (Mobile) + Page Title with Icon & Description -->
                     <div class="flex items-center gap-3 sm:gap-4 min-w-0">
                         <!-- Hamburger Menu Button for Mobile/Tablet -->
@@ -156,33 +164,65 @@
                             </svg>
                         </button>
 
-                        <div class="flex items-center sm:items-start gap-2.5 sm:gap-3.5 min-w-0">
+                        <div class="flex items-start gap-3 sm:gap-4 min-w-0">
                             @php
-                                $currentPageIcon = $pageIcon ?? null;
-                                $currentPageTitle = $pageTitle ?? $title ?? 'Dashboard';
-                                $currentPageDescription = $pageDescription ?? '';
+                                $currentPageIcon = $pageIcon ?? $attributes->get('pageIcon') ?? $attributes->get('page-icon');
+                                $currentPageTitle = $pageTitle ?? $attributes->get('pageTitle') ?? $attributes->get('page-title') ?? $title ?? 'Dashboard';
+                                $currentPageDescription = $pageDescription ?? $attributes->get('pageDescription') ?? $attributes->get('page-description') ?? '';
                                 
-                                // Fallback untuk route-specific titles
-                                if (!isset($pageIcon) || !isset($pageDescription)) {
+                                // Route-specific fallbacks if not explicitly passed
+                                if (!$currentPageIcon || !$currentPageDescription) {
                                     if (request()->routeIs('admin.analytics')) {
                                         $currentPageIcon = $currentPageIcon ?? 'fa-chart-line';
                                         $currentPageTitle = $currentPageTitle ?? 'Analitik Aplikasi';
-                                        $currentPageDescription = $currentPageDescription ?? 'Pantau kinerja aplikasi, engagement user, dan performa sponsor secara real‑time.';
+                                        $currentPageDescription = $currentPageDescription ?: 'Pantau kinerja aplikasi, engagement user, dan performa sponsor secara real‑time.';
                                     } elseif (request()->routeIs('dashboard')) {
                                         $currentPageIcon = $currentPageIcon ?? 'fa-home';
                                         $currentPageTitle = $currentPageTitle ?? 'Dashboard Utama';
-                                        $currentPageDescription = $currentPageDescription ?? 'Ringkasan performa aplikasi dan aktivitas terkini.';
+                                        $currentPageDescription = $currentPageDescription ?: 'Ringkasan performa aplikasi dan aktivitas terkini.';
+                                    } elseif (request()->routeIs('admin.sponsors')) {
+                                        $currentPageIcon = $currentPageIcon ?? 'fa-handshake';
+                                        $currentPageTitle = $currentPageTitle ?? 'Manajemen Sponsor';
+                                        $currentPageDescription = $currentPageDescription ?: 'Kelola sponsor, verifikasi dokumen, dan kelola benefit tiap tier.';
+                                    } elseif (request()->routeIs('admin.products')) {
+                                        $currentPageIcon = $currentPageIcon ?? 'fa-cube';
+                                        $currentPageTitle = $currentPageTitle ?? 'Manajemen Katalog Produk';
+                                        $currentPageDescription = $currentPageDescription ?: 'Kelola produk sponsor, harga, stok, kategori, dan ketersediaan.';
+                                    } elseif (request()->routeIs('admin.campaigns')) {
+                                        $currentPageIcon = $currentPageIcon ?? 'fa-bullhorn';
+                                        $currentPageTitle = $currentPageTitle ?? 'Moderasi Kampanye';
+                                        $currentPageDescription = $currentPageDescription ?: 'Review dan kelola kampanye promosi dari sponsor sebelum dipublikasikan.';
+                                    } elseif (request()->routeIs('admin.events')) {
+                                        $currentPageIcon = $currentPageIcon ?? 'fa-calendar-alt';
+                                        $currentPageTitle = $currentPageTitle ?? 'Event & Diskon Shop';
+                                        $currentPageDescription = $currentPageDescription ?: 'Kelola event dan program diskon untuk toko teknisi dan pengguna.';
+                                    } elseif (request()->routeIs('admin.bulk-upload')) {
+                                        $currentPageIcon = $currentPageIcon ?? 'fa-cloud-upload-alt';
+                                        $currentPageTitle = $currentPageTitle ?? 'Bulk Upload Materi Kelas Video';
+                                        $currentPageDescription = $currentPageDescription ?: 'Unggah materi pembelajaran dalam jumlah banyak menggunakan template Excel atau CSV.';
+                                    } elseif (request()->routeIs('admin.notifications')) {
+                                        $currentPageIcon = $currentPageIcon ?? 'fa-bell';
+                                        $currentPageTitle = $currentPageTitle ?? 'Push Notification Manager (FCM)';
+                                        $currentPageDescription = $currentPageDescription ?: 'Kelola permintaan notifikasi sponsor dan kirim broadcast ke pengguna.';
+                                    } elseif (request()->routeIs('admin.users')) {
+                                        $currentPageIcon = $currentPageIcon ?? 'fa-users';
+                                        $currentPageTitle = $currentPageTitle ?? 'Daftar Akun Pengguna Terdaftar';
+                                        $currentPageDescription = $currentPageDescription ?: 'Kelola dan pantau seluruh akun pengguna yang terdaftar di ekosistem VBAT Ponsel (Siswa, Sponsor, Admin, dan Owner).';
+                                    } elseif (request()->routeIs('sponsor.dashboard')) {
+                                        $currentPageIcon = $currentPageIcon ?? 'fa-home';
+                                        $currentPageTitle = $currentPageTitle ?? 'Dashboard Sponsor';
+                                        $currentPageDescription = $currentPageDescription ?: 'Ringkasan pemakaian kuota promosi dan katalog produk resmi mitra.';
                                     }
                                 }
                             @endphp
                             
                             @if($currentPageIcon)
-                                <i class="fas {{ $currentPageIcon }} text-[#1a73e8] text-xl sm:text-2xl md:text-3xl mt-0.5 shrink-0"></i>
+                                <i class="fas {{ $currentPageIcon }} text-[#1a73e8] text-2xl sm:text-3xl md:text-4xl mt-1 shrink-0"></i>
                             @endif
                             <div class="min-w-0">
-                                <h1 class="text-base sm:text-xl md:text-[24px] font-bold text-[#212121] dark:text-white tracking-tight truncate leading-tight">{{ $currentPageTitle }}</h1>
+                                <h1 class="text-xl sm:text-2xl md:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight leading-tight">{{ $currentPageTitle }}</h1>
                                 @if($currentPageDescription)
-                                    <p class="hidden md:block text-xs text-[#828282] dark:text-zinc-400 mt-0.5 truncate max-w-xl">{{ $currentPageDescription }}</p>
+                                    <p class="text-xs sm:text-sm text-[#828282] dark:text-zinc-400 mt-1 sm:mt-1.5 leading-relaxed">{{ $currentPageDescription }}</p>
                                 @endif
                             </div>
                         </div>

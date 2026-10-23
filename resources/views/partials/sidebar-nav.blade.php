@@ -1,5 +1,5 @@
 <div class="flex flex-col gap-6 py-2">
-    @if(auth()->user()->isSponsor())
+    @if(auth()->user()?->isSponsor())
         {{-- SPONSOR MENU --}}
         <div>
             <p x-show="sidebarOpen" x-transition.opacity class="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-500 mb-2 truncate">
@@ -139,7 +139,7 @@
         </div>
     @endif
 
-    @if(!auth()->user()->isSponsor())
+    @if(!auth()->user()?->isSponsor())
         {{-- Group Manajemen --}}
     <div>
         <p x-show="sidebarOpen" x-transition.opacity class="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-zinc-400 mb-2 truncate">

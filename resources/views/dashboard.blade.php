@@ -44,7 +44,12 @@
         });
 @endphp
 
-<x-layouts::admin :title="__('Analitik Sponsor')">
+<x-layouts::admin 
+    :title="__('Dashboard Utama')"
+    pageIcon="fa-home"
+    pageTitle="Dashboard Utama"
+    pageDescription="Ringkasan performa aplikasi, analitik sponsor, dan aktivitas terkini."
+>
     <div class="flex flex-col gap-7 select-none">
         <!-- Top Summary Row: 3 Clean White Cards (Data Aktual Database) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">

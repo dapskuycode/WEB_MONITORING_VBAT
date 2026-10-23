@@ -77,19 +77,18 @@ new class extends Component
 ?>
 
 <div class="space-y-6">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-700 pb-5">
-        <div>
-            <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-                <svg class="w-7 h-7 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-                Push Notification Manager (FCM)
-            </h1>
-            <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-                Kirim pesan promosi sponsor & pengumuman penting langsung ke perangkat ponsel pengguna (Kirim Langsung atau Jadwalkan).
-            </p>
-        </div>
-        <button wire:click="openCreateModal" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition">
+    <!-- Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+        <span class="text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200/80 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 shadow-xs w-fit">
+            Total Riwayat: <span class="text-[#1a73e8] font-bold">{{ count($notifications) }}</span> Notifikasi
+        </span>
+        <button 
+            type="button" 
+            wire:click="openCreateModal" 
+            class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1a73e8] hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition cursor-pointer"
+        >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-            Kirim Notifikasi Baru
+            <span>Kirim Notifikasi Baru</span>
         </button>
     </div>
 
