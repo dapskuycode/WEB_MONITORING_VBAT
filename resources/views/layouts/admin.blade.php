@@ -39,6 +39,9 @@
               }
           }"
     >
+        @php
+            $homeUrl = auth()->user()?->isSponsor() ? route('sponsor.dashboard') : route('dashboard');
+        @endphp
         <div class="flex min-h-screen">
             <!-- Mobile Drawer Backdrop Overlay -->
             <div 
