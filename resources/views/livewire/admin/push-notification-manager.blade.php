@@ -12,24 +12,8 @@
         </div>
     @endif
 
-    <!-- Action Header (Title & Button Kirim Notifikasi Baru) -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <h2 class="text-lg font-bold text-[#212121] dark:text-[#F3F4F6]">Manajemen Push Notification</h2>
-            <p class="text-xs text-[#828282] dark:text-[#9CA3AF] mt-0.5">Kelola peninjauan notifikasi promosi sponsor dan buat pengumuman siaran resmi aplikasi.</p>
-        </div>
-        <button 
-            type="button" 
-            wire:click="openCreateModal" 
-            class="px-4 py-2.5 bg-[#1a68f0] hover:bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-colors flex items-center gap-2 self-start sm:self-auto cursor-pointer"
-        >
-            <i class="fas fa-plus"></i>
-            <span>Kirim Notifikasi Baru</span>
-        </button>
-    </div>
-
-    <!-- Tabbed Navigation -->
-    <div class="border-b border-slate-200 dark:border-[#3F3F46]">
+    <!-- Tabbed Navigation & Action Button -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-[#3F3F46] pb-2 sm:pb-0">
         <nav class="flex gap-6 sm:gap-8">
             <button 
                 type="button" 
@@ -58,6 +42,15 @@
                 @endif
             </button>
         </nav>
+
+        <button 
+            type="button" 
+            wire:click="openCreateModal" 
+            class="mb-2 sm:mb-2 px-4 py-2 bg-[#1a68f0] hover:bg-blue-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-xs transition-colors flex items-center gap-2 self-start sm:self-auto cursor-pointer shrink-0"
+        >
+            <i class="fas fa-plus"></i>
+            <span>Kirim Notifikasi Baru</span>
+        </button>
     </div>
 
     <!-- Table: Pending Approvals -->
