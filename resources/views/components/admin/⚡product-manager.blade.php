@@ -206,29 +206,37 @@ new class extends Component
 };
 ?>
 
-<div class="space-y-6 text-[#212121]">
+<div class="space-y-6 text-[#212121] dark:text-zinc-100">
     <!-- Search & Filter Bar with Upload Button -->
-    <div class="p-3.5 sm:p-4 bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-3">
+    <div class="p-3.5 sm:p-4 bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 w-full">
         <!-- Search Input with Magnifying Glass -->
-        <div class="relative flex-1">
-            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                </svg>
+        <div class="relative flex-1 w-full min-w-0 sm:min-w-[280px] md:min-w-[360px] lg:min-w-[420px]">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 dark:text-zinc-500">
+                <i class="fas fa-search text-sm"></i>
             </div>
             <input 
                 type="text" 
                 wire:model.live.debounce.250ms="search" 
-                placeholder="Cari nama part..." 
-                class="w-full pl-10 pr-4 py-2 text-sm text-[#212121] dark:text-zinc-100 placeholder-slate-400 bg-slate-50/70 dark:bg-zinc-800/60 rounded-lg border border-slate-200 dark:border-zinc-700 focus:outline-none focus:bg-white dark:focus:bg-zinc-800 focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 transition-all"
+                placeholder="Cari nama part, SKU, atau deskripsi produk..." 
+                class="w-full pl-10 pr-9 py-2 sm:py-2.5 text-xs sm:text-sm text-[#212121] dark:text-zinc-100 placeholder-slate-400 dark:placeholder-zinc-500 bg-slate-50/70 dark:bg-zinc-800/80 rounded-xl border border-slate-200 dark:border-zinc-700 focus:outline-none focus:bg-white dark:focus:bg-zinc-800 focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/15 transition-all shadow-2xs"
             >
+            @if(!empty($search))
+                <button 
+                    type="button" 
+                    wire:click="$set('search', '')" 
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 cursor-pointer"
+                    title="Hapus pencarian"
+                >
+                    <i class="fas fa-times-circle text-xs"></i>
+                </button>
+            @endif
         </div>
 
         <!-- Filter Sponsor + Upload Button -->
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full md:w-auto">
             <select 
                 wire:model.live="sponsorFilter" 
-                class="w-full sm:w-auto px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
+                class="w-full sm:w-auto px-3.5 py-2 sm:py-2.5 text-xs sm:text-sm font-medium rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/15 cursor-pointer shadow-2xs transition"
             >
                 <option value="">Filter: Semua Sponsor</option>
                 @foreach($sponsors as $sp)
@@ -239,11 +247,9 @@ new class extends Component
             <button 
                 type="button"
                 wire:click="openCreateModal" 
-                class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer shrink-0"
+                class="inline-flex items-center justify-center gap-2 px-4 py-2 sm:py-2.5 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl text-xs sm:text-sm font-semibold shadow-sm transition-colors cursor-pointer shrink-0"
             >
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
+                <i class="fas fa-plus text-xs"></i>
                 <span>Upload Produk Baru</span>
             </button>
         </div>
