@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Course;
 use App\Models\Lesson;
 use App\Models\LearningMaterial;
+use App\Services\ToastService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
@@ -90,17 +91,17 @@ class BulkUpload extends Component
                 ];
             }
 
-            session()->flash('message', 'Preview loaded: ' . count($this->preview) . ' rows.');
+            ToastService::info($this, 'Preview Dimuat', 'Berhasil memuat ' . count($this->preview) . ' baris data.');
         } catch (\Exception $e) {
             Log::error('Bulk upload preview error: ' . $e->getMessage());
-            session()->flash('error', 'Failed to read file: ' . $e->getMessage());
+            ToastService::error($this, 'Gagal Membaca File', $e->getMessage());
         }
     }
 
     public function importData()
     {
         if (empty($this->preview)) {
-            session()->flash('error', 'No preview data. Please upload and preview first.');
+            ToastService::warning($this, 'Tidak Ada Data', 'Silakan upload dan preview file terlebih dahulu.');
             return;
         }
 
@@ -157,11 +158,11 @@ class BulkUpload extends Component
             DB::commit();
             $this->importResult = compact('created', 'updated', 'skipped', 'errors');
             $this->preview = [];
-            session()->flash('message', "Import complete: $created created, $updated updated, $skipped skipped.");
+            ToastService::importComplete($this, $created, $updated, $skipped);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Bulk import error: ' . $e->getMessage());
-            session()->flash('error', 'Import failed: ' . $e->getMessage());
+            ToastService::importFailed($this, $e->getMessage());
         }
     }
 

@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use App\Services\ToastService;
 
 class ProfileFieldManager extends Component
 {
@@ -54,12 +55,12 @@ class ProfileFieldManager extends Component
     {
         // Placeholder — would save to DB
         $this->showFieldModal = false;
-        session()->flash('message', 'Profile field disimpan');
+        ToastService::saved($this, 'Profile field');
     }
 
     public function deleteField($id)
     {
-        session()->flash('message', 'Profile field dihapus');
+        ToastService::deleted($this, 'Profile field');
     }
 
     public function previewKta()

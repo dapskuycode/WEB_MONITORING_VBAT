@@ -10,6 +10,7 @@ use App\Models\TierBenefit;
 use App\Models\SponsorBenefitOverride;
 use App\Models\Province;
 use App\Models\City;
+use App\Services\ToastService;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Str;
@@ -132,7 +133,7 @@ class SponsorManager extends Component
             $sponsor = Sponsor::create($data);
         }
 
-        session()->flash('message', $this->selectedSponsorId ? 'Sponsor updated.' : 'Sponsor created.');
+        ToastService::success($this, $this->selectedSponsorId ? 'Sponsor Diperbarui' : 'Sponsor Dibuat', 'Data sponsor telah berhasil disimpan.');
         $this->resetSponsorForm();
     }
 
@@ -160,7 +161,7 @@ class SponsorManager extends Component
     public function deleteSponsor($id)
     {
         Sponsor::findOrFail($id)->delete();
-        session()->flash('message', 'Sponsor deleted.');
+        ToastService::deleted($this, 'Sponsor');
         $this->resetSponsorForm();
     }
 
@@ -199,7 +200,7 @@ class SponsorManager extends Component
             ['override_value' => $this->benefitOverrideValue ?: null]
         );
 
-        session()->flash('message', 'Benefit override updated.');
+        ToastService::saved($this, 'Benefit override');
         $this->selectedBenefitCategoryId = null;
         $this->benefitOverrideValue = '';
     }
@@ -236,7 +237,7 @@ class SponsorManager extends Component
             ? SponsorProduct::findOrFail($this->selectedProductId)->update($data)
             : SponsorProduct::create($data);
 
-        session()->flash('message', $this->selectedProductId ? 'Product updated.' : 'Product created.');
+        ToastService::success($this, $this->selectedProductId ? 'Produk Diperbarui' : 'Produk Dibuat', 'Data produk telah berhasil disimpan.');
         $this->resetProductForm();
     }
 
@@ -260,7 +261,7 @@ class SponsorManager extends Component
     public function deleteProduct($id)
     {
         SponsorProduct::findOrFail($id)->delete();
-        session()->flash('message', 'Product deleted.');
+        ToastService::deleted($this, 'Produk');
         $this->resetProductForm();
     }
 

@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\InfoContent;
 use App\Models\LegalContent;
+use App\Services\ToastService;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -69,13 +70,13 @@ class ContentManager extends Component
         );
 
         $this->showInfoModal = false;
-        session()->flash('message', 'Info content disimpan');
+        ToastService::saved($this, 'Info content');
     }
 
     public function deleteInfo($id)
     {
         InfoContent::find($id)->delete();
-        session()->flash('message', 'Info content dihapus');
+        ToastService::deleted($this, 'Info content');
     }
 
     public function openLegalModal($id = null)
@@ -110,7 +111,7 @@ class ContentManager extends Component
         ]);
 
         $this->showLegalModal = false;
-        session()->flash('message', 'Legal version baru disimpan');
+        ToastService::created($this, 'Legal version');
     }
 
     public function render()

@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin;
 
 use App\Models\User;
+use App\Services\ToastService;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -54,14 +55,14 @@ class UserManager extends Component
             'phone' => $this->phone,
         ]);
 
-        session()->flash('message', 'User berhasil diperbarui.');
+        ToastService::updated($this, 'User');
         $this->closeModal();
     }
 
     public function delete($id)
     {
         User::findOrFail($id)->delete();
-        session()->flash('message', 'User berhasil dihapus.');
+        ToastService::deleted($this, 'User');
     }
 
     public function render()

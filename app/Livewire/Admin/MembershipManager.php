@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Membership;
 use App\Models\User;
 use App\Services\MembershipService;
+use App\Services\ToastService;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -43,7 +44,7 @@ class MembershipManager extends Component
 
         $this->showIssueModal = false;
         $this->selectedUser = null;
-        session()->flash('message', 'KTA berhasil diterbitkan');
+        ToastService::success($this, 'KTA Berhasil Diterbitkan', 'Kartu Tanda Anggota telah berhasil diterbitkan.');
     }
 
     public function render()

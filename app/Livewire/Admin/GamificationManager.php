@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Badge;
 use App\Models\Achievement;
 use App\Models\Streak;
+use App\Services\ToastService;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -74,13 +75,13 @@ class GamificationManager extends Component
         );
 
         $this->showBadgeModal = false;
-        session()->flash('message', 'Badge disimpan');
+        ToastService::saved($this, 'Badge');
     }
 
     public function deleteBadge($id)
     {
         Badge::find($id)->delete();
-        session()->flash('message', 'Badge dihapus');
+        ToastService::deleted($this, 'Badge');
     }
 
     public function render()

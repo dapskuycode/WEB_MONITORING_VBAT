@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\PushNotification;
 use App\Models\Sponsor;
 use App\Services\AdminNotificationService;
+use App\Services\ToastService;
 use Livewire\Component;
 
 class PushNotificationManager extends Component
@@ -74,7 +75,7 @@ class PushNotificationManager extends Component
             targetId: $notif->id
         );
 
-        session()->flash('message', 'Notifikasi berhasil disimpan dan disiarkan ke database!');
+        ToastService::success($this, 'Notifikasi Berhasil Dikirim', 'Push notification telah berhasil disimpan dan disiarkan.');
         $this->showModal = false;
     }
 
@@ -96,7 +97,7 @@ class PushNotificationManager extends Component
             targetId: $notif->id
         );
 
-        session()->flash('message', "Notifikasi '{$notif->title}' berhasil disetujui dan disiarkan!");
+        ToastService::approved($this, "Notifikasi '{$notif->title}'");
     }
 
     public function reject($notificationId)
@@ -112,14 +113,14 @@ class PushNotificationManager extends Component
             targetId: $notif->id
         );
 
-        session()->flash('message', "Notifikasi '{$notif->title}' ditolak.");
+        ToastService::rejected($this, "Notifikasi '{$notif->title}'");
     }
 
     public function delete($notificationId)
     {
         $notif = PushNotification::findOrFail($notificationId);
         $notif->delete();
-        session()->flash('message', 'Notifikasi berhasil dihapus dari database.');
+        ToastService::deleted($this, 'Notifikasi');
     }
 
     public function render()

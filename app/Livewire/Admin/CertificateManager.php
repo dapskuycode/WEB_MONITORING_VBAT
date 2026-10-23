@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Certificate;
 use App\Models\User;
 use App\Services\CertificateService;
+use App\Services\ToastService;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -40,7 +41,7 @@ class CertificateManager extends Component
 
         $this->showIssueModal = false;
         $this->courseId = null;
-        session()->flash('message', 'Sertifikat berhasil diterbitkan: ' . $certificate->certificate_number);
+        ToastService::success($this, 'Sertifikat Berhasil Diterbitkan', 'Nomor: ' . $certificate->certificate_number);
     }
 
     public function openRevokeModal($certificateId)
@@ -59,7 +60,7 @@ class CertificateManager extends Component
 
             $this->showRevokeModal = false;
             $this->revokeReason = '';
-            session()->flash('message', 'Sertifikat berhasil dibatalkan');
+            ToastService::success($this, 'Sertifikat Dibatalkan', 'Sertifikat telah berhasil dibatalkan.');
         }
     }
 
