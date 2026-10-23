@@ -296,7 +296,7 @@ new class extends Component
     <!-- Events Table -->
     <div class="bg-white rounded-[12px] border border-slate-200/80 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="w-full min-w-[650px]">
                 <thead>
                     <tr class="bg-slate-50/70 border-b border-slate-200">
                         <th class="px-4 py-3.5 text-left text-xs font-bold text-[#212121] uppercase tracking-wide">Nama Event & Banner</th>

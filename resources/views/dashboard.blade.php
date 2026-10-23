@@ -47,17 +47,17 @@
 <x-layouts::admin :title="__('Analitik Sponsor')">
     <div class="flex flex-col gap-7 select-none">
         <!-- Top Summary Row: 3 Clean White Cards (Data Aktual Database) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
             <!-- Card 1: Total Sponsor Aktif -->
-            <div class="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 shadow-[0_4px_20px_-4px_rgba(20,40,90,0.04)] flex items-start gap-4">
-                <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center shrink-0">
-                    <svg class="w-6 h-6 text-[#1a68f0]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <div class="p-4 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 shadow-[0_4px_20px_-4px_rgba(20,40,90,0.04)] flex items-start gap-3.5 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#1a68f0]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
                     </svg>
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-zinc-400">Total Sponsor Aktif</p>
-                    <p class="text-2xl sm:text-3xl font-extrabold text-[#212121] dark:text-white mt-1">{{ number_format($totalActiveSponsors) }}</p>
+                    <p class="text-xl sm:text-3xl font-extrabold text-[#212121] dark:text-white mt-1">{{ number_format($totalActiveSponsors) }}</p>
                     <div class="flex items-center gap-1.5 mt-2 text-xs font-semibold text-emerald-600">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
@@ -69,16 +69,16 @@
             </div>
 
             <!-- Card 2: Total Kampanye Berjalan -->
-            <div class="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 shadow-[0_4px_20px_-4px_rgba(20,40,90,0.04)] flex items-start gap-4">
-                <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center shrink-0">
-                    <svg class="w-6 h-6 text-[#1a68f0]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <div class="p-4 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 shadow-[0_4px_20px_-4px_rgba(20,40,90,0.04)] flex items-start gap-3.5 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#1a68f0]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.38.04-.76.07-1.15.08a21.11 21.11 0 0 1-5.74-.78m12.44 3.7c.32.2.65.38.99.55a.75.75 0 0 0 .99-.34l1.32-2.64a.75.75 0 0 0-.25-.97 10.5 10.5 0 0 0-4.09-1.59m-5.66 5.27c-.7.04-1.42.06-2.14.06-2.52 0-4.93-.3-7.2-.87A.75.75 0 0 1 0 17.65V6.35a.75.75 0 0 1 .56-.73C3.3 4.9 6.2 4.5 9.25 4.5c2.3 0 4.51.23 6.6.66a.75.75 0 0 1 .59.73v9.06" />
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 7.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     </svg>
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-zinc-400">Total Kampanye Berjalan</p>
-                    <p class="text-2xl sm:text-3xl font-extrabold text-[#212121] dark:text-white mt-1">{{ number_format($totalActiveCampaigns) }}</p>
+                    <p class="text-xl sm:text-3xl font-extrabold text-[#212121] dark:text-white mt-1">{{ number_format($totalActiveCampaigns) }}</p>
                     <div class="flex items-center gap-1.5 mt-2 text-xs font-semibold text-emerald-600">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
@@ -90,15 +90,15 @@
             </div>
 
             <!-- Card 3: Total Pendapatan/Nilai -->
-            <div class="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 shadow-[0_4px_20px_-4px_rgba(20,40,90,0.04)] flex items-start gap-4">
-                <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center shrink-0">
-                    <svg class="w-6 h-6 text-[#1a68f0]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <div class="p-4 sm:p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 shadow-[0_4px_20px_-4px_rgba(20,40,90,0.04)] flex items-start gap-3.5 sm:gap-4">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-50 dark:bg-blue-950/50 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6 text-[#1a68f0]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" />
                     </svg>
                 </div>
                 <div class="flex-1 min-w-0">
                     <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-zinc-400">Total Pendapatan/Nilai</p>
-                    <p class="text-2xl sm:text-3xl font-extrabold text-[#212121] dark:text-white mt-1">Rp {{ number_format($totalRevenueVal, 0, ',', '.') }}</p>
+                    <p class="text-xl sm:text-3xl font-extrabold text-[#212121] dark:text-white mt-1">Rp {{ number_format($totalRevenueVal, 0, ',', '.') }}</p>
                     <div class="flex items-center gap-1.5 mt-2 text-xs font-semibold text-emerald-600">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
@@ -111,7 +111,7 @@
         </div>
 
         <!-- Main Table Card: Daftar Sponsor (Data Aktual Database) -->
-        <div class="p-6 sm:p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 shadow-[0_4px_20px_-4px_rgba(20,40,90,0.04)]"
+        <div class="p-4 sm:p-8 rounded-2xl bg-white dark:bg-zinc-900 border border-slate-200/60 dark:border-zinc-800 shadow-[0_4px_20px_-4px_rgba(20,40,90,0.04)]"
              x-data="{
                  search: '',
                  sponsors: {{ Js::from($dbSponsors) }},
@@ -123,7 +123,7 @@
         >
             <!-- Card Header: Title & Clean Search Box -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <h2 class="text-xl font-bold text-[#212121] dark:text-white tracking-tight">
+                <h2 class="text-lg sm:text-xl font-bold text-[#212121] dark:text-white tracking-tight">
                     Daftar Sponsor
                 </h2>
 
@@ -143,8 +143,8 @@
             </div>
 
             <!-- Sleek, Borderless Table -->
-            <div class="overflow-x-auto">
-                <table class="w-full text-start border-collapse">
+            <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+                <table class="w-full text-start border-collapse min-w-[650px]">
                     <thead>
                         <tr class="border-b border-slate-100 dark:border-zinc-800/80 text-[13px] font-semibold text-slate-400 dark:text-zinc-500">
                             <th class="py-3 px-4 text-start font-medium">Nama Sponsor</th>

@@ -5,23 +5,71 @@
     </head>
     <body class="min-h-screen bg-[#F4F6F8] dark:bg-zinc-950 text-[#212121] dark:text-zinc-100 antialiased font-sans selection:bg-blue-600/15 selection:text-blue-600"
           x-data="{ 
-              sidebarOpen: {{ auth()->user()?->isSponsor() ? 'false' : 'true' }},
-              sidebarPinned: {{ auth()->user()?->isSponsor() ? 'false' : 'true' }},
+              isMobile: window.innerWidth < 1024,
+              sidebarOpen: window.innerWidth >= 1024 ? {{ auth()->user()?->isSponsor() ? 'false' : 'true' }} : true,
+              sidebarPinned: window.innerWidth >= 1024 ? {{ auth()->user()?->isSponsor() ? 'false' : 'true' }} : true,
+              mobileOpen: false,
+              init() {
+                  const check = () => {
+                      this.isMobile = window.innerWidth < 1024;
+                      if (!this.isMobile) {
+                          this.mobileOpen = false;
+                      } else {
+                          this.sidebarOpen = true;
+                      }
+                  };
+                  check();
+                  window.addEventListener('resize', check);
+                  document.addEventListener('livewire:navigated', () => {
+                      check();
+                      this.mobileOpen = false;
+                  });
+              },
               toggleSidebar() {
-                  this.sidebarOpen = !this.sidebarOpen;
-                  this.sidebarPinned = this.sidebarOpen;
+                  if (this.isMobile) {
+                      this.mobileOpen = !this.mobileOpen;
+                      if (this.mobileOpen) this.sidebarOpen = true;
+                  } else {
+                      this.sidebarOpen = !this.sidebarOpen;
+                      this.sidebarPinned = this.sidebarOpen;
+                  }
+              },
+              closeMobile() {
+                  this.mobileOpen = false;
               }
           }"
     >
         <div class="flex min-h-screen">
+            <!-- Mobile Drawer Backdrop Overlay -->
+            <div 
+                x-show="mobileOpen" 
+                x-cloak 
+                @click="closeMobile()" 
+                x-transition:enter="transition-opacity ease-linear duration-200"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition-opacity ease-linear duration-200"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                class="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
+                aria-hidden="true"
+            ></div>
+
             <!-- Sidebar (Left) -->
             <aside 
-                class="fixed inset-y-0 left-0 z-40 bg-white dark:bg-zinc-900 border-r border-slate-200/80 dark:border-zinc-800 transition-all duration-300 flex flex-col justify-between"
-                :class="sidebarOpen ? 'w-64' : 'w-20'"
-                @mouseenter="if(!sidebarPinned) sidebarOpen = true"
-                @mouseleave="if(!sidebarPinned) sidebarOpen = false"
+                class="fixed inset-y-0 left-0 z-50 lg:z-40 bg-white dark:bg-zinc-900 border-r border-slate-200/80 dark:border-zinc-800 transition-all duration-300 flex flex-col justify-between"
+                :class="{
+                    /* Mobile Drawer Behavior */
+                    'translate-x-0 w-72 shadow-2xl': mobileOpen,
+                    '-translate-x-full lg:translate-x-0': !mobileOpen,
+                    /* Desktop Collapsible Width */
+                    'lg:w-64': sidebarOpen,
+                    'lg:w-20': !sidebarOpen
+                }"
+                @mouseenter="if(!isMobile && !sidebarPinned) sidebarOpen = true"
+                @mouseleave="if(!isMobile && !sidebarPinned) sidebarOpen = false"
             >
-                <!-- Subtle Collapse / Minimize Icon floating on sidebar border edge -->
+                <!-- Subtle Collapse / Minimize Icon floating on sidebar border edge (Desktop only) -->
                 <button 
                     type="button"
                     @click="toggleSidebar()"
@@ -37,20 +85,33 @@
                 @php
                     $homeUrl = auth()->user()?->isSponsor() ? route('sponsor.dashboard') : route('dashboard');
                 @endphp
-                <div class="relative flex items-center justify-center p-4 border-b border-slate-100 dark:border-zinc-800/80 min-h-[73px] overflow-hidden">
-                    <!-- Expanded Brand: vbat_logo_shadow.png -->
-                    <a href="{{ $homeUrl }}" wire:navigate x-show="sidebarOpen" x-transition.opacity class="flex items-center overflow-hidden select-none focus:outline-none w-full">
+                <div class="relative flex items-center justify-between lg:justify-center p-4 border-b border-slate-100 dark:border-zinc-800/80 min-h-[73px] overflow-hidden">
+                    <!-- Expanded Brand / Mobile Brand: vbat_logo_shadow.png -->
+                    <a href="{{ $homeUrl }}" wire:navigate x-show="sidebarOpen || mobileOpen" x-transition.opacity class="flex items-center overflow-hidden select-none focus:outline-none flex-1">
                         <img src="{{ asset('assets/images/vbat_logo_shadow.png') }}" alt="VBAT Ponsel" class="h-9 w-auto object-contain shrink-0" />
                     </a>
 
-                    <!-- Collapsed Brand: vbat_logo_simple.png (centered when minimized) -->
-                    <a href="{{ $homeUrl }}" wire:navigate x-show="!sidebarOpen" x-transition.opacity class="flex items-center justify-center w-full select-none focus:outline-none">
+                    <!-- Collapsed Brand: vbat_logo_simple.png (Desktop only when minimized) -->
+                    <a href="{{ $homeUrl }}" wire:navigate x-show="!sidebarOpen && !mobileOpen" x-transition.opacity class="hidden lg:flex items-center justify-center w-full select-none focus:outline-none">
                         <img src="{{ asset('assets/images/vbat_logo_simple.png') }}" alt="VBAT" class="h-8 w-auto object-contain shrink-0" />
                     </a>
+
+                    <!-- Mobile Close Button (✕) -->
+                    <button 
+                        type="button" 
+                        @click="closeMobile()" 
+                        class="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800 transition cursor-pointer shrink-0 ml-2"
+                        title="Tutup Menu"
+                        aria-label="Tutup Menu"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- Navigation List -->
-                <div class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
+                <div class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4" @click="if(isMobile && $event.target.closest('a')) closeMobile()">
                     @include('partials.sidebar-nav')
                 </div>
 
@@ -62,14 +123,27 @@
 
             <!-- Main Page Layout -->
             <div 
-                class="flex-1 flex flex-col min-w-0 transition-all duration-300"
+                class="flex-1 flex flex-col min-w-0 transition-all duration-300 w-full"
                 :class="sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'"
             >
                 <!-- Top Bar -->
-                <header class="sticky top-0 z-30 flex items-center justify-between h-20 px-6 sm:px-8 bg-transparent">
-                    <!-- Left: Page Title with Icon & Description -->
-                    <div>
-                        <div class="flex items-start gap-4">
+                <header class="sticky top-0 z-30 flex items-center justify-between min-h-16 py-2.5 px-4 sm:px-6 md:px-8 bg-[#F4F6F8]/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-slate-200/50 dark:border-zinc-800/50">
+                    <!-- Left: Hamburger Button (Mobile) + Page Title with Icon & Description -->
+                    <div class="flex items-center gap-3 sm:gap-4 min-w-0">
+                        <!-- Hamburger Menu Button for Mobile/Tablet -->
+                        <button 
+                            type="button" 
+                            @click="toggleSidebar()" 
+                            class="lg:hidden flex items-center justify-center w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-700 transition cursor-pointer shrink-0 shadow-xs"
+                            title="Buka Menu Navigasi"
+                            aria-label="Toggle Sidebar Menu"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
+
+                        <div class="flex items-center sm:items-start gap-2.5 sm:gap-3.5 min-w-0">
                             @php
                                 $currentPageIcon = $pageIcon ?? null;
                                 $currentPageTitle = $pageTitle ?? $title ?? 'Dashboard';
@@ -90,19 +164,19 @@
                             @endphp
                             
                             @if($currentPageIcon)
-                                <i class="fas {{ $currentPageIcon }} text-[#1a73e8] text-4xl mt-1 flex-shrink-0"></i>
+                                <i class="fas {{ $currentPageIcon }} text-[#1a73e8] text-xl sm:text-2xl md:text-3xl mt-0.5 shrink-0"></i>
                             @endif
-                            <div>
-                                <h1 class="text-2xl sm:text-[26px] font-bold text-[#212121] dark:text-white tracking-tight">{{ $currentPageTitle }}</h1>
+                            <div class="min-w-0">
+                                <h1 class="text-base sm:text-xl md:text-[24px] font-bold text-[#212121] dark:text-white tracking-tight truncate leading-tight">{{ $currentPageTitle }}</h1>
                                 @if($currentPageDescription)
-                                    <p class="text-sm text-[#828282] dark:text-zinc-400 mt-1.5">{{ $currentPageDescription }}</p>
+                                    <p class="hidden md:block text-xs text-[#828282] dark:text-zinc-400 mt-0.5 truncate max-w-xl">{{ $currentPageDescription }}</p>
                                 @endif
                             </div>
                         </div>
                     </div>
 
                     <!-- Right: Actions & Tools -->
-                    <div class="flex items-center gap-3.5">
+                    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
                         @if(request()->routeIs('admin.analytics') || request()->routeIs('dashboard'))
                         <!-- Date Range Picker in Top Bar with Interactive Modal/Dropdown -->
                         <div 
@@ -134,7 +208,7 @@
                             <button 
                                 type="button" 
                                 @click="openDateFilter = !openDateFilter"
-                                class="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-[#212121] dark:text-zinc-200 shadow-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                                class="hidden sm:inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 text-xs font-semibold text-[#212121] dark:text-zinc-200 shadow-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
                                 title="Klik untuk mengubah rentang tanggal"
                             >
                                 <svg class="w-3.5 h-3.5 text-[#1a68f0] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -152,7 +226,7 @@
                                 x-cloak
                                 @click.outside="openDateFilter = false"
                                 x-transition
-                                class="absolute left-0 sm:right-0 sm:left-auto mt-2 w-72 sm:w-80 p-4 rounded-2xl bg-white dark:bg-[#242424] border border-slate-200 dark:border-[#3F3F46] shadow-2xl z-50 text-xs"
+                                class="absolute right-0 mt-2 w-72 sm:w-80 p-4 rounded-2xl bg-white dark:bg-[#242424] border border-slate-200 dark:border-[#3F3F46] shadow-2xl z-50 text-xs"
                             >
                                 <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#3F3F46] mb-3">
                                     <span class="font-bold text-[#212121] dark:text-[#F3F4F6]">Filter Rentang Tanggal</span>
@@ -189,21 +263,23 @@
                         @endif
 
                         @if(isset($actions))
-                            {{ $actions }}
+                            <div class="flex items-center gap-1.5 sm:gap-2">
+                                {{ $actions }}
+                            </div>
                         @endif
 
                         @if(request()->routeIs('dashboard') || request()->routeIs('admin.analytics'))
                         <!-- Export to Excel Button (Functional Real Excel Downloader) -->
                         <a 
                             href="{{ route('admin.export.analytics', ['source' => request()->routeIs('dashboard') ? 'dashboard' : 'analytics', 'start_date' => request('start_date', '2026-10-01'), 'end_date' => request('end_date', '2026-10-31')]) }}" 
-                            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer shadow-xs select-none"
+                            class="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 text-xs sm:text-sm font-semibold transition-colors cursor-pointer shadow-xs select-none shrink-0"
                             title="Unduh Laporan Format Excel (.xlsx)"
                             download
                         >
-                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400" viewBox="0 0 24 24" fill="currentColor">
+                            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M21.17 3.25q.33 0 .59.25.24.24.24.58v15.84q0 .34-.24.58-.26.25-.59.25H7.83q-.33 0-.58-.25-.25-.24-.25-.58V17H2.83q-.33 0-.58-.24-.25-.26-.25-.59V7.83q0-.33.25-.59.25-.24.58-.24h4.17V4.08q0-.34.25-.58.25-.25.58-.25zm-.75 1.58H8.58v2.34h11.84zm0 3.92H8.58v6.5h11.84zm0 8.08H8.58v2.34h11.84zm-14-6.5H3.58v3.34h2.84zm0-4.91H3.58v3.33h2.84zm-.09 6.27-1.12-2.14h-.05l-1.12 2.14H3.04l1.83-3.03-1.74-2.88h1.28l1.04 2.05h.05l1.04-2.05h1.28l-1.75 2.88 1.83 3.03z"/>
                             </svg>
-                            <span>Export to Excel</span>
+                            <span class="hidden md:inline">Export to Excel</span>
                         </a>
                         @endif
 
@@ -238,28 +314,28 @@
                             role="button"
                             tabindex="0"
                             title="Toggle Mode Terang / Gelap"
-                            class="relative inline-flex items-center w-16 h-8 p-1 rounded-full bg-slate-200/90 dark:bg-zinc-800 border border-slate-300/80 dark:border-zinc-700 shadow-xs cursor-pointer select-none transition-all"
+                            class="relative inline-flex items-center w-14 sm:w-16 h-7 sm:h-8 p-1 rounded-full bg-slate-200/90 dark:bg-zinc-800 border border-slate-300/80 dark:border-zinc-700 shadow-xs cursor-pointer select-none transition-all shrink-0"
                         >
                             <!-- Animated Active Knob -->
                             <span 
-                                class="absolute top-1 bottom-1 w-6 h-6 rounded-full bg-white dark:bg-zinc-700 shadow-xs transition-transform duration-200 ease-out"
-                                :class="isDark ? 'translate-x-[32px]' : 'translate-x-0'"
+                                class="absolute top-1 bottom-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white dark:bg-zinc-700 shadow-xs transition-transform duration-200 ease-out"
+                                :class="isDark ? 'translate-x-[26px] sm:translate-x-[32px]' : 'translate-x-0'"
                             ></span>
 
                             <!-- Sun Icon (left) -->
                             <span 
-                                class="relative z-10 flex items-center justify-center w-6 h-6 transition-colors duration-200"
+                                class="relative z-10 flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 transition-colors duration-200"
                                 :class="!isDark ? 'text-[#1a68f0]' : 'text-slate-400 dark:text-zinc-500'"
                             >
-                                <i class="fas fa-sun text-xs"></i>
+                                <i class="fas fa-sun text-[10px] sm:text-xs"></i>
                             </span>
 
                             <!-- Moon Icon (right) -->
                             <span 
-                                class="relative z-10 flex items-center justify-center w-6 h-6 transition-colors duration-200 ml-auto"
+                                class="relative z-10 flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 transition-colors duration-200 ml-auto"
                                 :class="isDark ? 'text-blue-400' : 'text-slate-400 dark:text-zinc-500'"
                             >
-                                <i class="fas fa-moon text-xs"></i>
+                                <i class="fas fa-moon text-[10px] sm:text-xs"></i>
                             </span>
                         </div>
 
@@ -269,7 +345,7 @@
                 </header>
 
                 <!-- Page Content Area -->
-                <main class="flex-1 px-6 sm:px-8 pb-10">
+                <main class="flex-1 px-3.5 sm:px-6 md:px-8 pb-10 pt-4 w-full max-w-full overflow-x-hidden">
                     {{ $slot }}
                 </main>
             </div>

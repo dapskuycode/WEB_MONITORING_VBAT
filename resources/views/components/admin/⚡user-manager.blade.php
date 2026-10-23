@@ -233,7 +233,7 @@ new class extends Component
     <!-- 3. Users Table Container -->
     <div class="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
+            <table class="w-full text-left text-sm min-w-[700px]">
                 <thead class="border-b border-zinc-200 bg-zinc-50/75 text-xs font-semibold tracking-wider text-zinc-500 uppercase dark:border-zinc-800 dark:bg-zinc-800/50 dark:text-zinc-400">
                     <tr>
                         <th scope="col" class="py-3.5 pr-3 pl-5">Pengguna</th>

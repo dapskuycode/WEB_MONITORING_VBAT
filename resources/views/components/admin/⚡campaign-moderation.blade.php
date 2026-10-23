@@ -147,7 +147,7 @@ new class extends Component
     <!-- Data Table: Clean Borderless -->
     <div class="bg-white rounded-[12px] border border-slate-200/80 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="w-full min-w-[650px]">
                 <thead>
                     <tr class="bg-[#F4F6F8] border-b border-slate-200/80">
                         <th class="px-5 py-3.5 text-left text-xs font-bold text-[#212121] uppercase tracking-wider">Banner Preview</th>

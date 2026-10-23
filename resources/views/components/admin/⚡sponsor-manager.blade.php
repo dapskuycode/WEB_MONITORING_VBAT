@@ -657,12 +657,12 @@ new class extends Component
 <div class="space-y-6">
     <!-- Unified Action/Tab Bar: 4 Inline Items -->
     <div class="border-b border-slate-200 dark:border-zinc-800 -mt-2">
-        <nav class="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
+        <nav class="flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar pb-1">
             <!-- 1. DAFTAR SPONSOR (Active tab) -->
             <button 
                 type="button"
                 wire:click="$set('activeTab', 'sponsors')" 
-                class="inline-flex items-center gap-2 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer {{ $activeTab === 'sponsors' ? 'border-[#1a68f0] text-[#1a68f0] dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200' }}"
+                class="inline-flex items-center gap-2 py-3 px-3 sm:py-3.5 sm:px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer shrink-0 whitespace-nowrap {{ $activeTab === 'sponsors' ? 'border-[#1a68f0] text-[#1a68f0] dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200' }}"
             >
                 <span>DAFTAR SPONSOR</span>
                 <span class="text-[11px] px-2 py-0.5 rounded-full font-semibold {{ $activeTab === 'sponsors' ? 'bg-blue-50 text-[#1a68f0] dark:bg-blue-950/50 dark:text-blue-300' : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-400' }}">
@@ -674,7 +674,7 @@ new class extends Component
             <button 
                 type="button"
                 wire:click="$set('activeTab', 'matrix')" 
-                class="inline-flex items-center gap-2 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer {{ $activeTab === 'matrix' ? 'border-[#1a68f0] text-[#1a68f0] dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200' }}"
+                class="inline-flex items-center gap-2 py-3 px-3 sm:py-3.5 sm:px-4 text-xs sm:text-sm font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer shrink-0 whitespace-nowrap {{ $activeTab === 'matrix' ? 'border-[#1a68f0] text-[#1a68f0] dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200' }}"
             >
                 <span>KELOLA BENEFIT</span>
             </button>
@@ -683,7 +683,7 @@ new class extends Component
             <button 
                 type="button"
                 wire:click="openTierModal" 
-                class="inline-flex items-center gap-1.5 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 hover:text-[#1a68f0] dark:text-zinc-400 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                class="inline-flex items-center gap-1.5 py-3 px-3 sm:py-3.5 sm:px-4 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 hover:text-[#1a68f0] dark:text-zinc-400 dark:hover:text-blue-400 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
                 title="Tambah atau kelola tingkatan tier sponsor"
             >
                 <svg class="w-4 h-4 text-[#1a68f0]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -696,7 +696,7 @@ new class extends Component
             <button 
                 type="button"
                 wire:click="openCreateModal" 
-                class="inline-flex items-center gap-1.5 py-3.5 px-4 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 hover:text-[#1a68f0] dark:text-zinc-400 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                class="inline-flex items-center gap-1.5 py-3 px-3 sm:py-3.5 sm:px-4 text-xs sm:text-sm font-bold uppercase tracking-wider border-b-2 border-transparent text-slate-500 hover:text-[#1a68f0] dark:text-zinc-400 dark:hover:text-blue-400 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
                 title="Daftarkan mitra sponsor baru"
             >
                 <svg class="w-4 h-4 text-[#1a68f0]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -711,9 +711,9 @@ new class extends Component
     @if ($activeTab === 'sponsors')
         <div class="space-y-6">
             <!-- Search & Filter: Clean, full-width white bar -->
-            <div class="p-3.5 sm:p-4 bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="p-3.5 sm:p-4 bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-[0_2px_12px_-3px_rgba(0,0,0,0.04)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <!-- Search Input with Magnifying Glass -->
-                <div class="relative flex-1">
+                <div class="relative flex-1 w-full">
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
@@ -728,10 +728,10 @@ new class extends Component
                 </div>
 
                 <!-- Two Clean Dropdown Filters ("Semua Tier", "Semua Status") -->
-                <div class="flex items-center gap-2.5 shrink-0">
+                <div class="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
                     <select 
                         wire:model.live="filterTier" 
-                        class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
+                        class="flex-1 sm:flex-initial px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
                     >
                         <option value="">Semua Tier</option>
                         <option value="diamond">Diamond</option>
@@ -744,7 +744,7 @@ new class extends Component
 
                     <select 
                         wire:model.live="filterStatus" 
-                        class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
+                        class="flex-1 sm:flex-initial px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
                     >
                         <option value="">Semua Status</option>
                         <option value="1">Aktif Saja</option>

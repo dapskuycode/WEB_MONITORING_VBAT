@@ -225,12 +225,12 @@ new class extends Component
         </div>
 
         <!-- Filter Sponsor + Upload Button -->
-        <div class="flex items-center gap-2.5 shrink-0">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 w-full md:w-auto">
             <select 
                 wire:model.live="sponsorFilter" 
-                class="px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
+                class="w-full sm:w-auto px-3.5 py-2 text-xs sm:text-sm font-medium rounded-lg border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-[#212121] dark:text-zinc-200 focus:outline-none focus:border-[#1a68f0] focus:ring-2 focus:ring-[#1a68f0]/10 cursor-pointer shadow-xs transition"
             >
-                <option value="">Filter Sponsor: Semua Mitra Sponsor</option>
+                <option value="">Filter: Semua Sponsor</option>
                 @foreach($sponsors as $sp)
                     <option value="{{ $sp->id }}">{{ $sp->name }}</option>
                 @endforeach
@@ -239,7 +239,7 @@ new class extends Component
             <button 
                 type="button"
                 wire:click="openCreateModal" 
-                class="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer"
+                class="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#1a68f0] hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer shrink-0"
             >
                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -252,7 +252,7 @@ new class extends Component
     <!-- Data Table - Clean Enterprise Content Card (border-radius: 12px, soft enterprise shadow) -->
     <div class="bg-white dark:bg-zinc-900 rounded-[12px] border border-slate-200/80 dark:border-zinc-800 shadow-[0_4px_16px_-4px_rgba(20,40,90,0.04)] overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
+            <table class="w-full text-left text-xs min-w-[650px]">
                 <thead>
                     <tr class="border-b border-slate-200/80 dark:border-zinc-800 bg-[#F8F9FA] dark:bg-zinc-800/40 text-[11px] font-bold text-[#828282] uppercase tracking-wider">
                         <th class="px-5 py-3.5">Produk</th>
