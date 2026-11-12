@@ -5,12 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property Carbon $issued_at
+ * @property Carbon|null $expires_at
+ */
 class Certificate extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'course_id', 'identity_snapshot', 'completion_snapshot', 'status', 'revoke_reason', 'revoked_at', 'verification_token', 'document_path',
         'user_id',
         'title',
         'certificate_number',
@@ -26,6 +32,7 @@ class Certificate extends Model
     protected function casts(): array
     {
         return [
+            'identity_snapshot' => 'array', 'completion_snapshot' => 'array', 'revoked_at' => 'datetime',
             'issued_at' => 'datetime',
             'expires_at' => 'datetime',
             'is_public' => 'boolean',
@@ -42,14 +49,15 @@ class Certificate extends Model
 
     public function isValid(): bool
     {
-        return $this->expires_at === null || $this->expires_at->isFuture();
+        return ($this->status ?? 'valid') === 'valid' && ($this->expires_at === null || $this->expires_at->isFuture());
     }
 
     public static function generateCertificateNumber(string $type = 'CERT'): string
     {
         $date = now()->format('Ym');
         $random = strtoupper(substr(md5(uniqid('', true)), 0, 8));
-        return strtoupper($type) . '-' . $date . '-' . $random;
+
+        return strtoupper($type).'-'.$date.'-'.$random;
     }
 
     public function generateQrData(): string
@@ -59,7 +67,7 @@ class Certificate extends Model
             'user_name' => $this->user->name,
             'title' => $this->title,
             'issued_at' => $this->issued_at->toISOString(),
-            'verify_url' => url('/api/certificates/verify/' . $this->certificate_number),
+            'verify_url' => url('/api/certificates/verify/'.$this->certificate_number),
         ]);
     }
 }

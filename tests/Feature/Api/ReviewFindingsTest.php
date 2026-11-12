@@ -2,9 +2,8 @@
 
 namespace Tests\Feature\Api;
 
-use App\Models\AdminNotification;
 use App\Models\LearningMaterial;
-use App\Models\LearningMaterialView;
+use App\Models\Lesson;
 use App\Models\Sponsor;
 use App\Models\SponsorProduct;
 use App\Models\User;
@@ -54,7 +53,7 @@ class ReviewFindingsTest extends TestCase
     #[Test]
     public function guest_cannot_create_learning_material(): void
     {
-        $lesson = \App\Models\Lesson::factory()->create();
+        $lesson = Lesson::factory()->create();
 
         $response = $this->postJson('/api/v1/learning-materials', [
             'lesson_id' => $lesson->id,
@@ -92,34 +91,13 @@ class ReviewFindingsTest extends TestCase
     // ─── CRITICAL #2: Client-Side Ownership Injection (recordProgress) ──
 
     #[Test]
-    public function record_progress_uses_auth_user_not_payload(): void
+    public function record_progress_cannot_write_client_percentages(): void
     {
-        $userA = User::factory()->create(['role' => 'student']);
-        $userB = User::factory()->create(['role' => 'student']);
+        $user = User::factory()->create(['role' => 'student']);
         $material = LearningMaterial::factory()->create();
-
-        // Act as userA, but try to send user_id of userB in payload
-        $response = $this->actingAs($userA)->postJson(
-            "/api/v1/learning-materials/{$material->id}/progress",
-            [
-                'progress_percent' => 50,
-                // user_id is NO LONGER accepted from payload
-            ]
-        );
-
-        $response->assertStatus(200);
-
-        // Verify the view was created for userA, NOT userB
-        $this->assertDatabaseHas('learning_material_views', [
-            'user_id' => $userA->id,
-            'learning_material_id' => $material->id,
-            'progress_percent' => 50,
-        ]);
-
-        $this->assertDatabaseMissing('learning_material_views', [
-            'user_id' => $userB->id,
-            'learning_material_id' => $material->id,
-        ]);
+        $this->actingAs($user)->postJson("/api/v1/learning-materials/{$material->id}/progress", ['progress_percent' => 100])
+            ->assertStatus(410)->assertJsonPath('code', 'PLAYBACK_SESSION_REQUIRED');
+        $this->assertDatabaseCount('learning_material_views', 0);
     }
 
     #[Test]

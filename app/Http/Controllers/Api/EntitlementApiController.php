@@ -14,13 +14,25 @@ class EntitlementApiController extends Controller
         private EntitlementService $entitlementService
     ) {}
 
+    public function snapshot(Request $request): JsonResponse
+    {
+        $access = [];
+        foreach (Course::TYPES as $type) {
+            $access[$type] = $this->entitlementService->accessForType($request->user(), $type);
+        }
+
+        return response()->json(['success' => true, 'data' => [
+            'server_time' => now()->toIso8601String(), 'access' => $access,
+        ]])->header('Cache-Control', 'private, no-store');
+    }
+
     /**
      * Get download manifest for a course.
      */
     public function downloadManifest(int $courseId): JsonResponse
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -48,7 +60,7 @@ class EntitlementApiController extends Controller
     public function checkAccess(int $courseId): JsonResponse
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
@@ -58,7 +70,7 @@ class EntitlementApiController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'has_access' => $hasAccess,
+                ...$this->entitlementService->courseAccess($user, $course),
                 'course_id' => $courseId,
                 'is_free_class' => $course->is_free_class,
             ],
@@ -66,32 +78,15 @@ class EntitlementApiController extends Controller
         ]);
     }
 
-    /**
-     * Issue KTA certificate (Hardware Solution 90% threshold).
-     */
     public function issueKtaCertificate(int $courseId): JsonResponse
     {
-        $user = auth()->user();
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
+        Course::findOrFail($courseId);
 
-        $course = Course::findOrFail($courseId);
-
-        try {
-            $certificate = $this->entitlementService->issueKtaCertificate($user, $course);
-
-            return response()->json([
-                'success' => true,
-                'data' => $certificate,
-                'message' => 'KTA certificate issued successfully',
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
-        }
+        return response()->json([
+            'success' => false,
+            'error' => ['code' => 'CERTIFICATE_ISSUANCE_UNAVAILABLE'],
+            'message' => 'Penerbitan KTA dan sertifikat menunggu aturan keanggotaan dan kelulusan.',
+        ], 503);
     }
 
     /**
@@ -100,24 +95,24 @@ class EntitlementApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $validated = $request->validate([
-            'entitlement_type' => ['nullable', 'in:course_access,certificate'],
-            'is_active' => ['nullable', 'boolean'],
+            'package_type' => ['nullable', 'in:android,iphone,bundling,premium,hardware_solution'],
+            'status' => ['nullable', 'in:active,expired,revoked'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
 
         $query = $user->entitlements();
 
-        if (!empty($validated['entitlement_type'])) {
-            $query->where('entitlement_type', $validated['entitlement_type']);
+        if (! empty($validated['package_type'])) {
+            $query->where('package_type', $validated['package_type']);
         }
 
-        if (isset($validated['is_active'])) {
-            $query->where('is_active', $validated['is_active']);
+        if (isset($validated['status'])) {
+            $query->where('status', $validated['status']);
         }
 
         $entitlements = $query->orderBy('created_at', 'desc')

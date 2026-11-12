@@ -1,27 +1,42 @@
 <?php
 
 use App\Http\Controllers\Api\AdminApiController;
-use App\Http\Controllers\Api\CampaignApiController;
-use App\Http\Controllers\Api\DemographicApiController;
-use App\Http\Controllers\Api\EventApiController;
-use App\Http\Controllers\Api\HealthController;
-use App\Http\Controllers\Api\LearningMaterialApiController;
-use App\Http\Controllers\Api\NotificationApiController;
-use App\Http\Controllers\Api\PlacementApiController;
-use App\Http\Controllers\Api\SponsorProductApiController;
-use App\Http\Controllers\Api\SponsorApiController;
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\BookmarkApiController;
+use App\Http\Controllers\Api\CampaignApiController;
+use App\Http\Controllers\Api\CertificateController;
 use App\Http\Controllers\Api\CourseApiController;
+use App\Http\Controllers\Api\DemographicApiController;
 use App\Http\Controllers\Api\EntitlementApiController;
+use App\Http\Controllers\Api\EventApiController;
 use App\Http\Controllers\Api\FeedApiController;
+use App\Http\Controllers\Api\GamificationController;
+use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\InfoContentController;
+use App\Http\Controllers\Api\LearningMaterialApiController;
+use App\Http\Controllers\Api\LegalController;
 use App\Http\Controllers\Api\LessonApiController;
+use App\Http\Controllers\Api\LmsDocumentController;
+use App\Http\Controllers\Api\LmsGradeController;
+use App\Http\Controllers\Api\LmsImportController;
+use App\Http\Controllers\Api\LmsOrderController;
+use App\Http\Controllers\Api\LmsOutcomeController;
 use App\Http\Controllers\Api\MediaServeController;
 use App\Http\Controllers\Api\MembershipController;
+use App\Http\Controllers\Api\NotificationApiController;
+use App\Http\Controllers\Api\OAuthController;
 use App\Http\Controllers\Api\PaymentApiController;
+use App\Http\Controllers\Api\PlacementApiController;
+use App\Http\Controllers\Api\PlaybackController;
+use App\Http\Controllers\Api\PublicMediaController;
 use App\Http\Controllers\Api\QuizApiController;
+use App\Http\Controllers\Api\SponsorApiController;
+use App\Http\Controllers\Api\SponsorProductApiController;
+use App\Http\Controllers\Api\StudentCourseController;
+use App\Http\Controllers\Api\StudentQuizController;
 use App\Http\Controllers\Api\TrackerApiController;
 use App\Http\Controllers\Api\WebhookController;
+use App\Http\Middleware\SanitizeLmsCatalog;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -30,57 +45,89 @@ Route::prefix('v1')->group(function () {
 
     // Auth (Phase 6 — TASK-BE-06)
     Route::post('/auth/register', [AuthApiController::class, 'register']);
-    Route::post('/auth/login', [AuthApiController::class, 'login']);
-    
-    // OAuth Social Login (Phase G — AUTH-BE-01)
-    Route::post('/auth/oauth/callback', [\App\Http\Controllers\Api\OAuthController::class, 'callback']);
-    
-    // Demografi Profil Pengguna (Mendukung auth:sanctum maupun email/user_id fallback)
-    Route::post('/user/demographics', [DemographicApiController::class, 'updateDemographics']);
+    Route::post('/auth/login', [AuthApiController::class, 'login'])->middleware('throttle:10,1');
 
-    // Aktivasi Membership KTA dari Mobile (Mendukung auth:sanctum maupun email/user_id fallback)
-    Route::post('/membership/activate', [MembershipController::class, 'activate']);
+    // OAuth Social Login (Phase G — AUTH-BE-01)
+    Route::post('/auth/oauth/callback', [OAuthController::class, 'callback']);
+
+    // Profile mutations use the authenticated account only.
+    Route::post('/user/demographics', [DemographicApiController::class, 'updateDemographics'])->middleware('auth:sanctum');
+
+    // Client activation cannot create grants; purchases require server verification.
+    Route::post('/membership/activate', [MembershipController::class, 'activate'])->middleware('auth:sanctum');
 
     // Log Tracker & Wishlist (Mendukung auth:sanctum maupun email/user_id fallback / anonymous)
     Route::post('/track', [TrackerApiController::class, 'logInteraction']);
     Route::post('/wishlist/toggle', [TrackerApiController::class, 'toggleWishlist']);
     Route::get('/wishlist/user', [TrackerApiController::class, 'getUserWishlist']);
-    
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/auth/logout', [AuthApiController::class, 'logout']);
+        Route::get('/lms/dashboard', [LmsOutcomeController::class, 'dashboard']);
+        Route::get('/lms/history', [LmsOutcomeController::class, 'history']);
+        Route::get('/lms/courses/{id}/outcome', [LmsOutcomeController::class, 'course'])->whereNumber('id');
+        Route::get('/lms/credentials', [LmsOutcomeController::class, 'credentials']);
+        Route::post('/lms/courses/{id}/certificate', [LmsOutcomeController::class, 'issue'])->whereNumber('id');
+        Route::post('/lms/credentials/{id}/visibility', [LmsOutcomeController::class, 'visibility'])->whereNumber('id');
+        Route::get('/lms/credentials/{id}/document', [LmsOutcomeController::class, 'document'])->whereNumber('id');
+        Route::post('/admin/lms/credentials/{id}/revoke', [LmsOutcomeController::class, 'revoke'])->whereNumber('id')->middleware('role:super_admin');
+        Route::get('/admin/lms/reviews', [LmsGradeController::class, 'index'])->middleware('role:super_admin');
+        Route::get('/admin/lms/reviews/{id}', [LmsGradeController::class, 'show'])->whereNumber('id')->middleware('role:super_admin');
+        Route::post('/admin/lms/reviews/{id}/draft', [LmsGradeController::class, 'draft'])->whereNumber('id')->middleware('role:super_admin');
+        Route::post('/admin/lms/reviews/{id}/publish', [LmsGradeController::class, 'publish'])->whereNumber('id')->middleware('role:super_admin');
+        Route::get('/lms/imports/template', [LmsImportController::class, 'template'])->middleware('role:super_admin');
+        Route::post('/lms/imports', [LmsImportController::class, 'preview'])->middleware(['role:super_admin', 'throttle:lms-import']);
+        Route::get('/lms/imports/{id}', [LmsImportController::class, 'show'])->whereUuid('id')->middleware('role:super_admin');
+        Route::post('/lms/imports/{id}/apply', [LmsImportController::class, 'apply'])->whereUuid('id')->middleware('role:super_admin');
+        Route::get('/lms/imports/{id}/errors', [LmsImportController::class, 'errors'])->whereUuid('id')->middleware('role:super_admin');
+        Route::post('/lms/uploads', [LmsDocumentController::class, 'upload'])->middleware(['role:super_admin', 'throttle:lms-upload']);
+        Route::get('/lms/uploads/{id}', [LmsDocumentController::class, 'status'])->whereUuid('id')->middleware('role:super_admin');
+        Route::post('/lms/materials/{id}/reading', [LmsDocumentController::class, 'start'])->whereNumber('id')->middleware('throttle:lms-reading');
+        Route::post('/lms/reading/{id}/events', [LmsDocumentController::class, 'event'])->whereUuid('id')->middleware('throttle:lms-reading');
+        Route::get('/lms/quizzes/{id}', [StudentQuizController::class, 'show'])->whereNumber('id')->middleware('throttle:lms-quiz-read');
+        Route::post('/lms/quizzes/{id}/attempts', [StudentQuizController::class, 'start'])->whereNumber('id')->middleware('throttle:lms-quiz-write');
+        Route::get('/lms/attempts/{id}', [StudentQuizController::class, 'read'])->whereNumber('id')->middleware('throttle:lms-quiz-read');
+        Route::post('/lms/attempts/{id}/answers', [StudentQuizController::class, 'save'])->whereNumber('id')->middleware('throttle:lms-quiz-save');
+        Route::post('/lms/attempts/{id}/submit', [StudentQuizController::class, 'submit'])->whereNumber('id')->middleware('throttle:lms-quiz-write');
+        Route::get('/lms/courses', [StudentCourseController::class, 'index']);
+        Route::post('/lms/materials/{id}/playback', [PlaybackController::class, 'start'])->whereNumber('id');
+        Route::post('/lms/playback/{session}/events', [PlaybackController::class, 'event'])->whereUuid('session');
+        Route::get('/lms/courses/{id}', [StudentCourseController::class, 'show'])->whereNumber('id');
         Route::get('/auth/me', [AuthApiController::class, 'me']);
-        Route::get('/auth/profile/status', [\App\Http\Controllers\Api\OAuthController::class, 'checkProfileStatus']);
-        
+        Route::get('/auth/profile/status', [OAuthController::class, 'checkProfileStatus']);
+
         // Membership & KTA (Phase G — MEM-BE-01)
-        Route::get('/membership', [\App\Http\Controllers\Api\MembershipController::class, 'show']);
-        
+        Route::get('/membership', [MembershipController::class, 'show']);
+
         // Certificates & QR (Phase G — CERT-BE-01)
-        Route::get('/certificates', [\App\Http\Controllers\Api\CertificateController::class, 'index']);
-        Route::get('/certificates/{certificate}', [\App\Http\Controllers\Api\CertificateController::class, 'show']);
-        
+        Route::get('/certificates', [CertificateController::class, 'index']);
+        Route::get('/certificates/{certificate}', [CertificateController::class, 'show']);
+
         // Gamification: Badge, Achievement, Streak (Phase G — GAM-BE-01)
-        Route::get('/achievements', [\App\Http\Controllers\Api\GamificationController::class, 'getAchievements']);
-        Route::get('/streaks', [\App\Http\Controllers\Api\GamificationController::class, 'getStreaks']);
+        Route::get('/achievements', [GamificationController::class, 'getAchievements']);
+        Route::get('/streaks', [GamificationController::class, 'getStreaks']);
     });
-    
+
     // Public membership verification
-    Route::get('/membership/verify/{membershipNumber}', [\App\Http\Controllers\Api\MembershipController::class, 'verify']);
-    
+    Route::get('/membership/verify/{membershipNumber}', [MembershipController::class, 'verify']);
+
+    Route::get('/lms/credentials/verify/{token}', [LmsOutcomeController::class, 'verify'])->whereUuid('token');
+
     // Public certificate verification
-    Route::get('/certificates/verify/{certificateNumber}', [\App\Http\Controllers\Api\CertificateController::class, 'verify']);
-    
+    Route::get('/certificates/verify/{certificateNumber}', [CertificateController::class, 'verify']);
+
     // Public badges list
-    Route::get('/badges', [\App\Http\Controllers\Api\GamificationController::class, 'getAllBadges']);
-    
+    Route::get('/badges', [GamificationController::class, 'getAllBadges']);
+
     // Info & WhatsApp CTA (Phase G — INFO-BE-01)
-    Route::get('/info', [\App\Http\Controllers\Api\InfoContentController::class, 'index']);
-    Route::get('/info/{slug}', [\App\Http\Controllers\Api\InfoContentController::class, 'show']);
-    
+    Route::get('/info', [InfoContentController::class, 'index']);
+    Route::get('/info/{slug}', [InfoContentController::class, 'show']);
+
     // Legal content (Phase G — LEGAL-BE-01)
-    Route::get('/legal/terms', [\App\Http\Controllers\Api\LegalController::class, 'getTerms']);
-    Route::get('/legal/privacy', [\App\Http\Controllers\Api\LegalController::class, 'getPrivacy']);
-    Route::get('/legal/about', [\App\Http\Controllers\Api\LegalController::class, 'getAbout']);
-    Route::get('/legal/consent', [\App\Http\Controllers\Api\LegalController::class, 'getConsent']);
+    Route::get('/legal/terms', [LegalController::class, 'getTerms']);
+    Route::get('/legal/privacy', [LegalController::class, 'getPrivacy']);
+    Route::get('/legal/about', [LegalController::class, 'getAbout']);
+    Route::get('/legal/consent', [LegalController::class, 'getConsent']);
 
     // 1. Feed Dinamis & Infinite Scroll (Phase 7 — REQ-SF-01)
     Route::get('/feed/shop', [FeedApiController::class, 'shop']);
@@ -98,20 +145,20 @@ Route::prefix('v1')->group(function () {
     Route::get('/products/{product}', [SponsorProductApiController::class, 'show']);
 
     // 3. Learning Material — Public read
-    Route::get('/learning-materials', [LearningMaterialApiController::class, 'index']);
-    Route::get('/learning-materials/{material}', [LearningMaterialApiController::class, 'show']);
-    Route::post('/learning-materials/validate-youtube', [LearningMaterialApiController::class, 'validateYouTube']);
+    Route::get('/learning-materials', [LearningMaterialApiController::class, 'index'])->middleware(SanitizeLmsCatalog::class);
+    Route::get('/learning-materials/{material}', [LearningMaterialApiController::class, 'show'])->middleware(SanitizeLmsCatalog::class);
+    Route::post('/learning-materials/validate-youtube', [LearningMaterialApiController::class, 'validateYouTube'])->middleware(['auth:sanctum', 'role:super_admin']);
 
     // 3a. Course & Lesson — Public read
-    Route::get('/courses', [CourseApiController::class, 'index']);
-    Route::get('/courses/free-class', [CourseApiController::class, 'freeClass']);
-    Route::get('/courses/{id}', [CourseApiController::class, 'show']);
-    Route::get('/lessons', [LessonApiController::class, 'index']);
-    Route::get('/lessons/{id}', [LessonApiController::class, 'show']);
+    Route::get('/courses', [CourseApiController::class, 'index'])->middleware(SanitizeLmsCatalog::class);
+    Route::get('/courses/free-class', [CourseApiController::class, 'freeClass'])->middleware(SanitizeLmsCatalog::class);
+    Route::get('/courses/{id}', [CourseApiController::class, 'show'])->middleware(SanitizeLmsCatalog::class);
+    Route::get('/lessons', [LessonApiController::class, 'index'])->middleware(SanitizeLmsCatalog::class);
+    Route::get('/lessons/{id}', [LessonApiController::class, 'show'])->middleware(SanitizeLmsCatalog::class);
 
     // 3b. Quiz — Public read
-    Route::get('/quizzes', [QuizApiController::class, 'index']);
-    Route::get('/quizzes/{id}', [QuizApiController::class, 'show']);
+    Route::get('/quizzes', [QuizApiController::class, 'index'])->middleware(SanitizeLmsCatalog::class);
+    Route::get('/quizzes/{id}', [QuizApiController::class, 'show'])->middleware(SanitizeLmsCatalog::class);
 
     // 4. Placement & Probabilistic Selection — Public read
     Route::get('/placements/best-deal', [PlacementApiController::class, 'bestDeal']);
@@ -163,39 +210,42 @@ Route::prefix('v1')->group(function () {
         Route::delete('/products/{product}/best-deal', [SponsorProductApiController::class, 'removeFromBestDeal']);
 
         // 3. Learning Material — Write operations
-        Route::post('/learning-materials', [LearningMaterialApiController::class, 'store']);
-        Route::put('/learning-materials/{material}', [LearningMaterialApiController::class, 'update']);
-        Route::delete('/learning-materials/{material}', [LearningMaterialApiController::class, 'destroy']);
-        Route::post('/learning-materials/{material}/thumbnail', [LearningMaterialApiController::class, 'uploadThumbnail']);
-        Route::post('/learning-materials/{material}/pdf', [LearningMaterialApiController::class, 'uploadPdf']);
+        Route::post('/learning-materials', [LearningMaterialApiController::class, 'store'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::put('/learning-materials/{material}', [LearningMaterialApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::delete('/learning-materials/{material}', [LearningMaterialApiController::class, 'destroy'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::post('/learning-materials/{material}/thumbnail', [LearningMaterialApiController::class, 'uploadThumbnail'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::post('/learning-materials/{material}/pdf', [LearningMaterialApiController::class, 'uploadPdf'])->middleware(['auth:sanctum', 'role:super_admin']);
         Route::post('/learning-materials/{material}/progress', [LearningMaterialApiController::class, 'recordProgress']);
-        Route::get('/learning-materials/{material}/analytics', [LearningMaterialApiController::class, 'analytics']);
+        Route::get('/learning-materials/{material}/analytics', [LearningMaterialApiController::class, 'analytics'])->middleware(['auth:sanctum', 'role:super_admin']);
 
         // 3a. Course & Lesson — Write operations
-        Route::post('/courses', [CourseApiController::class, 'store']);
-        Route::put('/courses/{id}', [CourseApiController::class, 'update']);
-        Route::post('/courses/{id}/archive', [CourseApiController::class, 'archive']);
-        Route::delete('/courses/{id}', [CourseApiController::class, 'destroy']);
-        Route::post('/lessons', [LessonApiController::class, 'store']);
-        Route::put('/lessons/{id}', [LessonApiController::class, 'update']);
-        Route::delete('/lessons/{id}', [LessonApiController::class, 'destroy']);
+        Route::post('/courses', [CourseApiController::class, 'store'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::put('/courses/{id}', [CourseApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::post('/courses/{id}/archive', [CourseApiController::class, 'archive'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::delete('/courses/{id}', [CourseApiController::class, 'destroy'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::post('/lessons', [LessonApiController::class, 'store'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::put('/lessons/{id}', [LessonApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::delete('/lessons/{id}', [LessonApiController::class, 'destroy'])->middleware(['auth:sanctum', 'role:super_admin']);
 
         // 3b. Quiz — Write operations & attempts
-        Route::post('/quizzes', [QuizApiController::class, 'store']);
-        Route::put('/quizzes/{id}', [QuizApiController::class, 'update']);
-        Route::delete('/quizzes/{id}', [QuizApiController::class, 'destroy']);
-        Route::post('/quizzes/{id}/questions', [QuizApiController::class, 'addQuestion']);
-        Route::put('/quiz-questions/{id}', [QuizApiController::class, 'updateQuestion']);
-        Route::delete('/quiz-questions/{id}', [QuizApiController::class, 'deleteQuestion']);
+        Route::post('/quizzes', [QuizApiController::class, 'store'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::put('/quizzes/{id}', [QuizApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::delete('/quizzes/{id}', [QuizApiController::class, 'destroy'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::post('/quizzes/{id}/questions', [QuizApiController::class, 'addQuestion'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::put('/quiz-questions/{id}', [QuizApiController::class, 'updateQuestion'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::delete('/quiz-questions/{id}', [QuizApiController::class, 'deleteQuestion'])->middleware(['auth:sanctum', 'role:super_admin']);
         Route::post('/quizzes/{id}/start-attempt', [QuizApiController::class, 'startAttempt']);
         Route::post('/quizzes/{id}/submit-attempt', [QuizApiController::class, 'submitAttempt']);
 
         // 3c. Bookmarks — Learning bookmarks (separate from wishlist)
-        Route::get('/bookmarks', [BookmarkApiController::class, 'index']);
-        Route::post('/bookmarks/toggle', [BookmarkApiController::class, 'toggle']);
-        Route::post('/bookmarks/check', [BookmarkApiController::class, 'check']);
+        Route::get('/bookmarks', [BookmarkApiController::class, 'index'])->middleware(SanitizeLmsCatalog::class);
+        Route::post('/bookmarks/toggle', [BookmarkApiController::class, 'toggle'])->middleware(SanitizeLmsCatalog::class);
+        Route::post('/bookmarks/check', [BookmarkApiController::class, 'check'])->middleware(SanitizeLmsCatalog::class);
+
+        Route::put('/lms-admin/{kind}/{id}/order', [LmsOrderController::class, 'update'])->where('kind', 'courses|lessons')->middleware('role:super_admin');
 
         // 3d. Entitlements — Access gating & certificates
+        Route::get('/entitlements/access', [EntitlementApiController::class, 'snapshot']);
         Route::get('/entitlements', [EntitlementApiController::class, 'index']);
         Route::get('/entitlements/courses/{courseId}/access', [EntitlementApiController::class, 'checkAccess']);
         Route::get('/entitlements/courses/{courseId}/manifest', [EntitlementApiController::class, 'downloadManifest']);
@@ -211,14 +261,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/media/access-check', [MediaServeController::class, 'checkAccess']);
 
         // 3b. Bulk Import (REQ-ADM-02)
-        Route::post('/learning-materials/bulk-import', [LearningMaterialApiController::class, 'bulkImport']);
-        Route::get('/learning-materials/bulk-import/template', [LearningMaterialApiController::class, 'bulkImportTemplate']);
+        Route::post('/learning-materials/bulk-import', [LearningMaterialApiController::class, 'bulkImport'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::get('/learning-materials/bulk-import/template', [LearningMaterialApiController::class, 'bulkImportTemplate'])->middleware(['auth:sanctum', 'role:super_admin']);
 
         // 4. Placement — Write operations
         Route::post('/placements/impression', [PlacementApiController::class, 'logImpression']);
         Route::post('/placements/click', [PlacementApiController::class, 'logClick']);
-
-
 
         // 9. User Notification API (Phase 5 — REQ-ANA-02)
         Route::get('/user/notifications', [NotificationApiController::class, 'listUserNotifications']);
@@ -279,46 +327,6 @@ Route::prefix('v1')->group(function () {
     // 5. Webhooks (public, no auth)
     Route::post('/webhooks/midtrans', [WebhookController::class, 'midtrans']);
 
-    // 6. Storage File Proxy with CORS (for Flutter Web CanvasKit & Mobile)
-    Route::get('/media-file', function (\Illuminate\Http\Request $request) {
-        $path = $request->query('path');
-        if (! $path) {
-            abort(404);
-        }
-        $fullPath = storage_path('app/public/'.$path);
-        if (! file_exists($fullPath)) {
-            $assetPath = public_path($path);
-            if (file_exists($assetPath)) {
-                $fullPath = $assetPath;
-            } else {
-                abort(404);
-            }
-        }
-        $mime = mime_content_type($fullPath) ?: 'image/jpeg';
-
-        return response()->file($fullPath, [
-            'Access-Control-Allow-Origin' => '*',
-            'Access-Control-Allow-Methods' => 'GET, OPTIONS',
-            'Content-Type' => $mime,
-        ]);
-    });
-
-    Route::get('/storage/{path}', function ($path) {
-        $fullPath = storage_path('app/public/'.$path);
-        if (! file_exists($fullPath)) {
-            $assetPath = public_path($path);
-            if (file_exists($assetPath)) {
-                $fullPath = $assetPath;
-            } else {
-                abort(404);
-            }
-        }
-        $mime = mime_content_type($fullPath) ?: 'image/jpeg';
-
-        return response()->file($fullPath, [
-            'Access-Control-Allow-Origin' => '*',
-            'Access-Control-Allow-Methods' => 'GET, OPTIONS',
-            'Content-Type' => $mime,
-        ]);
-    })->where('path', '.*');
+    Route::get('/media-file', [PublicMediaController::class, 'query']);
+    Route::get('/storage/{path}', [PublicMediaController::class, 'serve'])->where('path', '.*');
 });

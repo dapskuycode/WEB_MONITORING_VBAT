@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,13 +12,19 @@ class Entitlement extends Model
     use HasFactory;
 
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_EXPIRED = 'expired';
+
     public const STATUS_REVOKED = 'revoked';
 
     public const PACKAGE_ANDROID = 'android';
+
     public const PACKAGE_IPHONE = 'iphone';
+
     public const PACKAGE_BUNDLING = 'bundling';
+
     public const PACKAGE_HARDWARE_SOLUTION = 'hardware_solution';
+
     public const PACKAGE_PREMIUM = 'premium';
 
     protected $fillable = [
@@ -52,7 +59,7 @@ class Entitlement extends Model
             return false;
         }
 
-        if ($this->expires_at && $this->expires_at->isPast()) {
+        if (($this->starts_at && $this->starts_at->isFuture()) || ($this->expires_at && $this->expires_at->lessThanOrEqualTo(now()))) {
             return false;
         }
 
@@ -62,12 +69,13 @@ class Entitlement extends Model
     /**
      * Scope: only active and non-expired.
      *
-     * @param \Illuminate\Database\Eloquent\Builder<$this> $query
-     * @return \Illuminate\Database\Eloquent\Builder<$this>
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
      */
     public function scopeActive($query)
     {
         return $query->where('status', self::STATUS_ACTIVE)
+            ->where(fn ($q) => $q->whereNull('starts_at')->orWhere('starts_at', '<=', now()))
             ->where(function ($q) {
                 $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
             });

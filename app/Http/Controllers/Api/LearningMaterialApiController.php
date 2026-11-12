@@ -4,8 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LearningMaterial;
-use App\Models\LearningMaterialView;
 use App\Services\BulkImportService;
+use App\Services\LmsAuthoringService;
+use App\Services\LmsUploadService;
+use App\Services\MediaAuthorizationService;
+use App\Services\MediaProxyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +20,7 @@ class LearningMaterialApiController extends Controller
     public function __construct(
         private readonly BulkImportService $bulkImportService,
     ) {}
+
     /**
      * List learning materials with filtering and pagination.
      */
@@ -34,16 +38,19 @@ class LearningMaterialApiController extends Controller
         ]);
 
         $query = LearningMaterial::with('lesson.course');
+        if (! auth('sanctum')->user()?->isSuperAdmin()) {
+            $query->published()->whereHas('lesson', fn ($q) => $q->where('status', 'published')->whereHas('course', fn ($q) => $q->published()));
+        }
 
-        if (!empty($validated['lesson_id'])) {
+        if (! empty($validated['lesson_id'])) {
             $query->where('lesson_id', $validated['lesson_id']);
         }
 
-        if (!empty($validated['material_type'])) {
+        if (! empty($validated['material_type'])) {
             $query->where('material_type', $validated['material_type']);
         }
 
-        if (!empty($validated['status'])) {
+        if (! empty($validated['status'])) {
             if ($validated['status'] !== 'all') {
                 $query->where('status', $validated['status']);
             }
@@ -55,13 +62,13 @@ class LearningMaterialApiController extends Controller
             $query->where('is_required', $validated['is_required']);
         }
 
-        if (!empty($validated['search'])) {
-            $search = '%' . $validated['search'] . '%';
+        if (! empty($validated['search'])) {
+            $search = '%'.$validated['search'].'%';
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', $search)
-                  ->orWhere('description', 'like', $search)
-                  ->orWhere('unit_code', 'like', $search)
-                  ->orWhere('unit_title', 'like', $search);
+                    ->orWhere('description', 'like', $search)
+                    ->orWhere('unit_code', 'like', $search)
+                    ->orWhere('unit_title', 'like', $search);
             });
         }
 
@@ -90,45 +97,9 @@ class LearningMaterialApiController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'lesson_id' => ['required', 'integer', 'exists:lessons,id'],
-            'unit_code' => ['required', 'string', 'max:50', 'unique:learning_materials,unit_code'],
-            'unit_title' => ['required', 'string', 'max:255'],
-            'material_type' => ['required', Rule::in(['youtube_video', 'pdf_document', 'text_content', 'external_link'])],
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'youtube_url' => ['nullable', 'url', 'max:500'],
-            'pdf_path' => ['nullable', 'string', 'max:500'],
-            'thumbnail_path' => ['nullable', 'string', 'max:500'],
-            'content_text' => ['nullable', 'string'],
-            'external_url' => ['nullable', 'url', 'max:500'],
-            'sort_order' => ['integer', 'min:0'],
-            'is_required' => ['boolean'],
-            'quiz_required' => ['boolean'],
-            'quiz_id' => ['nullable', 'integer'],
-            'status' => ['nullable', Rule::in(['draft', 'published', 'archived'])],
-            'duration_seconds' => ['integer', 'min:0'],
-        ]);
-
-        $validated['status'] = $validated['status'] ?? 'draft';
-        $validated['is_required'] = $validated['is_required'] ?? true;
-        $validated['quiz_required'] = $validated['quiz_required'] ?? false;
-        $validated['sort_order'] = $validated['sort_order'] ?? 0;
-        $validated['duration_seconds'] = $validated['duration_seconds'] ?? 0;
-
-        if ($validated['material_type'] === 'youtube_video' && !empty($validated['youtube_url'])) {
-            $videoId = LearningMaterial::extractYouTubeId($validated['youtube_url']);
-            if (!$videoId) {
-                return response()->json([
-                    'success' => false,
-                    'data' => null,
-                    'message' => 'Invalid YouTube URL format',
-                ], 422);
-            }
-            $validated['youtube_video_id'] = $videoId;
-        }
-
-        $material = LearningMaterial::create($validated);
+        $input = $request->all();
+        $input['status'] = $input['status'] ?? 'draft';
+        $material = app(LmsAuthoringService::class)->saveMaterial($input);
 
         return response()->json([
             'success' => true,
@@ -143,9 +114,14 @@ class LearningMaterialApiController extends Controller
     public function show(int $id, Request $request): JsonResponse
     {
         $material = LearningMaterial::with('lesson.course')->findOrFail($id);
+        if (auth('sanctum')->user()?->isSuperAdmin()) {
+            return response()->json(['success' => true, 'data' => [
+                ...$material->toArray(), 'thumbnail_url' => $material->thumbnail_url, 'embed_url' => $material->embed_url,
+            ]]);
+        }
 
         // For guests/public: return only published free materials
-        if (!$request->user() && $material->lesson?->course?->type !== 'free_class') {
+        if (! $request->user() && $material->lesson?->course?->type !== 'free_class') {
             return response()->json([
                 'success' => false,
                 'error' => 'Authentication required to access this material',
@@ -155,37 +131,37 @@ class LearningMaterialApiController extends Controller
 
         // For authenticated users: check authorization
         if ($request->user()) {
-            $authService = app(\App\Services\MediaAuthorizationService::class);
+            $authService = app(MediaAuthorizationService::class);
             $canAccess = $authService->canAccessMaterial($request->user(), $material);
             $tier = $authService->getAccessTier($request->user(), $material);
 
-            if (!$canAccess && $material->lesson?->course?->type !== 'free_class') {
+            if (! $canAccess && $material->lesson?->course?->type !== 'free_class') {
                 return response()->json([
                     'success' => false,
                     'error' => 'Access denied to this material',
                     'tier' => $tier,
                     'course_type' => $material->lesson?->course?->type,
                     'reason' => $tier === 'qualified_pending'
-                        ? 'Hardware Solution quiz threshold not met (90% required)'
+                        ? 'Hardware Solution prerequisite validation is not available'
                         : 'No active entitlement for this course',
                 ], 403);
             }
         }
 
         // Build response with access URLs
-        $proxyService = app(\App\Services\MediaProxyService::class);
+        $proxyService = app(MediaProxyService::class);
         $response = [
             ...$material->toArray(),
             'thumbnail_url' => $material->thumbnail_url,
             'embed_url' => $material->embed_url,
             'access_tier' => $request->user()
-                ? app(\App\Services\MediaAuthorizationService::class)->getAccessTier($request->user(), $material)
+                ? app(MediaAuthorizationService::class)->getAccessTier($request->user(), $material)
                 : 'public',
         ];
 
         // For PDF: generate signed URL
-        if ($material->file_path && $material->file_type === 'pdf' && $request->user()) {
-            $response['pdf_signed_url'] = $proxyService->generateProxyUrl('learning_material', $material->id);
+        if ($material->pdf_path && $material->material_type === 'pdf_document' && $request->user()) {
+            $response['pdf_signed_url'] = $proxyService->generateProxyUrl('pdf', $material->id, $request->user()->id);
         }
 
         return response()->json([
@@ -201,60 +177,23 @@ class LearningMaterialApiController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $material = LearningMaterial::findOrFail($id);
+        $material = app(LmsAuthoringService::class)->saveMaterial([...$material->getAttributes(), ...$request->all()], $id);
 
-        $validated = $request->validate([
-            'lesson_id' => ['nullable', 'integer', 'exists:lessons,id'],
-            'unit_code' => ['nullable', 'string', 'max:50', Rule::unique('learning_materials')->ignore($material->id)],
-            'unit_title' => ['nullable', 'string', 'max:255'],
-            'material_type' => ['nullable', Rule::in(['youtube_video', 'pdf_document', 'text_content', 'external_link'])],
-            'title' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'youtube_url' => ['nullable', 'url', 'max:500'],
-            'pdf_path' => ['nullable', 'string', 'max:500'],
-            'thumbnail_path' => ['nullable', 'string', 'max:500'],
-            'content_text' => ['nullable', 'string'],
-            'external_url' => ['nullable', 'url', 'max:500'],
-            'sort_order' => ['integer', 'min:0'],
-            'is_required' => ['boolean'],
-            'quiz_required' => ['boolean'],
-            'quiz_id' => ['nullable', 'integer'],
-            'status' => ['nullable', Rule::in(['draft', 'published', 'archived'])],
-            'duration_seconds' => ['integer', 'min:0'],
-        ]);
-
-        if (isset($validated['youtube_url']) && $validated['youtube_url'] !== null) {
-            $videoId = LearningMaterial::extractYouTubeId($validated['youtube_url']);
-            if (!$videoId) {
-                return response()->json([
-                    'success' => false,
-                    'data' => null,
-                    'message' => 'Invalid YouTube URL format',
-                ], 422);
-            }
-            $validated['youtube_video_id'] = $videoId;
-        }
-
-        $material->update($validated);
-
-        return response()->json([
-            'success' => true,
-            'data' => $material->fresh()->load('lesson.course'),
-            'message' => 'Learning material updated successfully',
-        ]);
+        return response()->json(['success' => true, 'data' => $material->load('lesson.course'), 'message' => 'Learning material updated successfully']);
     }
 
     /**
      * Soft delete a learning material.
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $material = LearningMaterial::findOrFail($id);
-        $material->delete();
+        app(LmsAuthoringService::class)->archive($material, $request->integer('expected_revision'));
 
         return response()->json([
             'success' => true,
             'data' => null,
-            'message' => 'Learning material deleted successfully',
+            'message' => 'Learning material archived; learning history retained',
         ]);
     }
 
@@ -264,22 +203,28 @@ class LearningMaterialApiController extends Controller
     public function uploadThumbnail(Request $request, int $id): JsonResponse
     {
         $material = LearningMaterial::findOrFail($id);
+        abort_unless($material->status === 'draft', 409, 'Ubah materi ke Draft sebelum mengganti berkas.');
 
         $validated = $request->validate([
             'thumbnail' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         $file = $validated['thumbnail'];
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $filename = Str::uuid().'.'.$file->getClientOriginalExtension();
         $path = $file->storeAs('learning/thumbnails', $filename, 'public');
 
-        $material->update(['thumbnail_path' => $path]);
+        try {
+            app(LmsAuthoringService::class)->saveMaterial([...$material->getAttributes(), 'thumbnail_path' => $path, 'expected_revision' => $request->integer('expected_revision')], $material->id);
+        } catch (\Throwable $e) {
+            Storage::disk('public')->delete($path);
+            throw $e;
+        }
 
         return response()->json([
             'success' => true,
             'data' => [
                 'thumbnail_path' => $path,
-                'thumbnail_url' => asset('storage/' . $path),
+                'thumbnail_url' => asset('storage/'.$path),
             ],
             'message' => 'Thumbnail uploaded successfully',
         ]);
@@ -291,25 +236,12 @@ class LearningMaterialApiController extends Controller
     public function uploadPdf(Request $request, int $id): JsonResponse
     {
         $material = LearningMaterial::findOrFail($id);
+        abort_unless($material->status === 'draft', 409);
+        $request->validate(['pdf' => 'required|file']);
+        $upload = app(LmsUploadService::class)->receive($request->user(), $request->file('pdf'), 'course_material');
 
-        $validated = $request->validate([
-            'pdf' => ['required', 'file', 'mimes:pdf', 'max:10240'],
-        ]);
-
-        $file = $validated['pdf'];
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-        $path = $file->storeAs('learning/pdfs', $filename, 'public');
-
-        $material->update(['pdf_path' => $path]);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'pdf_path' => $path,
-                'pdf_url' => asset('storage/' . $path),
-            ],
-            'message' => 'PDF uploaded successfully',
-        ]);
+        return response()->json(['success' => true, 'data' => app(LmsUploadService::class)->data($upload),
+            'message' => 'PDF menunggu pemeriksaan; tautkan ID upload setelah status ready.'], 202);
     }
 
     /**
@@ -323,7 +255,7 @@ class LearningMaterialApiController extends Controller
 
         $videoId = LearningMaterial::extractYouTubeId($validated['youtube_url']);
 
-        if (!$videoId) {
+        if (! $videoId) {
             return response()->json([
                 'success' => false,
                 'data' => null,
@@ -337,16 +269,17 @@ class LearningMaterialApiController extends Controller
             'success' => true,
             'data' => [
                 'video_id' => $videoId,
-                'is_valid' => true,
+                'is_valid' => $check['valid'],
+                'embed_verified' => false,
                 'is_accessible' => $check['accessible'],
                 'title' => $check['title'] ?? null,
                 'author' => $check['author'] ?? null,
-                'thumbnail_url' => $check['thumbnail_url'] ?? null,
+                'thumbnail_url' => $check['thumbnail'] ?? null,
                 'raw_check' => $check,
             ],
             'message' => $check['accessible']
                 ? 'YouTube video is accessible'
-                : 'YouTube video is not accessible: ' . ($check['error'] ?? 'unknown error'),
+                : 'YouTube video is not accessible: '.($check['error'] ?? 'unknown error'),
         ]);
     }
 
@@ -355,42 +288,10 @@ class LearningMaterialApiController extends Controller
      */
     public function recordProgress(Request $request, int $id): JsonResponse
     {
-        $material = LearningMaterial::findOrFail($id);
-
-        $validated = $request->validate([
-            'progress_percent' => ['required', 'integer', 'min:0', 'max:100'],
-        ]);
-
-        // Ownership from server auth — NOT from client payload (Decision D-009)
-        $userId = $request->user()?->id;
-
-        if (! $userId) {
-            return response()->json([
-                'success' => false,
-                'data' => null,
-                'message' => 'Authentication required to record progress.',
-            ], 401);
-        }
-
-        $completedAt = $validated['progress_percent'] >= 100 ? now() : null;
-
-        $view = LearningMaterialView::updateOrCreate(
-            [
-                'user_id' => $userId,
-                'learning_material_id' => $material->id,
-            ],
-            [
-                'viewed_at' => now(),
-                'progress_percent' => $validated['progress_percent'],
-                'completed_at' => $completedAt,
-            ]
-        );
-
         return response()->json([
-            'success' => true,
-            'data' => $view,
-            'message' => 'Progress recorded successfully',
-        ]);
+            'success' => false, 'code' => 'PLAYBACK_SESSION_REQUIRED',
+            'message' => 'Gunakan sesi playback. Persentase dari klien tidak diterima.',
+        ], 410);
     }
 
     /**
@@ -440,83 +341,14 @@ class LearningMaterialApiController extends Controller
      */
     public function bulkImport(Request $request): JsonResponse
     {
-        $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:10240'],
-            'preview' => ['nullable', 'boolean'],
-            'skip_invalid' => ['nullable', 'boolean'],
-        ]);
+        abort_unless($request->boolean('preview', true), 410, 'Gunakan preview ID pada endpoint apply LMS.');
 
-        $file = $request->file('file');
-        $isPreview = $request->boolean('preview', true);
-        $skipInvalid = $request->boolean('skip_invalid', false);
-
-        // Store temporarily for PhpSpreadsheet to read
-        $tempPath = $file->store('temp/imports', 'local');
-        $fullPath = storage_path('app/' . $tempPath);
-
-        try {
-            if ($isPreview) {
-                $maxRows = (int) $request->input('preview_limit', 20);
-                $result = $this->bulkImportService->preview($fullPath, $maxRows);
-            } else {
-                $result = $this->bulkImportService->commit($fullPath, $skipInvalid);
-            }
-        } finally {
-            // Always clean up temp file
-            if (file_exists($fullPath)) {
-                unlink($fullPath);
-            }
-        }
-
-        $statusCode = $result['success'] ? 200 : 422;
-
-        return response()->json([
-            'success' => $result['success'],
-            'data' => $result['data'],
-            'errors' => $result['errors'],
-            'message' => $isPreview
-                ? ($result['success'] ? 'Preview generated successfully' : 'Preview failed')
-                : ($result['success'] ? 'Import completed successfully' : 'Import failed'),
-        ], $statusCode);
+        return app(LmsImportController::class)->preview($request, $this->bulkImportService);
     }
 
-    /**
-     * Download XLSX import template with correct column headers.
-     *
-     * GET /api/v1/learning-materials/bulk-import/template
-     */
     public function bulkImportTemplate(): JsonResponse
     {
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'columns' => BulkImportService::TEMPLATE_COLUMNS,
-                'column_descriptions' => [
-                    'lesson_id' => 'Required. ID of the lesson this material belongs to.',
-                    'unit_code' => 'Optional. Auto-generated if empty. Must be unique.',
-                    'unit_title' => 'Optional. Falls back to title if empty.',
-                    'material_type' => 'One of: youtube_video, pdf_document, text_content, external_link. Default: text_content',
-                    'title' => 'Required. Title of the learning material.',
-                    'description' => 'Optional. Description text.',
-                    'youtube_url' => 'Optional. YouTube URL (for youtube_video type).',
-                    'external_url' => 'Optional. External link URL (for external_link type).',
-                    'content_text' => 'Optional. Text content (for text_content type).',
-                    'status' => 'One of: draft, published, archived. Default: draft',
-                ],
-                'example_row' => [
-                    'lesson_id' => 1,
-                    'unit_code' => 'MAT-UNIT-001',
-                    'unit_title' => 'Introduction to Topic',
-                    'material_type' => 'youtube_video',
-                    'title' => 'Video: Getting Started',
-                    'description' => 'An introductory video',
-                    'youtube_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-                    'external_url' => null,
-                    'content_text' => null,
-                    'status' => 'published',
-                ],
-            ],
-            'message' => 'Import template specification',
-        ]);
+        return response()->json(['success' => true, 'data' => ['columns' => BulkImportService::TEMPLATE_COLUMNS,
+            'mode' => 'create_only_all_or_nothing_draft', 'max_rows' => 1000]]);
     }
 }

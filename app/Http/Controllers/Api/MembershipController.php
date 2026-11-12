@@ -14,7 +14,7 @@ class MembershipController extends Controller
         $user = $request->user();
         $membership = $user->membership;
 
-        if (!$membership) {
+        if (! $membership) {
             return response()->json([
                 'success' => false,
                 'message' => 'No active membership found',
@@ -41,7 +41,7 @@ class MembershipController extends Controller
     {
         $membership = Membership::where('membership_number', $membershipNumber)->first();
 
-        if (!$membership) {
+        if (! $membership) {
             return response()->json([
                 'success' => false,
                 'message' => 'Membership not found',
@@ -62,83 +62,12 @@ class MembershipController extends Controller
         ]);
     }
 
-    /**
-     * Activate membership upon purchase from mobile app.
-     */
     public function activate(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'user_id' => 'nullable|integer|exists:users,id',
-            'email' => 'nullable|string|email',
-            'package' => 'required|string',
-        ]);
-
-        $user = $request->user('sanctum') ?? $request->user();
-        if (! $user && $request->filled('email')) {
-            $user = \App\Models\User::where('email', $request->input('email'))->first();
-        }
-        if (! $user && ! empty($validated['user_id'])) {
-            $user = \App\Models\User::find($validated['user_id']);
-        }
-        if (! $user) {
-            $user = \App\Models\User::where('role', 'student')->first();
-        }
-
-        if (! $user) {
-            return response()->json(['success' => false, 'message' => 'User not found'], 404);
-        }
-
-        $package = strtolower($validated['package']);
-
-        // 1. Create or update Membership
-        $membershipNumber = $user->membership?->membership_number ?? Membership::generateMembershipNumber();
-        $membership = Membership::updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'membership_number' => $membershipNumber,
-                'status' => 'active',
-                'purchase_type' => $package,
-                'issued_at' => now(),
-                'expires_at' => null, // permanent
-            ]
-        );
-
-        // 2. Grant Entitlements
-        $courseTypes = match($package) {
-            'bundling' => ['android', 'iphone', 'bundling'],
-            'android' => ['android'],
-            'iphone' => ['iphone'],
-            default => [$package],
-        };
-
-        foreach ($courseTypes as $cType) {
-            \App\Models\Entitlement::firstOrCreate(
-                [
-                    'user_id' => $user->id,
-                    'package_type' => $cType,
-                ],
-                [
-                    'source' => 'purchase',
-                    'status' => 'active',
-                    'starts_at' => now(),
-                    'expires_at' => null,
-                ]
-            );
-        }
-
         return response()->json([
-            'success' => true,
-            'message' => 'Membership KTA dan hak akses berhasil diaktifkan di database',
-            'data' => [
-                'user_id' => $user->id,
-                'user_name' => $user->name,
-                'membership_number' => $membership->membership_number,
-                'status' => $membership->status,
-                'purchase_type' => $membership->purchase_type,
-                'issued_at' => $membership->issued_at->toIso8601String(),
-                'is_permanent' => true,
-                'is_active' => true,
-            ],
-        ]);
+            'success' => false,
+            'error' => ['code' => 'PURCHASE_VERIFICATION_REQUIRED'],
+            'message' => 'Aktivasi hanya tersedia melalui transaksi yang diverifikasi server.',
+        ], 409);
     }
 }

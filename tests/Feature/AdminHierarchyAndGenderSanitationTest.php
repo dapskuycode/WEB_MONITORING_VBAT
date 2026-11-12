@@ -91,7 +91,6 @@ class AdminHierarchyAndGenderSanitationTest extends TestCase
 
         // Uji coba kirim gender 'other' -> wajib ditolak HTTP 422
         $response = $this->actingAs($user)->postJson('/api/v1/user/demographics', [
-            'user_id' => $user->id,
             'gender' => 'other',
         ]);
 
@@ -107,7 +106,6 @@ class AdminHierarchyAndGenderSanitationTest extends TestCase
         $user = User::factory()->create(['role' => 'student']);
 
         $response = $this->actingAs($user)->postJson('/api/v1/user/demographics', [
-            'user_id' => $user->id,
             'gender' => 'Laki-laki',
         ]);
 
@@ -126,7 +124,6 @@ class AdminHierarchyAndGenderSanitationTest extends TestCase
         $user = User::factory()->create(['role' => 'student']);
 
         $response = $this->actingAs($user)->postJson('/api/v1/user/demographics', [
-            'user_id' => $user->id,
             'gender' => 'Perempuan',
         ]);
 

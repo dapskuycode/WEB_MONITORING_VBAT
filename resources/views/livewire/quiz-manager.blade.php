@@ -1,220 +1,28 @@
-<div class="p-6">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Quiz Manager</h1>
-        <p class="text-gray-600 mt-1">Manage quizzes, questions, and attempt limits</p>
-    </div>
-
-    @if (session()->has('message'))
-        <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-            {{ session('message') }}
-        </div>
-    @endif
-
-    {{-- Tab Navigation --}}
-    <div class="border-b border-gray-200 mb-6">
-        <nav class="-mb-px flex space-x-8">
-            <button wire:click="$set('activeTab', 'quizzes')"
-                class="@if($activeTab === 'quizzes') border-blue-500 text-blue-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium">
-                Quizzes
-            </button>
-            <button wire:click="$set('activeTab', 'questions')" @if(!$managingQuizId) disabled class="opacity-50 cursor-not-allowed" @endif
-                class="@if($activeTab === 'questions') border-blue-500 text-blue-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium">
-                Questions
-            </button>
-        </nav>
-    </div>
-
-    {{-- Quizzes Tab --}}
-    @if($activeTab === 'quizzes')
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {{-- Quiz Form --}}
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-4">@if($selectedQuizId) Edit Quiz @else Create Quiz @endif</h2>
-                <form wire:submit.prevent="saveQuiz" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Title *</label>
-                        <input type="text" wire:model="quizTitle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                        @error('quizTitle') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Description</label>
-                        <textarea wire:model="quizDescription" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
-                        @error('quizDescription') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Learning Material</label>
-                        <select wire:model="quizMaterialId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            <option value="">-- None --</option>
-                            @foreach($materials as $mat)
-                                <option value="{{ $mat->id }}">{{ $mat->title }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Max Attempts *</label>
-                            <input type="number" wire:model="quizMaxAttempts" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            @error('quizMaxAttempts') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Passing Score % *</label>
-                            <input type="number" wire:model="quizPassingScore" min="0" max="100" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            @error('quizPassingScore') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Time Limit (min) *</label>
-                            <input type="number" wire:model="quizTimeLimit" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            @error('quizTimeLimit') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Sort Order</label>
-                            <input type="number" wire:model="quizSortOrder" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="flex items-center">
-                            <input type="checkbox" wire:model="quizIsActive" class="rounded border-gray-300">
-                            <span class="ml-2 text-sm">Active</span>
-                        </label>
-                    </div>
-
-                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        @if($selectedQuizId) Update @else Create @endif Quiz
-                    </button>
-                    @if($selectedQuizId)
-                        <button type="button" wire:click="resetQuizForm" class="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded-md">Cancel</button>
-                    @endif
-                </form>
-            </div>
-
-            {{-- Quizzes List --}}
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-4">All Quizzes</h2>
-                <div class="mb-4 grid grid-cols-1 gap-2">
-                    <input type="text" wire:model.live="searchTerm" placeholder="Search quizzes..." class="block w-full rounded-md border-gray-300 shadow-sm">
-                    <select wire:model.live="materialFilter" class="block w-full rounded-md border-gray-300 shadow-sm">
-                        <option value="">-- All Materials --</option>
-                        @foreach($materials as $mat)
-                            <option value="{{ $mat->id }}">{{ $mat->title }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="space-y-2 max-h-96 overflow-y-auto">
-                    @forelse($quizzes as $quiz)
-                        <div class="p-3 bg-gray-50 rounded border border-gray-200">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <h3 class="font-medium text-gray-900">{{ $quiz->title }}</h3>
-                                    <p class="text-xs text-gray-600">{{ $quiz->learningMaterial?->title ?? 'No material' }}</p>
-                                    <p class="text-xs text-gray-500 mt-1">
-                                        Max attempts: {{ $quiz->max_attempts }} | Pass score: {{ $quiz->passing_score }}%
-                                    </p>
-                                </div>
-                                <div class="flex gap-1">
-                                    <button wire:click="editQuiz({{ $quiz->id }})" class="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
-                                    <button wire:click="manageQuestions({{ $quiz->id }})" class="text-green-600 hover:text-green-800 text-sm">Questions</button>
-                                    <button wire:click="deleteQuiz({{ $quiz->id }})" onclick="return confirm('Delete?')" class="text-red-600 hover:text-red-800 text-sm">Delete</button>
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        <p class="text-gray-500 text-center py-8">No quizzes found.</p>
-                    @endforelse
-                </div>
-
-                <div class="mt-4">
-                    {{ $quizzes->links() }}
-                </div>
-            </div>
-        </div>
-    @endif
-
-    {{-- Questions Tab --}}
-    @if($activeTab === 'questions' && $managingQuizId)
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {{-- Question Form --}}
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-4">@if($selectedQuestionId) Edit Question @else Add Question @endif</h2>
-                <form wire:submit.prevent="saveQuestion" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Question Text *</label>
-                        <textarea wire:model="questionText" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="Enter question..."></textarea>
-                        @error('questionText') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div>
-                        <div class="flex justify-between items-center mb-2">
-                            <label class="block text-sm font-medium text-gray-700">Options *</label>
-                            <button type="button" wire:click="addOption" class="text-sm text-blue-600 hover:text-blue-800">+ Add Option</button>
-                        </div>
-                        <div class="space-y-2 max-h-40 overflow-y-auto">
-                            @foreach($questionOptions as $index => $option)
-                                <div class="flex gap-2">
-                                    <label class="flex items-center flex-shrink-0">
-                                        <input type="radio" wire:model="questionCorrectAnswer" value="{{ $index }}" class="rounded border-gray-300">
-                                        <span class="ml-1 text-xs text-gray-600">Correct</span>
-                                    </label>
-                                    <input type="text" wire:model="questionOptions.{{ $index }}" class="flex-1 rounded-md border-gray-300 shadow-sm" placeholder="Option {{ $index + 1 }}">
-                                    @if(count($questionOptions) > 2)
-                                        <button type="button" wire:click="removeOption({{ $index }})" class="text-red-600 hover:text-red-800">✕</button>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                        @error('questionOptions') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Points *</label>
-                            <input type="number" wire:model="questionPoints" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            @error('questionPoints') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Sort Order</label>
-                            <input type="number" wire:model="questionSortOrder" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                        </div>
-                    </div>
-
-                    <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-                        @if($selectedQuestionId) Update @else Add @endif Question
-                    </button>
-                    @if($selectedQuestionId)
-                        <button type="button" wire:click="resetQuestionForm" class="w-full px-4 py-2 bg-gray-300 text-gray-700 rounded-md">Cancel</button>
-                    @endif
-                </form>
-            </div>
-
-            {{-- Questions List --}}
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-4">Questions ({{ count($questions) }})</h2>
-                <div class="space-y-2 max-h-96 overflow-y-auto">
-                    @forelse($questions as $question)
-                        <div class="p-3 bg-gray-50 rounded border border-gray-200">
-                            <h3 class="font-medium text-gray-900 text-sm">{{ $question->question_text }}</h3>
-                            <p class="text-xs text-gray-600 mt-1">{{ count($question->options ?? []) }} options | {{ $question->points }} pts</p>
-                            <div class="flex gap-1 mt-2">
-                                <button wire:click="editQuestion({{ $question->id }})" class="text-blue-600 hover:text-blue-800 text-xs">Edit</button>
-                                <button wire:click="deleteQuestion({{ $question->id }})" onclick="return confirm('Delete?')" class="text-red-600 hover:text-red-800 text-xs">Delete</button>
-                            </div>
-                        </div>
-                    @empty
-                        <p class="text-gray-500 text-center py-8">No questions yet.</p>
-                    @endforelse
-                </div>
-
-                <button wire:click="backToQuizzes" class="w-full mt-4 px-4 py-2 bg-gray-300 text-gray-700 rounded-md">
-                    ← Back to Quizzes
-                </button>
-            </div>
-        </div>
-    @endif
+<div class="space-y-6 p-6 text-zinc-900 dark:text-zinc-100">
+<h1 class="text-2xl font-semibold">Pengelolaan kuis</h1><p>Soal, aturan dan posisi kuis disimpan di server. Attempt yang sudah dimulai memakai snapshot awal.</p>
+@if(session('message'))<p role="status">{{ session('message') }}</p>@endif
+@if($errors->any())<ul role="alert">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>@endif
+<div class="flex flex-wrap gap-3"><flux:button wire:click="$set('activeTab','quizzes')">Daftar kuis</flux:button>@if($managingQuizId)<flux:button wire:click="$set('activeTab','questions')">Editor soal</flux:button>@endif<flux:button href="{{ url('/admin/lms/reviews') }}">Review penilaian</flux:button></div>
+@if($activeTab==='quizzes')
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2"><form wire:submit="saveQuiz" class="space-y-4 rounded border border-zinc-300 p-4 dark:border-zinc-700">
+<label class="block">Judul kuis<flux:input wire:model="quizTitle" /></label><label class="block">Deskripsi<flux:textarea wire:model="quizDescription" rows="2" /></label>
+<label class="block">Materi acuan untuk kelas/modul<select wire:model="quizMaterialId" class="block w-full rounded border p-2 dark:bg-zinc-900"><option value="">Pilih materi</option>@foreach($this->materials as $material)<option value="{{ $material->id }}">{{ $material->unit_code }} · {{ $material->title }}</option>@endforeach</select></label>
+<label class="block">Posisi<select wire:model="quizPlacement" class="block w-full rounded border p-2 dark:bg-zinc-900"><option value="after_material">Setelah materi acuan</option><option value="end_of_module">Akhir modul materi acuan</option><option value="end_of_course">Akhir kelas materi acuan</option></select></label>
+<label class="block">Cara penilaian<select wire:model="quizGradingMode" class="block w-full rounded border p-2 dark:bg-zinc-900"><option value="auto">Otomatis (MCQ/jawaban singkat)</option><option value="hybrid">Hybrid (studi kasus direview)</option><option value="manual">Manual (semua soal direview)</option></select></label>
+<label class="block">Nilai yang dipakai<select wire:model="quizGradingPolicy" class="block w-full rounded border p-2 dark:bg-zinc-900"><option value="highest">Tertinggi</option><option value="latest">Terakhir dipublikasikan</option><option value="average">Rata-rata nilai dipublikasikan</option></select></label>
+<div class="grid grid-cols-1 gap-4 sm:grid-cols-2"><label>Nilai lulus<flux:input wire:model="quizPassingScore" type="number" min="0" max="100" /></label><label>Batas percobaan (0 = tanpa batas)<flux:input wire:model="quizMaxAttempts" type="number" min="0" max="10" /></label><label>Waktu dalam menit (kosong = tanpa batas)<flux:input wire:model="quizTimeLimit" type="number" min="1" max="240" /></label><label>Urutan kuis<flux:input wire:model="quizSortOrder" type="number" min="0" /></label></div>
+<flux:checkbox wire:model="quizRequired" label="Wajib untuk penyelesaian kelas" /><flux:checkbox wire:model="quizIsActive" label="Aktif" /><flux:checkbox wire:model="quizShuffleQuestions" label="Acak urutan soal saat attempt dimulai" /><flux:checkbox wire:model="quizShuffleOptions" label="Acak opsi pilihan ganda" />
+<div class="flex flex-wrap gap-3"><flux:button type="submit" variant="primary">Simpan kuis</flux:button><flux:button wire:click="resetQuizForm" type="button">Kuis baru</flux:button></div>
+</form><div><label>Cari kuis<flux:input wire:model.live.debounce.300ms="searchTerm" /></label><ul class="mt-4 space-y-3">@foreach($this->quizzes as $quiz)<li class="space-y-2 rounded border border-zinc-300 p-3 dark:border-zinc-700"><p>{{ $quiz->title }} · {{ $quiz->grading_mode }} · {{ $quiz->is_active?'Aktif':'Nonaktif' }}</p><div class="flex flex-wrap gap-2"><flux:button wire:click="editQuiz({{ $quiz->id }})">Aturan</flux:button><flux:button wire:click="manageQuestions({{ $quiz->id }})">Soal</flux:button><flux:button wire:click="deleteQuiz({{ $quiz->id }})">Hapus/nonaktifkan</flux:button></div></li>@endforeach</ul>{{ $this->quizzes->links() }}</div></div>
+@else
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-2"><form wire:submit="saveQuestion" class="space-y-4 rounded border border-zinc-300 p-4 dark:border-zinc-700">
+<label class="block">Jenis soal<select aria-label="Jenis soal" wire:model.live="questionType" class="block w-full rounded border p-2 dark:bg-zinc-900"><option value="mcq">Pilihan ganda</option><option value="short_answer">Jawaban singkat</option><option value="case_study">Studi kasus</option></select></label>
+<label class="block">Pertanyaan<flux:textarea wire:model="questionText" rows="4" /></label>
+@if($questionType==='mcq')<fieldset class="space-y-3"><legend>Opsi dan jawaban benar</legend>@foreach($questionOptions as $index=>$option)<div class="flex flex-wrap items-center gap-2"><input type="radio" aria-label="Jawaban benar opsi {{ $index+1 }}" wire:model="questionCorrectAnswer" value="{{ $index }}" /><label class="grow">Opsi {{ $index+1 }}<flux:input aria-label="Opsi {{ $index+1 }}" wire:model="questionOptions.{{ $index }}" placeholder="Opsi {{ $index+1 }}" /></label><flux:button type="button" wire:click="removeOption({{ $index }})">Hapus opsi</flux:button></div>@endforeach<flux:button wire:click="addOption" type="button">Tambah opsi</flux:button></fieldset>
+@elseif($questionType==='short_answer')<p>Keyword cocok sebagai kata/frasa utuh. Alias dipisah koma; satu kelompok dihitung sekali sesuai bobot.</p>@foreach($questionAliasGroups as $index=>$group)<fieldset class="space-y-2"><legend>Kelompok keyword {{ $index+1 }}</legend><label class="block">Alias kelompok {{ $index+1 }}<flux:input aria-label="Alias kelompok {{ $index+1 }}" wire:model="questionAliasGroups.{{ $index }}.text" placeholder="Contoh: tegangan suplai, vbat" /></label><label>Bobot<flux:input wire:model="questionAliasGroups.{{ $index }}.weight" type="number" min="0.01" step="0.01" /></label><flux:button type="button" wire:click="removeAliasGroup({{ $index }})">Hapus kelompok</flux:button></fieldset>@endforeach<flux:button wire:click="addAliasGroup" type="button">Tambah kelompok</flux:button>
+@else<p>Studi kasus dinilai manusia. Total poin kriteria harus sama dengan poin soal.</p>@foreach($questionRubric as $index=>$criterion)<fieldset class="space-y-2"><legend>Kriteria {{ $index+1 }}</legend><label>Deskripsi<flux:input wire:model="questionRubric.{{ $index }}.label" /></label><label>Poin maksimum<flux:input wire:model="questionRubric.{{ $index }}.max_points" type="number" min="0.01" step="0.01" /></label><flux:button type="button" wire:click="removeCriterion({{ $index }})">Hapus kriteria</flux:button></fieldset>@endforeach<flux:button type="button" wire:click="addCriterion">Tambah kriteria</flux:button>@endif
+<div class="grid grid-cols-1 gap-3 sm:grid-cols-2"><label>Poin soal<flux:input wire:model="questionPoints" type="number" min="1" max="1000" /></label><label>Urutan<flux:input wire:model="questionSortOrder" type="number" min="0" /></label></div>
+<div class="flex flex-wrap gap-3"><flux:button type="submit" variant="primary">Simpan soal</flux:button><flux:button type="button" wire:click="resetQuestionForm">Soal baru</flux:button></div>
+</form><ul class="space-y-3">@foreach($this->questions as $question)<li class="rounded border border-zinc-300 p-3 dark:border-zinc-700"><p>{{ $question->question_text }}</p><p>{{ $question->question_type }} · {{ $question->points }} poin</p><div class="mt-2 flex flex-wrap gap-2"><flux:button wire:click="editQuestion({{ $question->id }})">Edit soal</flux:button><flux:button wire:click="deleteQuestion({{ $question->id }})">Hapus soal</flux:button></div></li>@endforeach</ul></div>
+@endif
 </div>

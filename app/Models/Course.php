@@ -2,17 +2,24 @@
 
 namespace App\Models;
 
+use Database\Factories\CourseFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Course extends Model
 {
+    /** @use HasFactory<CourseFactory> */
     use HasFactory;
 
     public const TYPE_FREE_CLASS = 'free_class';
+
     public const TYPE_ANDROID = 'android';
+
     public const TYPE_IPHONE = 'iphone';
+
     public const TYPE_HARDWARE_SOLUTION = 'hardware_solution';
 
     public const TYPES = [
@@ -22,7 +29,13 @@ class Course extends Model
         self::TYPE_HARDWARE_SOLUTION,
     ];
 
+    protected $attributes = ['revision' => 1];
+
     protected $fillable = [
+        'prerequisite_course_id',
+        'code',
+        'revision',
+
         'title',
         'slug',
         'description',
@@ -59,18 +72,18 @@ class Course extends Model
     }
 
     /**
-     * @return HasMany<LearningMaterial, $this>
+     * @return HasManyThrough<LearningMaterial, Lesson, $this>
      */
-    public function learningMaterials(): HasMany
+    public function learningMaterials(): HasManyThrough
     {
-        return $this->hasMany(LearningMaterial::class)->orderBy('sort_order');
+        return $this->hasManyThrough(LearningMaterial::class, Lesson::class)->orderBy('learning_materials.sort_order');
     }
 
     /**
      * Scope: published courses only.
      *
-     * @param \Illuminate\Database\Eloquent\Builder<$this> $query
-     * @return \Illuminate\Database\Eloquent\Builder<$this>
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
      */
     public function scopePublished($query)
     {
@@ -81,8 +94,8 @@ class Course extends Model
     /**
      * Scope: free class courses.
      *
-     * @param \Illuminate\Database\Eloquent\Builder<$this> $query
-     * @return \Illuminate\Database\Eloquent\Builder<$this>
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
      */
     public function scopeFreeClass($query)
     {
@@ -92,8 +105,8 @@ class Course extends Model
     /**
      * Scope: by type.
      *
-     * @param \Illuminate\Database\Eloquent\Builder<$this> $query
-     * @return \Illuminate\Database\Eloquent\Builder<$this>
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
      */
     public function scopeOfType($query, string $type)
     {

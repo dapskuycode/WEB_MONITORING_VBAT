@@ -10,7 +10,10 @@ class QuizQuestion extends Model
 {
     use HasFactory;
 
+    protected $attributes = ['question_type' => 'mcq'];
+
     protected $fillable = [
+        'question_type', 'answer_aliases', 'rubric',
         'quiz_id',
         'question_text',
         'options',
@@ -20,7 +23,7 @@ class QuizQuestion extends Model
     ];
 
     protected $casts = [
-        'options' => 'array',
+        'options' => 'array', 'answer_aliases' => 'array', 'rubric' => 'array',
         'points' => 'integer',
         'sort_order' => 'integer',
     ];

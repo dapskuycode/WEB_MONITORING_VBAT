@@ -3,537 +3,378 @@
 namespace App\Livewire;
 
 use App\Models\Course;
-use App\Models\CourseCategory;
 use App\Models\LearningMaterial;
 use App\Models\Lesson;
-use App\Models\Unit;
-use App\Services\YouTubeValidationService;
+use App\Models\LmsUpload;
+use App\Services\LmsAuthoringService;
+use App\Services\LmsUploadService;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class ContentCms extends Component
 {
     use WithFileUploads;
     use WithPagination;
 
+    public string $search = '';
+
+    public string $statusFilter = '';
+
     public string $activeTab = 'courses';
 
-    // Course form
+    #[Locked]
     public ?int $selectedCourseId = null;
+
+    #[Locked]
+    public int $courseRevision = 1;
+
     public string $courseTitle = '';
+
     public string $courseSlug = '';
+
+    public string $courseCode = '';
+
     public string $courseType = 'android';
+
+    public ?int $coursePrerequisiteId = null;
+
     public string $courseDescription = '';
-    public ?int $courseCategoryId = null;
-    public float $coursePrice = 0;
-    public string $courseDuration = '30 hari';
-    public string $courseDurationUnit = 'day';
-    public int $courseDurationValue = 30;
-    public bool $courseIsArchived = false;
-    public bool $courseIsFree = false;
-    public string $courseEntitlements = '';
-    public array $courseErrors = [];
 
-    // Category form
-    public ?int $selectedCategoryId = null;
-    public string $categoryTitle = '';
-    public string $categorySlug = '';
-    public string $categoryColor = '#3b82f6';
+    public string $courseStatus = 'draft';
 
-    // Lesson form
+    public ?TemporaryUploadedFile $courseCover = null;
+
+    #[Locked]
+    public ?string $courseCoverPath = null;
+
+    #[Locked]
     public ?int $selectedLessonId = null;
+
+    #[Locked]
+    public int $lessonRevision = 1;
+
     public string $lessonTitle = '';
-    public string $lessonSlug = '';
+
+    public string $lessonCode = '';
+
     public string $lessonDescription = '';
+
+    public string $lessonStatus = 'draft';
+
     public int $lessonSortOrder = 0;
-    public bool $lessonIsArchived = false;
 
-    // Unit form
-    public ?int $selectedUnitId = null;
-    public string $unitTitle = '';
-    public string $unitCode = '';
-    public string $unitDescription = '';
-    public string $unitType = 'video';
-    public bool $unitIsRequired = false;
-    public int $unitSortOrder = 0;
-    public bool $unitIsArchived = false;
-    public ?string $unitQuizCode = null;
-
-    // Material form
+    #[Locked]
     public ?int $selectedMaterialId = null;
+
+    #[Locked]
+    public int $materialRevision = 1;
+
     public string $materialTitle = '';
-    public string $materialType = 'youtube';
+
+    public string $materialCode = '';
+
+    public string $materialUnitTitle = '';
+
+    public string $materialType = 'youtube_video';
+
     public string $materialDescription = '';
-    public ?string $materialYoutubeUrl = null;
-    public ?string $materialVideoId = null;
-    public $materialPdfFile;
-    public ?string $materialPdfPath = null;
-    public $materialThumbnailFile;
-    public ?string $materialThumbnailPath = null;
+
+    public string $materialYoutubeUrl = '';
+
+    public string $materialContent = '';
+
+    public string $materialExternalUrl = '';
+
+    public string $materialStatus = 'draft';
+
     public int $materialSortOrder = 0;
-    public bool $materialIsArchived = false;
-    public bool $materialIsRequired = false;
 
-    // Bulk upload
-    public $bulkXlsxFile;
-    public string $bulkProcess = 'dry_run';
-    public string $bulkReport = '';
+    public bool $materialIsRequired = true;
 
-    // Services
-    private YouTubeValidationService $youtubeService;
+    public bool $materialIsPreview = false;
 
-    public function mount()
+    public ?TemporaryUploadedFile $materialPdfFile = null;
+
+    public ?string $materialPdfUploadId = null;
+
+    public string $materialPdfStatus = '';
+
+    #[Locked]
+    public ?string $materialPdfPath = null;
+
+    /** @var list<array{0: string, 1: string}> */
+    private array $pendingUploads = [];
+
+    public function boot(): void
     {
-        $this->youtubeService = app(YouTubeValidationService::class);
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
     }
 
-    public function updatedCourseType($value)
+    public function updatedSearch(): void
     {
-        $this->coursePrice = match ($value) {
-            'android' => 800000,
-            'iphone' => 2000000,
-            'bundling' => 2500000,
-            'hardware_solution' => 0,
-            'free_class' => 0,
-            default => 0,
-        };
-        $this->courseIsFree = in_array($value, ['hardware_solution', 'free_class']);
-        $this->courseDurationValue = $value === 'subscription' ? 365 : 30;
-        $this->courseDurationUnit = 'day';
+        $this->resetPage();
     }
 
-    public function updatedMaterialYoutubeUrl($url)
+    public function updatedStatusFilter(): void
     {
-        if (empty($url)) {
-            $this->materialVideoId = null;
-            return;
-        }
-
-        $this->materialVideoId = $this->youtubeService->extractVideoId($url);
-        if (!$this->materialVideoId) {
-            $this->addError('materialYoutubeUrl', 'Invalid YouTube URL. Must be a valid YouTube video link.');
-        }
+        $this->resetPage();
     }
 
-    public function saveCourse()
+    public function newCourse(): void
     {
-        $this->validate([
-            'courseTitle' => 'required|min:3|max:255',
-            'courseSlug' => 'required|min:3|max:100|alpha_dash|unique:courses,slug,' . ($this->selectedCourseId ?: 'NULL'),
-            'courseType' => ['required', Rule::in(['android', 'iphone', 'bundling', 'hardware_solution', 'free_class', 'subscription'])],
-            'courseDescription' => 'nullable|max:1000',
-            'courseCategoryId' => 'nullable|exists:course_categories,id',
-            'coursePrice' => 'required|numeric|min:0',
-            'courseDurationValue' => 'required|integer|min:1',
-            'courseDurationUnit' => 'required|in:day,month,year',
-        ]);
-
-        try {
-            DB::transaction(function () {
-                $data = [
-                    'title' => $this->courseTitle,
-                    'slug' => $this->courseSlug,
-                    'type' => $this->courseType,
-                    'description' => $this->courseDescription,
-                    'category_id' => $this->courseCategoryId,
-                    'price' => $this->coursePrice,
-                    'duration_value' => $this->courseDurationValue,
-                    'duration_unit' => $this->courseDurationUnit,
-                    'duration' => "{$this->courseDurationValue} {$this->courseDurationUnit}s",
-                    'is_archived' => $this->courseIsArchived,
-                    'is_free' => $this->courseIsFree,
-                    'entitlements' => $this->courseEntitlements ? json_decode($this->courseEntitlements, true) : [],
-                ];
-
-                if ($this->selectedCourseId) {
-                    Course::findOrFail($this->selectedCourseId)->update($data);
-                    session()->flash('message', 'Course updated successfully.');
-                } else {
-                    Course::create($data);
-                    session()->flash('message', 'Course created successfully.');
-                }
-                $this->resetCourseForm();
-            });
-        } catch (\Exception $e) {
-            session()->flash('error', 'Failed to save course: ' . $e->getMessage());
-        }
+        $this->reset('selectedCourseId', 'courseRevision', 'courseTitle', 'courseSlug', 'courseCode', 'courseType', 'coursePrerequisiteId', 'courseDescription', 'courseStatus', 'courseCover', 'courseCoverPath', 'selectedLessonId', 'selectedMaterialId');
+        $this->activeTab = 'courses';
+        $this->resetValidation();
     }
 
-    public function editCourse(int $id)
+    public function selectCourse(int $id): void
     {
-        $course = Course::findOrFail($id);
-        $this->selectedCourseId = $course->id;
-        $this->courseTitle = $course->title;
-        $this->courseSlug = $course->slug;
-        $this->courseType = $course->type;
-        $this->courseDescription = $course->description;
-        $this->courseCategoryId = $course->category_id;
-        $this->coursePrice = $course->price;
-        [$value, $unit] = explode(' ', rtrim($course->duration, 's'));
-        $this->courseDurationValue = (int)$value;
-        $this->courseDurationUnit = $unit;
-        $this->courseIsArchived = $course->is_archived;
-        $this->courseIsFree = $course->is_free;
-        $this->courseEntitlements = json_encode($course->entitlements, JSON_PRETTY_PRINT);
+        $this->newCourse();
+        $this->selectedCourseId = $id;
+        $this->loadCourse();
+        $this->newLesson();
         $this->activeTab = 'courses';
     }
 
-    public function deleteCourse(int $id)
+    private function loadCourse(): void
     {
-        $course = Course::findOrFail($id);
-        if ($course->lessons()->count() > 0) {
-            session()->flash('error', 'Cannot delete course with existing lessons. Archive instead.');
-            return;
-        }
-        $course->delete();
-        session()->flash('message', 'Course deleted successfully.');
+        $course = Course::findOrFail($this->selectedCourseId);
+        $this->courseRevision = $course->revision;
+        $this->courseTitle = $course->title;
+        $this->courseSlug = $course->slug;
+        $this->courseCode = $course->code ?? '';
+        $this->courseType = $course->type;
+        $this->coursePrerequisiteId = $course->prerequisite_course_id;
+        $this->courseDescription = $course->description ?? '';
+        $this->courseStatus = $course->status;
+        $this->courseCoverPath = $course->thumbnail_path;
     }
 
-    public function resetCourseForm()
+    public function saveCourse(): void
     {
-        $this->selectedCourseId = null;
-        $this->courseTitle = '';
-        $this->courseSlug = '';
-        $this->courseType = 'android';
-        $this->courseDescription = '';
-        $this->courseCategoryId = null;
-        $this->coursePrice = 800000;
-        $this->courseDurationValue = 30;
-        $this->courseDurationUnit = 'day';
-        $this->courseIsArchived = false;
-        $this->courseIsFree = false;
-        $this->courseEntitlements = '';
+        $this->perform(function ($service) {
+            $this->validate(['courseCover' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:4096']);
+            $path = $this->courseCoverPath;
+            if ($this->courseCover) {
+                $path = $this->courseCover->store('learning/covers', 'public');
+                if ($path === false) {
+                    throw new \RuntimeException('Cover storage failed');
+                }
+                $this->pendingUploads[] = ['public', $path];
+            }
+            $course = $service->saveCourse([
+                'title' => $this->courseTitle, 'slug' => $this->courseSlug ?: null, 'code' => $this->courseCode ?: null,
+                'prerequisite_course_id' => $this->coursePrerequisiteId, 'type' => $this->courseType, 'description' => $this->courseDescription,
+                'status' => $this->courseStatus, 'thumbnail_path' => $path, 'expected_revision' => $this->courseRevision,
+            ], $this->selectedCourseId);
+            $this->selectCourse($course->id);
+        });
     }
 
-    // Similar methods for category, lesson, unit, material...
-    // For brevity, I'll implement the main flow with tab switching and listing
-
-    // ===== CATEGORY CRUD =====
-    public function saveCategory()
+    public function newLesson(): void
     {
-        $this->validate([
-            'categoryTitle' => 'required|min:3|max:255',
-            'categorySlug' => 'required|min:3|max:100|alpha_dash|unique:course_categories,slug,' . ($this->selectedCategoryId ?: 'NULL'),
-            'categoryColor' => 'required|regex:/^#[0-9A-Fa-f]{6}$/',
-        ]);
-
-        $data = [
-            'title' => $this->categoryTitle,
-            'slug' => $this->categorySlug,
-            'color' => $this->categoryColor,
-        ];
-
-        if ($this->selectedCategoryId) {
-            CourseCategory::findOrFail($this->selectedCategoryId)->update($data);
-            session()->flash('message', 'Category updated successfully.');
-        } else {
-            CourseCategory::create($data);
-            session()->flash('message', 'Category created successfully.');
-        }
-        $this->resetCategoryForm();
+        $this->reset('selectedLessonId', 'lessonRevision', 'lessonTitle', 'lessonCode', 'lessonDescription', 'lessonStatus', 'selectedMaterialId');
+        $this->lessonSortOrder = $this->selectedCourseId ? (Lesson::where('course_id', $this->selectedCourseId)->max('sort_order') ?? -1) + 1 : 0;
+        $this->resetValidation();
     }
 
-    public function editCategory(int $id)
+    public function selectLesson(int $id): void
     {
-        $category = CourseCategory::findOrFail($id);
-        $this->selectedCategoryId = $category->id;
-        $this->categoryTitle = $category->title;
-        $this->categorySlug = $category->slug;
-        $this->categoryColor = $category->color ?? '#3b82f6';
-        $this->activeTab = 'categories';
-    }
-
-    public function deleteCategory(int $id)
-    {
-        $category = CourseCategory::findOrFail($id);
-        if ($category->courses()->count() > 0) {
-            session()->flash('error', 'Cannot delete category with existing courses.');
-            return;
-        }
-        $category->delete();
-        session()->flash('message', 'Category deleted successfully.');
-    }
-
-    public function resetCategoryForm()
-    {
-        $this->selectedCategoryId = null;
-        $this->categoryTitle = '';
-        $this->categorySlug = '';
-        $this->categoryColor = '#3b82f6';
-    }
-
-    // ===== LESSON CRUD =====
-    public function saveLesson()
-    {
-        $this->validate([
-            'lessonTitle' => 'required|min:3|max:255',
-            'lessonSlug' => 'required|min:3|max:100|alpha_dash',
-            'lessonDescription' => 'nullable|max:1000',
-            'lessonSortOrder' => 'required|integer|min:0',
-        ]);
-
-        if (!$this->selectedCourseId) {
-            session()->flash('error', 'Please select a course first.');
-            return;
-        }
-
-        $data = [
-            'course_id' => $this->selectedCourseId,
-            'title' => $this->lessonTitle,
-            'slug' => $this->lessonSlug,
-            'description' => $this->lessonDescription,
-            'sort_order' => $this->lessonSortOrder,
-            'is_archived' => $this->lessonIsArchived,
-        ];
-
-        if ($this->selectedLessonId) {
-            Lesson::findOrFail($this->selectedLessonId)->update($data);
-            session()->flash('message', 'Lesson updated successfully.');
-        } else {
-            Lesson::create($data);
-            session()->flash('message', 'Lesson created successfully.');
-        }
-        $this->resetLessonForm();
-    }
-
-    public function editLesson(int $id)
-    {
-        $lesson = Lesson::findOrFail($id);
-        $this->selectedLessonId = $lesson->id;
-        $this->selectedCourseId = $lesson->course_id;
+        $lesson = Lesson::where('course_id', $this->selectedCourseId)->findOrFail($id);
+        $this->selectedLessonId = $id;
+        $this->lessonRevision = $lesson->revision;
         $this->lessonTitle = $lesson->title;
-        $this->lessonSlug = $lesson->slug;
-        $this->lessonDescription = $lesson->description;
+        $this->lessonCode = $lesson->code ?? '';
+        $this->lessonDescription = $lesson->description ?? '';
+        $this->lessonStatus = $lesson->status;
         $this->lessonSortOrder = $lesson->sort_order;
-        $this->lessonIsArchived = $lesson->is_archived;
+        $this->newMaterial();
         $this->activeTab = 'lessons';
     }
 
-    public function deleteLesson(int $id)
+    public function saveLesson(): void
     {
-        $lesson = Lesson::findOrFail($id);
-        if ($lesson->units()->count() > 0) {
-            session()->flash('error', 'Cannot delete lesson with existing units. Archive instead.');
-            return;
-        }
-        $lesson->delete();
-        session()->flash('message', 'Lesson deleted successfully.');
+        $this->perform(function ($service) {
+            $lesson = $service->saveLesson([
+                'course_id' => $this->selectedCourseId, 'title' => $this->lessonTitle, 'code' => $this->lessonCode ?: null,
+                'description' => $this->lessonDescription, 'status' => $this->lessonStatus,
+                'sort_order' => $this->lessonSortOrder, 'expected_revision' => $this->lessonRevision,
+            ], $this->selectedLessonId);
+            $this->loadCourse();
+            $this->selectLesson($lesson->id);
+        });
     }
 
-    public function resetLessonForm()
+    public function newMaterial(): void
     {
-        $this->selectedLessonId = null;
-        $this->lessonTitle = '';
-        $this->lessonSlug = '';
-        $this->lessonDescription = '';
-        $this->lessonSortOrder = 0;
-        $this->lessonIsArchived = false;
+        $this->reset('selectedMaterialId', 'materialRevision', 'materialTitle', 'materialCode', 'materialUnitTitle', 'materialType', 'materialDescription', 'materialYoutubeUrl', 'materialContent', 'materialExternalUrl', 'materialStatus', 'materialIsRequired', 'materialIsPreview', 'materialPdfFile', 'materialPdfPath', 'materialPdfUploadId', 'materialPdfStatus');
+        $this->materialSortOrder = $this->selectedLessonId ? (LearningMaterial::where('lesson_id', $this->selectedLessonId)->max('sort_order') ?? -1) + 1 : 0;
+        $this->resetValidation();
     }
 
-    // ===== UNIT CRUD =====
-    public function saveUnit()
+    public function selectMaterial(int $id): void
     {
-        $this->validate([
-            'unitTitle' => 'required|min:3|max:255',
-            'unitCode' => 'required|min:1|max:50|alpha_dash',
-            'unitDescription' => 'nullable|max:1000',
-            'unitType' => ['required', Rule::in(['video', 'reading', 'quiz', 'assignment'])],
-            'unitSortOrder' => 'required|integer|min:0',
-        ]);
-
-        if (!$this->selectedLessonId) {
-            session()->flash('error', 'Please select a lesson first.');
-            return;
-        }
-
-        $data = [
-            'lesson_id' => $this->selectedLessonId,
-            'title' => $this->unitTitle,
-            'code' => $this->unitCode,
-            'description' => $this->unitDescription,
-            'type' => $this->unitType,
-            'is_required' => $this->unitIsRequired,
-            'sort_order' => $this->unitSortOrder,
-            'is_archived' => $this->unitIsArchived,
-            'quiz_code' => $this->unitQuizCode,
-        ];
-
-        if ($this->selectedUnitId) {
-            Unit::findOrFail($this->selectedUnitId)->update($data);
-            session()->flash('message', 'Unit updated successfully.');
-        } else {
-            Unit::create($data);
-            session()->flash('message', 'Unit created successfully.');
-        }
-        $this->resetUnitForm();
-    }
-
-    public function editUnit(int $id)
-    {
-        $unit = Unit::findOrFail($id);
-        $this->selectedUnitId = $unit->id;
-        $this->selectedLessonId = $unit->lesson_id;
-        $this->unitTitle = $unit->title;
-        $this->unitCode = $unit->code;
-        $this->unitDescription = $unit->description;
-        $this->unitType = $unit->type;
-        $this->unitIsRequired = $unit->is_required;
-        $this->unitSortOrder = $unit->sort_order;
-        $this->unitIsArchived = $unit->is_archived;
-        $this->unitQuizCode = $unit->quiz_code;
-        $this->activeTab = 'units';
-    }
-
-    public function deleteUnit(int $id)
-    {
-        $unit = Unit::findOrFail($id);
-        if ($unit->learningMaterials()->count() > 0) {
-            session()->flash('error', 'Cannot delete unit with existing materials. Archive instead.');
-            return;
-        }
-        $unit->delete();
-        session()->flash('message', 'Unit deleted successfully.');
-    }
-
-    public function resetUnitForm()
-    {
-        $this->selectedUnitId = null;
-        $this->unitTitle = '';
-        $this->unitCode = '';
-        $this->unitDescription = '';
-        $this->unitType = 'video';
-        $this->unitIsRequired = false;
-        $this->unitSortOrder = 0;
-        $this->unitIsArchived = false;
-        $this->unitQuizCode = null;
-    }
-
-    // ===== MATERIAL CRUD =====
-    public function saveMaterial()
-    {
-        $this->validate([
-            'materialTitle' => 'required|min:3|max:255',
-            'materialType' => ['required', Rule::in(['youtube', 'pdf', 'external_link'])],
-            'materialDescription' => 'nullable|max:1000',
-            'materialSortOrder' => 'required|integer|min:0',
-            'materialYoutubeUrl' => 'required_if:materialType,youtube',
-            'materialPdfFile' => 'nullable|file|mimes:pdf|max:10240',
-            'materialThumbnailFile' => 'nullable|image|max:2048',
-        ]);
-
-        if (!$this->selectedUnitId) {
-            session()->flash('error', 'Please select a unit first.');
-            return;
-        }
-
-        $data = [
-            'unit_id' => $this->selectedUnitId,
-            'title' => $this->materialTitle,
-            'file_type' => $this->materialType,
-            'description' => $this->materialDescription,
-            'sort_order' => $this->materialSortOrder,
-            'is_archived' => $this->materialIsArchived,
-            'is_required' => $this->materialIsRequired,
-        ];
-
-        // YouTube handling
-        if ($this->materialType === 'youtube' && $this->materialVideoId) {
-            $data['url'] = $this->materialYoutubeUrl;
-            $data['video_id'] = $this->materialVideoId;
-            $data['file_path'] = null;
-        }
-
-        // PDF upload handling
-        if ($this->materialType === 'pdf' && $this->materialPdfFile) {
-            $data['file_path'] = $this->materialPdfFile->store('learning/pdfs', 'public');
-        }
-
-        // Thumbnail upload
-        if ($this->materialThumbnailFile) {
-            $data['thumbnail_path'] = $this->materialThumbnailFile->store('learning/thumbnails', 'public');
-        }
-
-        if ($this->selectedMaterialId) {
-            LearningMaterial::findOrFail($this->selectedMaterialId)->update($data);
-            session()->flash('message', 'Material updated successfully.');
-        } else {
-            LearningMaterial::create($data);
-            session()->flash('message', 'Material created successfully.');
-        }
-        $this->resetMaterialForm();
-    }
-
-    public function editMaterial(int $id)
-    {
-        $material = LearningMaterial::findOrFail($id);
-        $this->selectedMaterialId = $material->id;
-        $this->selectedUnitId = $material->unit_id;
+        $material = LearningMaterial::where('lesson_id', $this->selectedLessonId)->findOrFail($id);
+        $this->selectedMaterialId = $id;
+        $this->materialRevision = $material->revision;
         $this->materialTitle = $material->title;
-        $this->materialType = $material->file_type;
-        $this->materialDescription = $material->description;
-        $this->materialYoutubeUrl = $material->url;
-        $this->materialVideoId = $material->video_id;
-        $this->materialPdfPath = $material->file_path;
-        $this->materialThumbnailPath = $material->thumbnail_path;
+        $this->materialCode = $material->unit_code;
+        $this->materialUnitTitle = $material->unit_title;
+        $this->materialType = $material->material_type;
+        $this->materialDescription = $material->description ?? '';
+        $this->materialYoutubeUrl = $material->youtube_url ?? '';
+        $this->materialContent = $material->content_text ?? '';
+        $this->materialExternalUrl = $material->external_url ?? '';
+        $this->materialStatus = $material->status;
         $this->materialSortOrder = $material->sort_order;
-        $this->materialIsArchived = $material->is_archived;
         $this->materialIsRequired = $material->is_required;
-        $this->activeTab = 'materials';
-    }
-
-    public function deleteMaterial(int $id)
-    {
-        $material = LearningMaterial::findOrFail($id);
-        $material->delete();
-        session()->flash('message', 'Material deleted successfully.');
-    }
-
-    public function resetMaterialForm()
-    {
-        $this->selectedMaterialId = null;
-        $this->materialTitle = '';
-        $this->materialType = 'youtube';
-        $this->materialDescription = '';
-        $this->materialYoutubeUrl = null;
-        $this->materialVideoId = null;
+        $this->materialIsPreview = (bool) $material->is_preview;
+        $this->materialPdfPath = $material->pdf_path;
+        $this->materialPdfUploadId = $material->pdf_upload_id;
+        $this->materialPdfStatus = $material->pdf_upload_id ? 'PDF terhubung' : 'Berkas lama perlu diperiksa ulang sebelum terbit.';
         $this->materialPdfFile = null;
-        $this->materialPdfPath = null;
-        $this->materialThumbnailFile = null;
-        $this->materialThumbnailPath = null;
-        $this->materialSortOrder = 0;
-        $this->materialIsArchived = false;
-        $this->materialIsRequired = false;
+        $this->activeTab = 'materials';
+        $this->resetValidation();
     }
 
-    public function render()
+    public function uploadMaterialPdf(): void
+    {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        $this->validate(['materialPdfFile' => 'required|file|mimes:pdf|max:10240']);
+        $upload = app(LmsUploadService::class)->receive(auth()->user(), $this->materialPdfFile, 'course_material');
+        $this->materialPdfUploadId = $upload->id;
+        $this->materialPdfFile = null;
+        $this->materialPdfStatus = 'Karantina: menunggu pemeriksaan. ID '.$upload->id;
+    }
+
+    public function checkMaterialPdf(): void
+    {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        $upload = LmsUpload::whereKey($this->materialPdfUploadId)->where('user_id', auth()->id())->firstOrFail();
+        $this->materialPdfStatus = $upload->status.' — '.($upload->reason ?? $upload->original_name);
+    }
+
+    public function saveMaterial(): void
+    {
+        $this->perform(function ($service) {
+            if ($this->materialPdfFile) {
+                throw ValidationException::withMessages(['materialPdfFile' => 'Unggah untuk pemeriksaan dahulu, lalu tunggu status ready.']);
+            }
+            $path = $this->materialPdfPath;
+            $existing = $this->selectedMaterialId ? LearningMaterial::where('lesson_id', $this->selectedLessonId)->findOrFail($this->selectedMaterialId)->getAttributes() : [];
+            $material = $service->saveMaterial([
+                ...$existing, 'lesson_id' => $this->selectedLessonId, 'title' => $this->materialTitle,
+                'unit_code' => $this->materialCode, 'unit_title' => $this->materialUnitTitle,
+                'material_type' => $this->materialType, 'description' => $this->materialDescription,
+                'youtube_url' => $this->materialYoutubeUrl ?: null, 'pdf_path' => $path, 'pdf_upload_id' => $this->materialPdfUploadId ?: null,
+                'content_text' => $this->materialContent, 'external_url' => $this->materialExternalUrl ?: null,
+                'status' => $this->materialStatus, 'sort_order' => $this->materialSortOrder,
+                'is_required' => $this->materialIsRequired, 'is_preview' => $this->materialIsPreview,
+                'expected_revision' => $this->materialRevision,
+            ], $this->selectedMaterialId);
+            $lessonId = $this->selectedLessonId;
+            $this->loadCourse();
+            $this->selectLesson($lessonId);
+            $this->selectMaterial($material->id);
+        });
+    }
+
+    public function archiveCourse(int $id, int $revision): void
+    {
+        $this->perform(fn ($service) => $service->archive(Course::findOrFail($id), $revision));
+        if ($this->selectedCourseId === $id) {
+            $this->loadCourse();
+        }
+    }
+
+    public function archiveLesson(int $id, int $revision): void
+    {
+        if ($this->perform(fn ($service) => $service->archive(Lesson::where('course_id', $this->selectedCourseId)->findOrFail($id), $revision))) {
+            $this->loadCourse();
+            $this->newLesson();
+        }
+    }
+
+    public function archiveMaterial(int $id, int $revision): void
+    {
+        if ($this->perform(fn ($service) => $service->archive(LearningMaterial::where('lesson_id', $this->selectedLessonId)->findOrFail($id), $revision))) {
+            $this->loadCourse();
+            $this->selectLesson($this->selectedLessonId);
+        }
+    }
+
+    public function move(string $kind, int $id, int $direction): void
+    {
+        $this->perform(function ($service) use ($kind, $id, $direction) {
+            abort_unless(in_array($kind, ['lessons', 'materials'], true) && in_array($direction, [-1, 1], true), 422);
+            $parent = $kind === 'lessons' ? Course::findOrFail($this->selectedCourseId) : Lesson::where('course_id', $this->selectedCourseId)->findOrFail($this->selectedLessonId);
+            $children = ($parent instanceof Course ? $parent->lessons() : $parent->learningMaterials())->where('status', '!=', 'archived')->orderBy('id')->get();
+            $items = $children->map(fn ($child) => ['id' => $child->id, 'revision' => $child->revision])->all();
+            $index = array_search($id, array_column($items, 'id'), true);
+            if ($index === false || ! isset($items[$index + $direction])) {
+                return;
+            }
+            [$items[$index], $items[$index + $direction]] = [$items[$index + $direction], $items[$index]];
+            $service->reorder($parent, $items, $kind === 'lessons' ? $this->courseRevision : $this->lessonRevision);
+            $this->loadCourse();
+            if ($kind === 'materials') {
+                $this->selectLesson($this->selectedLessonId);
+            }
+        });
+    }
+
+    private function perform(callable $action): bool
+    {
+        $this->resetValidation();
+        session()->forget('message');
+        $this->pendingUploads = [];
+        try {
+            DB::transaction(fn () => $action(app(LmsAuthoringService::class)));
+            session()->flash('message', 'Konten berhasil disimpan.');
+
+            return true;
+        } catch (ValidationException $e) {
+            $this->cleanupUploads();
+            foreach ($e->errors() as $key => $messages) {
+                $this->addError($key, implode(' ', $messages));
+            }
+        } catch (HttpExceptionInterface $e) {
+            $this->cleanupUploads();
+            $this->addError('form', $e->getStatusCode() === 409 ? 'Konten telah berubah. Pilih ulang konten untuk memuat revisi terbaru; perubahan belum disimpan.' : 'Konten tidak tersedia untuk operasi ini.');
+        } catch (\Throwable $e) {
+            $this->cleanupUploads();
+            report($e);
+            $this->addError('form', 'Konten gagal disimpan. Isian tetap tersedia; coba kembali.');
+        }
+
+        return false;
+    }
+
+    private function cleanupUploads(): void
+    {
+        foreach ($this->pendingUploads as [$disk, $path]) {
+            Storage::disk($disk)->delete($path);
+        }
+        $this->pendingUploads = [];
+    }
+
+    public function render(): View
     {
         return view('livewire.content-cms', [
-            'courses' => Course::with(['category', 'lessons'])
-                ->orderBy('type')
-                ->orderBy('title')
-                ->paginate(10, pageName: 'coursesPage'),
-            'categories' => CourseCategory::orderBy('title')->get(),
-            'lessons' => $this->selectedCourseId
-                ? Lesson::where('course_id', $this->selectedCourseId)
-                    ->orderBy('sort_order')
-                    ->orderBy('title')
-                    ->paginate(10, pageName: 'lessonsPage')
-                : [],
-            'units' => $this->selectedLessonId
-                ? Unit::where('lesson_id', $this->selectedLessonId)
-                    ->orderBy('sort_order')
-                    ->orderBy('title')
-                    ->paginate(10, pageName: 'unitsPage')
-                : [],
-            'materials' => $this->selectedUnitId
-                ? LearningMaterial::where('unit_id', $this->selectedUnitId)
-                    ->orderBy('sort_order')
-                    ->orderBy('title')
-                    ->paginate(10, pageName: 'materialsPage')
-                : [],
+            'courses' => Course::query()->when($this->search !== '', fn ($q) => $q->where('title', 'like', '%'.$this->search.'%'))
+                ->when(in_array($this->statusFilter, ['draft', 'published', 'archived'], true), fn ($q) => $q->where('status', $this->statusFilter))
+                ->orderByDesc('updated_at')->orderBy('id')->paginate(10),
+            'prerequisiteCourses' => Course::whereIn('type', ['android', 'iphone'])->where('status', '!=', 'archived')->orderBy('title')->get(['id', 'title']),
+            'lessons' => $this->selectedCourseId ? Lesson::where('course_id', $this->selectedCourseId)->orderBy('sort_order')->orderBy('id')->get() : collect(),
+            'materials' => $this->selectedLessonId ? LearningMaterial::where('lesson_id', $this->selectedLessonId)->orderBy('sort_order')->orderBy('id')->get() : collect(),
         ]);
     }
 }

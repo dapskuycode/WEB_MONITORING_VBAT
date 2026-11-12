@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Services\YouTubeValidationService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +14,12 @@ class LearningMaterial extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $attributes = ['revision' => 1, 'is_preview' => false];
+
     protected $fillable = [
+        'is_preview',
+        'revision',
+
         'lesson_id',
         'unit_code',
         'unit_title',
@@ -21,7 +28,7 @@ class LearningMaterial extends Model
         'description',
         'youtube_url',
         'youtube_video_id',
-        'pdf_path',
+        'pdf_path', 'pdf_upload_id',
         'thumbnail_path',
         'content_text',
         'external_url',
@@ -35,6 +42,8 @@ class LearningMaterial extends Model
     ];
 
     protected $casts = [
+        'is_preview' => 'boolean',
+        'revision' => 'integer',
         'sort_order' => 'integer',
         'is_required' => 'boolean',
         'quiz_required' => 'boolean',
@@ -50,6 +59,12 @@ class LearningMaterial extends Model
         return $this->belongsTo(Lesson::class);
     }
 
+    /** @return HasMany<Quiz, $this> */
+    public function quizzes(): HasMany
+    {
+        return $this->hasMany(Quiz::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     /**
      * @return HasMany<LearningMaterialView, $this>
      */
@@ -59,8 +74,8 @@ class LearningMaterial extends Model
     }
 
     /**
-     * @param \Illuminate\Database\Eloquent\Builder<$this> $query
-     * @return \Illuminate\Database\Eloquent\Builder<$this>
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
      */
     public function scopePublished($query)
     {
@@ -68,8 +83,8 @@ class LearningMaterial extends Model
     }
 
     /**
-     * @param \Illuminate\Database\Eloquent\Builder<$this> $query
-     * @return \Illuminate\Database\Eloquent\Builder<$this>
+     * @param  Builder<$this>  $query
+     * @return Builder<$this>
      */
     public function scopeRequired($query)
     {
@@ -81,54 +96,12 @@ class LearningMaterial extends Model
      */
     public static function extractYouTubeId(?string $url): ?string
     {
-        if (empty($url)) {
-            return null;
-        }
-
-        $patterns = [
-            '/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/',
-            '/youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/',
-        ];
-
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $url, $matches)) {
-                return $matches[1];
-            }
-        }
-
-        return null;
+        return app(YouTubeValidationService::class)->extractVideoId($url);
     }
 
-    /**
-     * Check if a YouTube video is unlisted (best-effort via oEmbed).
-     */
     public static function checkYouTubeUnlisted(string $videoId): array
     {
-        $oembedUrl = "https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={$videoId}&format=json";
-
-        try {
-            $response = @file_get_contents($oembedUrl);
-            if ($response === false) {
-                return ['accessible' => false, 'unlisted' => null, 'error' => 'HTTP request failed'];
-            }
-
-            $data = json_decode($response, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                return ['accessible' => false, 'unlisted' => null, 'error' => 'Invalid JSON response'];
-            }
-
-            // oEmbed returns data = video is accessible (public or unlisted)
-            // oEmbed returns 401/404 = video is private or deleted
-            return [
-                'accessible' => true,
-                'unlisted' => null, // YouTube doesn't expose unlisted flag via oEmbed
-                'title' => $data['title'] ?? null,
-                'author' => $data['author_name'] ?? null,
-                'thumbnail_url' => $data['thumbnail_url'] ?? null,
-            ];
-        } catch (\Throwable $e) {
-            return ['accessible' => false, 'unlisted' => null, 'error' => $e->getMessage()];
-        }
+        return app(YouTubeValidationService::class)->validateVideoId($videoId);
     }
 
     /**
@@ -137,7 +110,7 @@ class LearningMaterial extends Model
     public function getThumbnailUrlAttribute(): ?string
     {
         if ($this->thumbnail_path) {
-            return asset('storage/' . $this->thumbnail_path);
+            return asset('storage/'.$this->thumbnail_path);
         }
 
         if ($this->youtube_video_id) {

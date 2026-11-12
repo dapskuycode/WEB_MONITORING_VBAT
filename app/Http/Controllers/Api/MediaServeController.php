@@ -4,180 +4,66 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LearningMaterial;
+use App\Services\LmsFileService;
+use App\Services\LmsUploadService;
 use App\Services\MediaAuthorizationService;
 use App\Services\MediaProxyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class MediaServeController extends Controller
 {
-    public function __construct(
-        private MediaAuthorizationService $authService,
-        private MediaProxyService $proxyService
-    ) {}
+    public function __construct(private MediaAuthorizationService $authService, private MediaProxyService $proxyService) {}
 
-    /**
-     * GET /api/v1/media/serve/{type}/{id} — Serve protected media
-     */
-    public function serve(Request $request, string $type, int $id): Response|JsonResponse
+    public function serve(Request $request, string $type, int $id): BinaryFileResponse|JsonResponse
     {
-        // Verify signed URL expiry
-        $expires = $request->query('expires');
-        if ($expires && (int) $expires < now()->timestamp) {
-            return response()->json(['error' => 'URL expired'], 410);
-        }
+        abort_unless($request->hasValidSignature() && (string) $request->query('user') === (string) $request->user()->id, 403);
+        $material = LearningMaterial::with('lesson.course')->findOrFail($id);
+        abort_unless($this->authService->canAccessMaterial($request->user(), $material), 403);
+        if ($type === 'pdf' && $material->material_type === 'pdf_document') {
+            $path = app(LmsFileService::class)->path('lms', $material->pdf_path);
+            abort_unless($path !== null, 404);
+            abort_unless($material->pdf_upload_id !== null, 422, 'Dokumen lama perlu pemeriksaan sebelum disajikan.');
+            $upload = app(LmsUploadService::class)->ready($material->pdf_upload_id);
+            abort_unless($material->pdf_path === $upload->path, 409);
 
-        // Find material
-        $material = LearningMaterial::with('lesson.course')->find($id);
-
-        if (!$material) {
-            return response()->json(['error' => 'Material not found'], 404);
-        }
-
-        // Check user authentication
-        $user = $request->user();
-
-        if (!$user) {
-            return response()->json(['error' => 'Authentication required'], 401);
-        }
-
-        // Check access authorization
-        $canAccess = $this->authService->canAccessMaterial($user, $material);
-
-        if (!$canAccess) {
-            $accessTier = $this->authService->getAccessTier($user, $material);
-
-            return response()->json([
-                'error' => 'Access denied',
-                'reason' => match ($accessTier) {
-                    'none' => 'No entitlement for this course',
-                    'qualified_pending' => 'Hardware Solution quiz threshold not met (90% required)',
-                    default => 'Access restricted',
-                },
-                'tier' => $accessTier,
-            ], 403);
-        }
-
-        // Serve media based on type
-        return match ($type) {
-            'pdf' => $this->servePdf($material),
-            'video' => $this->serveVideo($material),
-            'thumbnail' => $this->serveThumbnail($material),
-            default => response()->json(['error' => 'Invalid media type'], 400),
-        };
-    }
-
-    /**
-     * Serve PDF file from storage
-     */
-    private function servePdf(LearningMaterial $material): Response
-    {
-        if (!$material->pdf_path) {
-            return response(['error' => 'PDF not found'], 404);
-        }
-
-        $path = $material->pdf_path;
-
-        if (!Storage::disk('public')->exists($path)) {
-            return response(['error' => 'File not found'], 404);
-        }
-
-        $file = Storage::disk('public')->get($path);
-        $mimeType = Storage::disk('public')->mimeType($path);
-        $fileName = basename($path);
-
-        return response($file, 200, [
-            'Content-Type' => $mimeType,
-            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
-            'Cache-Control' => 'private, max-age=3600',
-        ]);
-    }
-
-    /**
-     * Serve video metadata (YouTube embed URL via proxy)
-     */
-    private function serveVideo(LearningMaterial $material): JsonResponse
-    {
-        if (!$material->youtube_video_id) {
-            return response()->json(['error' => 'Video not found'], 404);
-        }
-
-        $accessData = $this->proxyService->generateYouTubeAccessUrl($material->youtube_video_id);
-
-        return response()->json([
-            'video_id' => $accessData['video_id'],
-            'embed_url' => $accessData['embed_url'],
-            'expires_at' => $accessData['expires_at']->toIso8601String(),
-        ]);
-    }
-
-    /**
-     * Serve thumbnail image
-     */
-    private function serveThumbnail(LearningMaterial $material): Response|JsonResponse
-    {
-        if ($material->thumbnail_path) {
-            $path = $material->thumbnail_path;
-
-            if (!Storage::disk('public')->exists($path)) {
-                return response(['error' => 'Thumbnail not found'], 404);
-            }
-
-            $file = Storage::disk('public')->get($path);
-            $mimeType = Storage::disk('public')->mimeType($path);
-
-            return response($file, 200, [
-                'Content-Type' => $mimeType,
-                'Cache-Control' => 'public, max-age=86400',
+            return response()->file($path, [
+                'Content-Type' => 'application/pdf', 'Cache-Control' => 'private, no-store',
+                'X-Content-Type-Options' => 'nosniff',
             ]);
         }
-
-        // Fallback to YouTube thumbnail
-        if ($material->youtube_video_id) {
-            $youtubeUrl = "https://img.youtube.com/vi/{$material->youtube_video_id}/mqdefault.jpg";
-
+        if ($type === 'video' && $material->material_type === 'youtube_video' && preg_match('/^[a-zA-Z0-9_-]{11}$/', $material->youtube_video_id ?? '')) {
             return response()->json([
-                'thumbnail_url' => $youtubeUrl,
-                'source' => 'youtube',
-            ]);
+                'provider' => 'youtube', 'video_id' => $material->youtube_video_id,
+                'embed_url' => 'https://www.youtube.com/embed/'.$material->youtube_video_id,
+                'grant_expires_at' => (int) $request->query('expires'),
+                'provider_url_expires' => false,
+            ])->header('Cache-Control', 'private, no-store');
         }
-
-        return response()->json(['error' => 'No thumbnail available'], 404);
+        abort(404);
     }
 
-    /**
-     * POST /api/v1/media/access-check — Check access before generating URL
-     */
     public function checkAccess(Request $request): JsonResponse
     {
-        $request->validate([
-            'material_ids' => 'required|array',
-            'material_ids.*' => 'integer|exists:learning_materials,id',
+        $data = $request->validate([
+            'material_ids' => 'required|array|min:1|max:50', 'material_ids.*' => 'required|integer|distinct',
         ]);
-
-        $user = $request->user();
+        $materials = LearningMaterial::with('lesson.course')->whereIn('id', $data['material_ids'])->get()->keyBy('id');
         $results = [];
-
-        foreach ($request->material_ids as $materialId) {
-            $material = LearningMaterial::with('lesson.course')->find($materialId);
-
-            if (!$material) {
-                $results[$materialId] = ['access' => false, 'reason' => 'Material not found'];
-                continue;
-            }
-
-            $canAccess = $this->authService->canAccessMaterial($user, $material);
-            $tier = $this->authService->getAccessTier($user, $material);
-
-            $results[$materialId] = [
-                'access' => $canAccess,
-                'tier' => $tier,
-                'course_type' => $material->lesson?->course?->type,
+        foreach ($data['material_ids'] as $id) {
+            $material = $materials->get($id);
+            $allowed = $material && $this->authService->canAccessMaterial($request->user(), $material);
+            $type = match ($material?->material_type) {
+                'pdf_document' => 'pdf', 'youtube_video' => 'video', default => null
+            };
+            $results[$id] = [
+                'access' => (bool) $allowed,
+                'reason' => $allowed ? 'access_granted' : 'material_unavailable_or_no_access',
+                'media_url' => $allowed && $type ? $this->proxyService->generateProxyUrl($type, $id, $request->user()->id) : null,
             ];
         }
 
-        return response()->json(['results' => $results]);
+        return response()->json(['results' => $results])->header('Cache-Control', 'private, no-store');
     }
 }

@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Lesson;
+use App\Services\LmsAuthoringService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class LessonApiController extends Controller
 {
@@ -21,6 +21,7 @@ class LessonApiController extends Controller
         ]);
 
         $lessons = Lesson::where('course_id', $validated['course_id'])
+            ->when(! auth('sanctum')->user()?->isSuperAdmin(), fn ($q) => $q->where('status', 'published')->whereHas('course', fn ($q) => $q->published()))
             ->orderBy('sort_order')
             ->paginate($validated['per_page'] ?? 15);
 
@@ -42,15 +43,9 @@ class LessonApiController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'course_id' => ['required', 'integer', 'exists:courses,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
-        $validated['sort_order'] = $validated['sort_order'] ?? 0;
-
-        $lesson = Lesson::create($validated);
+        $input = $request->all();
+        $input['status'] = $input['status'] ?? 'draft';
+        $lesson = app(LmsAuthoringService::class)->saveLesson($input);
 
         return response()->json([
             'success' => true,
@@ -80,13 +75,8 @@ class LessonApiController extends Controller
     {
         $lesson = Lesson::findOrFail($id);
 
-        $validated = $request->validate([
-            'course_id' => ['nullable', 'integer', 'exists:courses,id'],
-            'title' => ['nullable', 'string', 'max:255'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
-
-        $lesson->update($validated);
+        $input = [...$lesson->getAttributes(), ...$request->all()];
+        $lesson = app(LmsAuthoringService::class)->saveLesson($input, $id);
 
         return response()->json([
             'success' => true,
@@ -98,15 +88,15 @@ class LessonApiController extends Controller
     /**
      * Delete a lesson.
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $lesson = Lesson::findOrFail($id);
-        $lesson->delete();
+        app(LmsAuthoringService::class)->archive($lesson, $request->integer('expected_revision'));
 
         return response()->json([
             'success' => true,
             'data' => null,
-            'message' => 'Lesson deleted successfully',
+            'message' => 'Lesson archived; learning history retained',
         ]);
     }
 }

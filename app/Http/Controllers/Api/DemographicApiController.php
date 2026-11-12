@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\City;
 use App\Models\Province;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,7 +23,9 @@ class DemographicApiController extends Controller
         } elseif ($genderInput !== null && in_array(strtolower(trim((string) $genderInput)), ['perempuan', 'female'])) {
             $genderInput = 'female';
         }
-        $request->merge(['gender' => $genderInput]);
+        if ($request->has('gender')) {
+            $request->merge(['gender' => $genderInput]);
+        }
 
         // Normalize province if province_name is provided
         if ($request->filled('province_name') && ! $request->filled('province_id')) {
@@ -46,8 +47,8 @@ class DemographicApiController extends Controller
         }
 
         $validated = $request->validate([
-            'user_id' => 'nullable|integer|exists:users,id',
-            'email' => 'nullable|string|email',
+            'user_id' => 'prohibited',
+            'email' => 'prohibited',
             'name' => 'nullable|string|max:255',
             'birth_date' => 'nullable|date|before:today',
             'gender' => 'nullable|string|in:male,female,laki-laki,perempuan',
@@ -64,22 +65,13 @@ class DemographicApiController extends Controller
             'youtube' => 'nullable|string|max:255',
         ]);
 
-        $user = $request->user('sanctum') ?? $request->user();
-        if (! $user && $request->filled('email')) {
-            $user = User::where('email', $request->input('email'))->first();
-        }
-        if (! $user && ! empty($validated['user_id'])) {
-            $user = User::find($validated['user_id']);
-        }
-        if (! $user) {
-            $user = User::where('role', 'student')->first();
-        }
+        $user = $request->user();
 
         if (! $user) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Pengguna tidak ditemukan',
-            ], 404);
+            ], 401);
         }
 
         $fields = [
@@ -119,7 +111,7 @@ class DemographicApiController extends Controller
                 'facebook' => $user->facebook,
                 'tiktok' => $user->tiktok,
                 'youtube' => $user->youtube,
-                'profile_completed' => (bool)$user->profile_completed,
+                'profile_completed' => (bool) $user->profile_completed,
             ],
         ]);
     }

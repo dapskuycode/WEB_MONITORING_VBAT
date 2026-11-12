@@ -1,0 +1,5 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><style>
+@page { margin: 48px; } body { font-family: DejaVu Sans, sans-serif; color: #162a43; font-size: 13px; }
+.brand { font-size: 22px; font-weight: bold; color: #1b4f9b; } h1 { font-size: 29px; font-weight: normal; margin: 35px 0 20px; }
+.name { font-size: 24px; margin: 16px 0; } .course { font-size: 19px; margin: 16px 0; } .footer { margin-top: 35px; font-size: 10px; color: #405065; word-wrap: break-word; }
+</style></head><body><div class="brand">VBAT PONSEL</div><h1>Sertifikat Kelulusan</h1><p>Diberikan kepada</p><div class="name">{{ $identity['name'] }}</div><p>atas penyelesaian aktivitas wajib pada kelas</p><div class="course">{{ $identity['course_title'] }}</div><p>Tanggal terbit: {{ \Carbon\CarbonImmutable::parse($identity['issued_at'])->timezone('Asia/Jakarta')->format('d M Y') }}</p><div class="footer">Nomor: {{ $identity['number'] }}<br>Verifikasi: {{ $verification }}<br>Verifikasi publik tersedia setelah pemilik mengaktifkan visibilitas sertifikat. Dokumen ini mencatat hasil pada saat penerbitan.</div></body></html>

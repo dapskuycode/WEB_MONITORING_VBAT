@@ -1,461 +1,57 @@
-<div class="p-6">
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Content Management System</h1>
-        <p class="text-gray-600 mt-1">Manage courses, lessons, units, and learning materials</p>
-    </div>
-
-    @if (session()->has('message'))
-        <div class="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-            {{ session('message') }}
-        </div>
-    @endif
-
-    @if (session()->has('error'))
-        <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    {{-- Tab Navigation --}}
-    <div class="border-b border-gray-200 mb-6">
-        <nav class="-mb-px flex space-x-8">
-            <button wire:click="$set('activeTab', 'courses')" 
-                class="@if($activeTab === 'courses') border-blue-500 text-blue-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium">
-                Courses
-            </button>
-            <button wire:click="$set('activeTab', 'categories')" 
-                class="@if($activeTab === 'categories') border-blue-500 text-blue-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium">
-                Categories
-            </button>
-            <button wire:click="$set('activeTab', 'lessons')" 
-                class="@if($activeTab === 'lessons') border-blue-500 text-blue-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium">
-                Lessons
-            </button>
-            <button wire:click="$set('activeTab', 'units')" 
-                class="@if($activeTab === 'units') border-blue-500 text-blue-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium">
-                Units
-            </button>
-            <button wire:click="$set('activeTab', 'materials')" 
-                class="@if($activeTab === 'materials') border-blue-500 text-blue-600 @else border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 @endif whitespace-nowrap py-4 px-1 border-b-2 font-medium">
-                Materials
-            </button>
-        </nav>
-    </div>
-
-    {{-- Courses Tab --}}
+<div class="lms-cms space-y-6 text-zinc-900 dark:text-zinc-100">
+    <style>.lms-cms button,.lms-cms a[href],.lms-cms select,.lms-cms label[for]{cursor:pointer}.lms-cms button,.lms-cms a[href]{min-height:44px}.lms-cms :is(input:not([type=checkbox]),textarea,select){border-color:#737373;min-height:44px}.lms-cms button{border-color:#737373}.lms-cms button:disabled{cursor:not-allowed}.lms-cms :is(button,a,input,select,textarea):focus-visible{outline:2px solid currentColor;outline-offset:3px}</style>
+    <header class="flex flex-wrap items-start justify-between gap-4">
+        <div><flux:heading size="xl" level="1">Konten belajar VBAT</flux:heading><flux:text>Siapkan kelas, susun modul, lalu terbitkan materi yang sudah diverifikasi.</flux:text></div>
+        <flux:button wire:click="newCourse" wire:loading.attr="disabled">Kelas baru</flux:button>
+    </header>
+    @if(session('message'))<p role="status" class="rounded border border-zinc-500 p-3">{{ session('message') }}</p>@endif
+    @if($errors->any())<div role="alert" class="rounded border border-red-600 p-3 text-red-700 dark:text-red-300"><p class="font-semibold">Perubahan belum disimpan</p><ul class="list-disc pl-5">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+    <p wire:loading role="status">Memproses perubahan…</p>
+    <nav aria-label="Tahapan penyusunan konten" class="flex flex-wrap gap-2">
+        <flux:button wire:click="$set('activeTab', 'courses')" :variant="$activeTab === 'courses' ? 'primary' : 'outline'">1. Kelas</flux:button>
+        <flux:button wire:click="$set('activeTab', 'lessons')" :disabled="!$selectedCourseId" :variant="$activeTab === 'lessons' ? 'primary' : 'outline'">2. Modul</flux:button>
+        <flux:button wire:click="$set('activeTab', 'materials')" :disabled="!$selectedLessonId" :variant="$activeTab === 'materials' ? 'primary' : 'outline'">3. Materi</flux:button>
+        @if($selectedCourseId)<flux:button href="{{ route('admin.lms.preview', $selectedCourseId) }}" target="_blank">Pratinjau kelas (tab baru)</flux:button>@endif
+    </nav>
+    @if($selectedCourseId)<p class="break-words">Kelas: <strong>{{ $courseTitle }}</strong> · {{ $courseStatus }} · revisi {{ $courseRevision }}@if($selectedLessonId)<br>Modul: <strong>{{ $lessonTitle }}</strong> · {{ $lessonStatus }}@endif</p>@endif
     @if($activeTab === 'courses')
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {{-- Course Form --}}
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-4">{{ $selectedCourseId ? 'Edit' : 'Create' }} Course</h2>
-                <form wire:submit.prevent="saveCourse">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Title *</label>
-                            <input type="text" wire:model="courseTitle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                            @error('courseTitle') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Slug *</label>
-                            <input type="text" wire:model="courseSlug" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                            @error('courseSlug') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Type *</label>
-                            <select wire:model="courseType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="android">Android</option>
-                                <option value="iphone">iPhone</option>
-                                <option value="bundling">Bundling</option>
-                                <option value="hardware_solution">Hardware Solution</option>
-                                <option value="free_class">Free Class</option>
-                                <option value="subscription">Subscription</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Category</label>
-                            <select wire:model="courseCategoryId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="">-- None --</option>
-                                @foreach($categories as $category)
-                                    <option value="{{ $category->id }}">{{ $category->title }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Price (IDR) *</label>
-                            <input type="number" wire:model="coursePrice" step="1000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Duration Value *</label>
-                                <input type="number" wire:model="courseDurationValue" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Duration Unit *</label>
-                                <select wire:model="courseDurationUnit" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <option value="day">Day</option>
-                                    <option value="month">Month</option>
-                                    <option value="year">Year</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Description</label>
-                            <textarea wire:model="courseDescription" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
-                        </div>
-                        <div class="flex items-center space-x-4">
-                            <label class="flex items-center">
-                                <input type="checkbox" wire:model="courseIsArchived" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <span class="ml-2 text-sm text-gray-700">Archived</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" wire:model="courseIsFree" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <span class="ml-2 text-sm text-gray-700">Free</span>
-                            </label>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                                {{ $selectedCourseId ? 'Update' : 'Create' }}
-                            </button>
-                            @if($selectedCourseId)
-                                <button type="button" wire:click="resetCourseForm" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">
-                                    Cancel
-                                </button>
-                            @endif
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            {{-- Course List --}}
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-4">Courses</h2>
-                <div class="space-y-2">
-                    @forelse($courses as $course)
-                        <div class="border rounded-lg p-4 hover:bg-gray-50">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1">
-                                    <h3 class="font-medium text-gray-900">{{ $course->title }}</h3>
-                                    <p class="text-sm text-gray-600">{{ $course->slug }} • {{ ucfirst($course->type) }}</p>
-                                    <p class="text-sm text-gray-500">Rp {{ number_format($course->price, 0, ',', '.') }} • {{ $course->duration }}</p>
-                                    @if($course->is_archived)
-                                        <span class="inline-block px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded">Archived</span>
-                                    @endif
-                                </div>
-                                <div class="flex space-x-2">
-                                    <button wire:click="editCourse({{ $course->id }})" class="text-blue-600 hover:text-blue-800">Edit</button>
-                                    <button wire:click="deleteCourse({{ $course->id }})" onclick="return confirm('Delete this course?')" class="text-red-600 hover:text-red-800">Delete</button>
-                                </div>
-                            </div>
-                        </div>
-                    @empty
-                        <p class="text-gray-500 text-center py-8">No courses yet.</p>
-                    @endforelse
-                </div>
-                <div class="mt-4">
-                    {{ $courses->links() }}
-                </div>
-            </div>
-        </div>
-    @endif
-
-    {{-- Categories Tab --}}
-    @if($activeTab === 'categories')
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {{-- Category Form --}}
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-4">{{ $selectedCategoryId ? 'Edit' : 'Create' }} Category</h2>
-                <form wire:submit.prevent="saveCategory">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Title *</label>
-                            <input type="text" wire:model="categoryTitle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            @error('categoryTitle') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Slug *</label>
-                            <input type="text" wire:model="categorySlug" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            @error('categorySlug') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700">Color *</label>
-                            <input type="color" wire:model="categoryColor" class="mt-1 block w-20 h-10 rounded-md border-gray-300 shadow-sm">
-                            @error('categoryColor') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                        </div>
-                        <div class="flex space-x-2">
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                                {{ $selectedCategoryId ? 'Update' : 'Create' }}
-                            </button>
-                            @if($selectedCategoryId)
-                                <button type="button" wire:click="resetCategoryForm" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
-                            @endif
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            {{-- Category List --}}
-            <div class="bg-white p-6 rounded-lg shadow">
-                <h2 class="text-lg font-semibold mb-4">Categories</h2>
-                <div class="space-y-2">
-                    @forelse($categories as $category)
-                        <div class="border rounded-lg p-4 hover:bg-gray-50 flex justify-between items-center">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-4 h-4 rounded" style="background-color: {{ $category->color ?? '#3b82f6' }}"></div>
-                                <div>
-                                    <h3 class="font-medium">{{ $category->title }}</h3>
-                                    <p class="text-sm text-gray-500">{{ $category->slug }}</p>
-                                </div>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button wire:click="editCategory({{ $category->id }})" class="text-blue-600 hover:text-blue-800">Edit</button>
-                                <button wire:click="deleteCategory({{ $category->id }})" onclick="return confirm('Delete?')" class="text-red-600 hover:text-red-800">Delete</button>
-                            </div>
-                        </div>
-                    @empty
-                        <p class="text-gray-500 text-center py-8">No categories yet.</p>
-                    @endforelse
-                </div>
-            </div>
-        </div>
-    @endif
-
-    {{-- Lessons Tab --}}
-    @if($activeTab === 'lessons')
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-lg font-semibold mb-4">Lesson Management</h2>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700">Select Course First</label>
-                <select wire:model="selectedCourseId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="">-- Select Course --</option>
-                    @foreach($courses as $course)
-                        <option value="{{ $course->id }}">{{ $course->title }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            @if($selectedCourseId)
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                    <div>
-                        <h3 class="font-medium mb-3">{{ $selectedLessonId ? 'Edit' : 'Create' }} Lesson</h3>
-                        <form wire:submit.prevent="saveLesson" class="space-y-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Title *</label>
-                                <input type="text" wire:model="lessonTitle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                @error('lessonTitle') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Slug *</label>
-                                <input type="text" wire:model="lessonSlug" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Description</label>
-                                <textarea wire:model="lessonDescription" rows="2" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Sort Order *</label>
-                                <input type="number" wire:model="lessonSortOrder" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            </div>
-                            <label class="flex items-center">
-                                <input type="checkbox" wire:model="lessonIsArchived" class="rounded border-gray-300">
-                                <span class="ml-2 text-sm">Archived</span>
-                            </label>
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md">{{ $selectedLessonId ? 'Update' : 'Create' }}</button>
-                            @if($selectedLessonId)
-                                <button type="button" wire:click="resetLessonForm" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md">Cancel</button>
-                            @endif
-                        </form>
-                    </div>
-
-                    <div>
-                        <h3 class="font-medium mb-3">Lessons</h3>
-                        <div class="space-y-2">
-                            @forelse($lessons as $lesson)
-                                <div class="border rounded p-3 hover:bg-gray-50">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h4 class="font-medium">{{ $lesson->title }}</h4>
-                                            <p class="text-sm text-gray-500">Order: {{ $lesson->sort_order }}</p>
-                                        </div>
-                                        <div class="flex space-x-2">
-                                            <button wire:click="editLesson({{ $lesson->id }})" class="text-blue-600 text-sm">Edit</button>
-                                            <button wire:click="deleteLesson({{ $lesson->id }})" onclick="return confirm('Delete?')" class="text-red-600 text-sm">Delete</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            @empty
-                                <p class="text-gray-500 text-center py-4">No lessons yet.</p>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-            @endif
-        </div>
-    @endif
-
-    {{-- Units Tab --}}
-    @if($activeTab === 'units')
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-lg font-semibold mb-4">Unit Management</h2>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700">Select Lesson First</label>
-                <select wire:model="selectedLessonId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="">-- Select Lesson --</option>
-                    @if($selectedCourseId && $lessons)
-                        @foreach($lessons as $lesson)
-                            <option value="{{ $lesson->id }}">{{ $lesson->title }}</option>
-                        @endforeach
-                    @endif
-                </select>
-            </div>
-
-            @if($selectedLessonId)
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                    <div>
-                        <h3 class="font-medium mb-3">{{ $selectedUnitId ? 'Edit' : 'Create' }} Unit</h3>
-                        <form wire:submit.prevent="saveUnit" class="space-y-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Title *</label>
-                                <input type="text" wire:model="unitTitle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Code *</label>
-                                <input type="text" wire:model="unitCode" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Type *</label>
-                                <select wire:model="unitType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                    <option value="video">Video</option>
-                                    <option value="reading">Reading</option>
-                                    <option value="quiz">Quiz</option>
-                                    <option value="assignment">Assignment</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Sort Order *</label>
-                                <input type="number" wire:model="unitSortOrder" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            </div>
-                            <label class="flex items-center">
-                                <input type="checkbox" wire:model="unitIsRequired" class="rounded border-gray-300">
-                                <span class="ml-2 text-sm">Required</span>
-                            </label>
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md">{{ $selectedUnitId ? 'Update' : 'Create' }}</button>
-                        </form>
-                    </div>
-
-                    <div>
-                        <h3 class="font-medium mb-3">Units</h3>
-                        <div class="space-y-2">
-                            @forelse($units as $unit)
-                                <div class="border rounded p-3 hover:bg-gray-50">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h4 class="font-medium">{{ $unit->title }}</h4>
-                                            <p class="text-sm text-gray-500">{{ ucfirst($unit->type) }} • Order: {{ $unit->sort_order }}</p>
-                                        </div>
-                                        <div class="flex space-x-2">
-                                            <button wire:click="editUnit({{ $unit->id }})" class="text-blue-600 text-sm">Edit</button>
-                                            <button wire:click="deleteUnit({{ $unit->id }})" onclick="return confirm('Delete?')" class="text-red-600 text-sm">Delete</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            @empty
-                                <p class="text-gray-500 text-center py-4">No units yet.</p>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-            @endif
-        </div>
-    @endif
-
-    {{-- Materials Tab --}}
-    @if($activeTab === 'materials')
-        <div class="bg-white p-6 rounded-lg shadow">
-            <h2 class="text-lg font-semibold mb-4">Material Management</h2>
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700">Select Unit First</label>
-                <select wire:model="selectedUnitId" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                    <option value="">-- Select Unit --</option>
-                    @if($selectedLessonId && $units)
-                        @foreach($units as $unit)
-                            <option value="{{ $unit->id }}">{{ $unit->title }}</option>
-                        @endforeach
-                    @endif
-                </select>
-            </div>
-
-            @if($selectedUnitId)
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                    <div>
-                        <h3 class="font-medium mb-3">{{ $selectedMaterialId ? 'Edit' : 'Create' }} Material</h3>
-                        <form wire:submit.prevent="saveMaterial" class="space-y-3">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Title *</label>
-                                <input type="text" wire:model="materialTitle" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Type *</label>
-                                <select wire:model="materialType" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                                    <option value="youtube">YouTube Video</option>
-                                    <option value="pdf">PDF Document</option>
-                                    <option value="external_link">External Link</option>
-                                </select>
-                            </div>
-
-                            @if($materialType === 'youtube')
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">YouTube URL *</label>
-                                    <input type="url" wire:model="materialYoutubeUrl" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm" placeholder="https://www.youtube.com/watch?v=...">
-                                    @error('materialYoutubeUrl') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                                    @if($materialVideoId)
-                                        <p class="mt-1 text-sm text-green-600">✓ Video ID: {{ $materialVideoId }}</p>
-                                    @endif
-                                </div>
-                            @endif
-
-                            @if($materialType === 'pdf')
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">PDF File *</label>
-                                    <input type="file" wire:model="materialPdfFile" accept="application/pdf" class="mt-1 block w-full">
-                                    @error('materialPdfFile') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-                                </div>
-                            @endif
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Sort Order *</label>
-                                <input type="number" wire:model="materialSortOrder" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
-                            </div>
-                            <label class="flex items-center">
-                                <input type="checkbox" wire:model="materialIsRequired" class="rounded border-gray-300">
-                                <span class="ml-2 text-sm">Required</span>
-                            </label>
-                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md">{{ $selectedMaterialId ? 'Update' : 'Create' }}</button>
-                        </form>
-                    </div>
-
-                    <div>
-                        <h3 class="font-medium mb-3">Materials</h3>
-                        <div class="space-y-2">
-                            @forelse($materials as $material)
-                                <div class="border rounded p-3 hover:bg-gray-50">
-                                    <div class="flex justify-between items-start">
-                                        <div>
-                                            <h4 class="font-medium">{{ $material->title }}</h4>
-                                            <p class="text-sm text-gray-500">{{ ucfirst($material->file_type) }} • Order: {{ $material->sort_order }}</p>
-                                        </div>
-                                        <div class="flex space-x-2">
-                                            <button wire:click="editMaterial({{ $material->id }})" class="text-blue-600 text-sm">Edit</button>
-                                            <button wire:click="deleteMaterial({{ $material->id }})" onclick="return confirm('Delete?')" class="text-red-600 text-sm">Delete</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            @empty
-                                <p class="text-gray-500 text-center py-4">No materials yet.</p>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-            @endif
-        </div>
-    @endif
+    <div class="grid min-w-0 gap-6 xl:grid-cols-2">
+        <section class="min-w-0 space-y-4" aria-labelledby="class-editor">
+            <flux:heading level="2" id="class-editor">{{ $selectedCourseId ? 'Edit kelas' : 'Buat kelas' }}</flux:heading>
+            <p>HS memakai kelas prasyarat yang dipilih saat menyimpan pengaturan kelas.</p><form wire:submit="saveCourse" class="space-y-4">
+<div wire:key="field-cms-courseTitle" class="space-y-2"><label for="cms-courseTitle" class="block font-medium">Judul kelas</label><flux:input wire:model="courseTitle" id="cms-courseTitle" type="text" /></div><div wire:key="field-cms-courseSlug" class="space-y-2"><label for="cms-courseSlug" class="block font-medium">Slug (opsional; dibuat otomatis)</label><flux:input wire:model="courseSlug" id="cms-courseSlug" type="text" /></div><div wire:key="field-cms-courseCode" class="space-y-2"><label for="cms-courseCode" class="block font-medium">Kode kelas (opsional; dibuat otomatis)</label><flux:input wire:model="courseCode" id="cms-courseCode" type="text" /></div><div wire:key="field-cms-courseType" class="space-y-2"><label for="cms-courseType" class="block font-medium">Paket kelas</label><flux:select wire:model.live="courseType" id="cms-courseType"><option value="android">Android</option><option value="iphone">iPhone</option><option value="free_class">Free Class</option><option value="hardware_solution">Hardware Solution</option></flux:select></div>@if($courseType === 'hardware_solution')<div class="space-y-2"><label for="cms-prerequisite" class="block font-medium">Kelas prasyarat HS</label><flux:select id="cms-prerequisite" wire:model="coursePrerequisiteId"><option value="">Pilih kelas Android atau iPhone</option>@foreach($prerequisiteCourses as $prerequisite)<option value="{{ $prerequisite->id }}">{{ $prerequisite->title }}</option>@endforeach</flux:select></div>@endif<div wire:key="field-cms-courseDescription" class="space-y-2"><label for="cms-courseDescription" class="block font-medium">Deskripsi kelas</label><flux:textarea wire:model="courseDescription" id="cms-courseDescription" rows="3" /></div><div wire:key="field-cms-courseCover" class="space-y-2"><label for="cms-courseCover" class="block font-medium">Cover JPG, PNG atau WebP, maksimal 4 MB</label><flux:input wire:model="courseCover" id="cms-courseCover" type="file" /></div><div wire:key="field-cms-courseStatus" class="space-y-2"><label for="cms-courseStatus" class="block font-medium">Status kelas</label><flux:select wire:model.live="courseStatus" id="cms-courseStatus"><option value="draft">Draft</option><option value="published">Terbit</option><option value="archived">Arsip</option></flux:select></div><flux:text>Terbitkan materi dan modul terlebih dahulu. Bundling dan premium merupakan hak akses, bukan jenis kelas.</flux:text><flux:button type="submit" variant="primary" wire:loading.attr="disabled">Simpan kelas</flux:button>
+            </form>
+        </section>
+        <section class="min-w-0 space-y-4" aria-labelledby="class-list">
+            <flux:heading level="2" id="class-list">Daftar kelas</flux:heading>
+            <div wire:key="field-cms-search" class="space-y-2"><label for="cms-search" class="block font-medium">Cari judul kelas</label><flux:input wire:model.live.debounce.300ms="search" id="cms-search" /></div>
+            <div wire:key="field-cms-statusFilter" class="space-y-2"><label for="cms-statusFilter" class="block font-medium">Filter status</label><flux:select wire:model.live="statusFilter" id="cms-statusFilter"><option value="">Semua status</option><option value="draft">Draft</option><option value="published">Terbit</option><option value="archived">Arsip</option></flux:select></div>
+            <ul class="divide-y divide-zinc-300 dark:divide-zinc-600">
+            @forelse($courses as $course)<li wire:key="course-{{ $course->id }}" class="space-y-2 py-4">
+                <p class="break-words font-semibold">{{ $course->title }}</p><p>{{ $course->type }} · {{ $course->status }} · revisi {{ $course->revision }}</p>
+                <div class="flex flex-wrap gap-2"><flux:button wire:click="selectCourse({{ $course->id }})">Kelola kelas</flux:button>@if($course->status !== 'archived')<flux:button wire:click="archiveCourse({{ $course->id }}, {{ $course->revision }})" wire:confirm="Arsipkan kelas? Riwayat belajar tetap disimpan." wire:loading.attr="disabled">Arsipkan kelas</flux:button>@endif</div>
+            </li>@empty<li class="py-4">Belum ada kelas yang sesuai. Buat kelas baru atau ubah filter.</li>@endforelse
+            </ul>{{ $courses->links() }}
+        </section>
+    </div>
+    @elseif($activeTab === 'lessons' && $selectedCourseId)
+    <div class="grid min-w-0 gap-6 xl:grid-cols-2">
+        <section class="space-y-4" aria-labelledby="module-editor"><flux:heading level="2" id="module-editor">{{ $selectedLessonId ? 'Edit modul' : 'Buat modul' }}</flux:heading>
+            <form wire:submit="saveLesson" class="space-y-4">
+<div wire:key="field-cms-lessonTitle" class="space-y-2"><label for="cms-lessonTitle" class="block font-medium">Judul modul</label><flux:input wire:model="lessonTitle" id="cms-lessonTitle" type="text" /></div><div wire:key="field-cms-lessonCode" class="space-y-2"><label for="cms-lessonCode" class="block font-medium">Kode modul (opsional; dibuat otomatis)</label><flux:input wire:model="lessonCode" id="cms-lessonCode" type="text" /></div><div wire:key="field-cms-lessonDescription" class="space-y-2"><label for="cms-lessonDescription" class="block font-medium">Deskripsi modul</label><flux:textarea wire:model="lessonDescription" id="cms-lessonDescription" rows="3" /></div><div wire:key="field-cms-lessonSortOrder" class="space-y-2"><label for="cms-lessonSortOrder" class="block font-medium">Urutan modul (mulai dari 0)</label><flux:input wire:model="lessonSortOrder" id="cms-lessonSortOrder" type="number" /></div><div wire:key="field-cms-lessonStatus" class="space-y-2"><label for="cms-lessonStatus" class="block font-medium">Status modul</label><flux:select wire:model.live="lessonStatus" id="cms-lessonStatus"><option value="draft">Draft</option><option value="published">Terbit</option><option value="archived">Arsip</option></flux:select></div><flux:text>Modul dapat diterbitkan setelah materi wajib di dalamnya terbit. Draft tetap tersembunyi dari siswa.</flux:text><flux:button type="submit" variant="primary" wire:loading.attr="disabled">Simpan modul</flux:button></form>
+        </section>
+        <section class="space-y-4" aria-labelledby="module-list"><flux:heading level="2" id="module-list">Modul dalam kelas</flux:heading><flux:button wire:click="newLesson">Modul baru</flux:button><ul class="divide-y divide-zinc-300 dark:divide-zinc-600">
+        @forelse($lessons as $lesson)<li wire:key="lesson-{{ $lesson->id }}" class="space-y-2 py-4"><p class="break-words font-semibold">{{ $lesson->sort_order }}. {{ $lesson->title }}</p><p>{{ $lesson->status }} · revisi {{ $lesson->revision }}</p><div class="flex flex-wrap gap-2"><flux:button wire:click="selectLesson({{ $lesson->id }})">Kelola modul</flux:button>@if($lesson->status !== 'archived')<flux:button wire:click="move('lessons', {{ $lesson->id }}, -1)" :disabled="$lesson->id === $lessons->where('status', '!=', 'archived')->first()?->id" wire:loading.attr="disabled" aria-label="Naikkan modul {{ $lesson->title }}">Naik</flux:button><flux:button wire:click="move('lessons', {{ $lesson->id }}, 1)" :disabled="$lesson->id === $lessons->where('status', '!=', 'archived')->last()?->id" wire:loading.attr="disabled" aria-label="Turunkan modul {{ $lesson->title }}">Turun</flux:button><flux:button wire:click="archiveLesson({{ $lesson->id }}, {{ $lesson->revision }})" wire:confirm="Arsipkan modul dan sembunyikan materinya dari siswa?" wire:loading.attr="disabled">Arsipkan modul</flux:button>@endif</div></li>@empty<li class="py-4">Belum ada modul. Simpan modul pertama sebagai Draft, lalu tambahkan materi.</li>@endforelse</ul></section>
+    </div>
+    @elseif($activeTab === 'materials' && $selectedLessonId)
+    <div class="grid min-w-0 gap-6 xl:grid-cols-2">
+        <section class="space-y-4" aria-labelledby="material-editor"><flux:heading level="2" id="material-editor">{{ $selectedMaterialId ? 'Edit materi' : 'Buat materi' }}</flux:heading><form wire:submit="saveMaterial" class="space-y-4">
+<div wire:key="field-cms-materialTitle" class="space-y-2"><label for="cms-materialTitle" class="block font-medium">Judul materi</label><flux:input wire:model="materialTitle" id="cms-materialTitle" type="text" /></div><div wire:key="field-cms-materialCode" class="space-y-2"><label for="cms-materialCode" class="block font-medium">Kode materi unik</label><flux:input wire:model="materialCode" id="cms-materialCode" type="text" /></div><div wire:key="field-cms-materialUnitTitle" class="space-y-2"><label for="cms-materialUnitTitle" class="block font-medium">Nama unit</label><flux:input wire:model="materialUnitTitle" id="cms-materialUnitTitle" type="text" /></div><div wire:key="field-cms-materialType" class="space-y-2"><label for="cms-materialType" class="block font-medium">Jenis materi</label><flux:select wire:model.live="materialType" id="cms-materialType"><option value="youtube_video">Video YouTube</option><option value="pdf_document">Dokumen PDF</option><option value="text_content">Bacaan teks</option><option value="external_link">Tautan HTTPS</option></flux:select></div><div wire:key="field-cms-materialDescription" class="space-y-2"><label for="cms-materialDescription" class="block font-medium">Deskripsi materi</label><flux:textarea wire:model="materialDescription" id="cms-materialDescription" rows="3" /></div>@if($materialType === 'youtube_video')<div wire:key="field-cms-materialYoutubeUrl" class="space-y-2"><label for="cms-materialYoutubeUrl" class="block font-medium">Tautan video YouTube</label><flux:input wire:model="materialYoutubeUrl" id="cms-materialYoutubeUrl" type="url" /></div><flux:text>Publish memerlukan pemeriksaan izin embed melalui YouTube Data API. Private dan unlisted memiliki aturan berbeda; unlisted tetap dapat dibuka di luar VBAT.</flux:text>
+            @elseif($materialType === 'pdf_document')<div wire:key="field-cms-materialPdfFile" class="space-y-2"><label for="cms-materialPdfFile" class="block font-medium">Unggah PDF privat, maksimal 10 MB</label><flux:input wire:model="materialPdfFile" id="cms-materialPdfFile" type="file" /></div><div class="flex flex-wrap gap-2"><flux:button wire:click="uploadMaterialPdf" wire:loading.attr="disabled">Unggah untuk diperiksa</flux:button><flux:button wire:click="checkMaterialPdf" wire:loading.attr="disabled">Periksa status</flux:button></div><label for="cms-pdf-upload-id">ID upload siap pakai</label><flux:input id="cms-pdf-upload-id" wire:model="materialPdfUploadId" /><p>{{ $materialPdfStatus }}</p><flux:text>Hanya PDF berstatus ready yang dapat ditautkan. Pemindai malware dan parser harus berhasil; hasil upload tidak otomatis terbit.</flux:text>
+            @elseif($materialType === 'text_content')<div wire:key="field-cms-materialContent" class="space-y-2"><label for="cms-materialContent" class="block font-medium">Isi bacaan (teks biasa)</label><flux:textarea wire:model="materialContent" id="cms-materialContent" rows="3" /></div>@elseif($materialType === 'external_link')<div wire:key="field-cms-materialExternalUrl" class="space-y-2"><label for="cms-materialExternalUrl" class="block font-medium">Tautan HTTPS</label><flux:input wire:model="materialExternalUrl" id="cms-materialExternalUrl" type="url" /></div>@endif
+<div wire:key="field-cms-materialSortOrder" class="space-y-2"><label for="cms-materialSortOrder" class="block font-medium">Urutan materi (mulai dari 0)</label><flux:input wire:model="materialSortOrder" id="cms-materialSortOrder" type="number" /></div><div wire:key="field-cms-materialStatus" class="space-y-2"><label for="cms-materialStatus" class="block font-medium">Status materi</label><flux:select wire:model.live="materialStatus" id="cms-materialStatus"><option value="draft">Draft</option><option value="published">Terbit</option><option value="archived">Arsip</option></flux:select></div><flux:checkbox wire:model="materialIsRequired" id="cms-materialIsRequired" wire:key="cms-materialIsRequired" label="Materi wajib" /><flux:checkbox wire:model="materialIsPreview" id="cms-materialIsPreview" wire:key="cms-materialIsPreview" label="Tandai sebagai kandidat preview siswa" /><flux:text>Penanda preview belum memberi akses publik. Preview admin terpisah dan tidak mencatat progres.</flux:text><flux:button type="submit" variant="primary" wire:loading.attr="disabled">Simpan materi</flux:button></form></section>
+        <section class="space-y-4" aria-labelledby="material-list"><flux:heading level="2" id="material-list">Materi dalam modul</flux:heading><flux:button wire:click="newMaterial">Materi baru</flux:button><ul class="divide-y divide-zinc-300 dark:divide-zinc-600">
+        @forelse($materials as $material)<li wire:key="material-{{ $material->id }}" class="space-y-2 py-4"><p class="break-words font-semibold">{{ $material->sort_order }}. {{ $material->title }}</p><p>{{ $material->material_type }} · {{ $material->status }} · {{ $material->is_required ? 'wajib' : 'opsional' }}</p><div class="flex flex-wrap gap-2"><flux:button wire:click="selectMaterial({{ $material->id }})">Edit materi</flux:button>@if($material->status !== 'archived')<flux:button wire:click="move('materials', {{ $material->id }}, -1)" :disabled="$material->id === $materials->where('status', '!=', 'archived')->first()?->id" wire:loading.attr="disabled" aria-label="Naikkan materi {{ $material->title }}">Naik</flux:button><flux:button wire:click="move('materials', {{ $material->id }}, 1)" :disabled="$material->id === $materials->where('status', '!=', 'archived')->last()?->id" wire:loading.attr="disabled" aria-label="Turunkan materi {{ $material->title }}">Turun</flux:button><flux:button wire:click="archiveMaterial({{ $material->id }}, {{ $material->revision }})" wire:confirm="Arsipkan materi? Progres dan percobaan kuis tetap disimpan." wire:loading.attr="disabled">Arsipkan materi</flux:button>@endif</div></li>@empty<li class="py-4">Belum ada materi. Tambahkan video, PDF, bacaan atau tautan.</li>@endforelse</ul></section>
+    </div>
+    @else<p>Pilih kelas dan modul terlebih dahulu.</p>@endif
 </div>

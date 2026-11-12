@@ -11,7 +11,14 @@ class Lesson extends Model
 {
     use HasFactory;
 
+    protected $attributes = ['revision' => 1];
+
     protected $fillable = [
+        'code',
+        'description',
+        'status',
+        'revision',
+
         'course_id',
         'title',
         'sort_order',

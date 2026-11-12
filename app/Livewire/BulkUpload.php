@@ -2,172 +2,91 @@
 
 namespace App\Livewire;
 
-use App\Models\Course;
-use App\Models\Lesson;
-use App\Models\LearningMaterial;
-use App\Services\ToastService;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Api\LmsImportController;
+use App\Models\LmsImport;
+use App\Models\LmsUpload;
+use App\Services\BulkImportService;
+use App\Services\LmsUploadService;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\IOFactory;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class BulkUpload extends Component
 {
     use WithFileUploads;
 
     public $file;
-    public $preview = [];
-    public $importResult = null;
+
+    public $pdf;
+
+    #[Locked]
+    public ?string $previewId = null;
+
+    #[Locked]
+    public ?array $importResult = null;
 
     public function downloadTemplate()
     {
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-        
-        $sheet->setCellValue('A1', 'course_slug');
-        $sheet->setCellValue('B1', 'lesson_slug');
-        $sheet->setCellValue('C1', 'unit_code');
-        $sheet->setCellValue('D1', 'material_type');
-        $sheet->setCellValue('E1', 'title');
-        $sheet->setCellValue('F1', 'description');
-        $sheet->setCellValue('G1', 'youtube_url');
-        $sheet->setCellValue('H1', 'pdf_key');
-        $sheet->setCellValue('I1', 'sort_order');
-        $sheet->setCellValue('J1', 'is_required');
-        $sheet->setCellValue('K1', 'status');
+        $this->assertAdmin();
 
-        $sheet->setCellValue('A2', 'android-basic');
-        $sheet->setCellValue('B2', 'intro');
-        $sheet->setCellValue('C2', 'UNIT-001');
-        $sheet->setCellValue('D2', 'video');
-        $sheet->setCellValue('E2', 'Introduction to Android');
-        $sheet->setCellValue('F2', 'Basic concepts');
-        $sheet->setCellValue('G2', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-        $sheet->setCellValue('H2', '');
-        $sheet->setCellValue('I2', '1');
-        $sheet->setCellValue('J2', '1');
-        $sheet->setCellValue('K2', 'published');
-
-        $writer = new Xlsx($spreadsheet);
-        $fileName = 'bulk_upload_template_' . date('Ymd_His') . '.xlsx';
-        $tempFile = storage_path('app/' . $fileName);
-        $writer->save($tempFile);
-
-        return response()->download($tempFile)->deleteFileAfterSend();
+        return app(LmsImportController::class)->template(app(BulkImportService::class));
     }
 
-    public function previewFile()
+    public function updatedFile(): void
     {
-        $this->validate(['file' => 'required|mimes:xlsx,xls|max:10240']);
+        $this->previewId = null;
+        $this->importResult = null;
+        $this->resetValidation();
+    }
 
+    public function previewFile(): void
+    {
+        $this->assertAdmin();
+        $this->validate(['file' => 'required|file|max:5120']);
+        $this->previewId = null;
+        $this->importResult = null;
+        $preview = app(BulkImportService::class)->preview($this->file->getRealPath(), auth()->user(), strtolower($this->file->getClientOriginalExtension()));
+        $this->previewId = $preview->id;
+    }
+
+    public function importData(): void
+    {
+        $this->assertAdmin();
+        abort_unless($this->previewId, 422);
         try {
-            $path = $this->file->getRealPath();
-            $spreadsheet = IOFactory::load($path);
-            $sheet = $spreadsheet->getActiveSheet();
-            $rows = $sheet->toArray();
-
-            $this->preview = [];
-            $header = array_shift($rows);
-
-            foreach ($rows as $idx => $row) {
-                if (empty(array_filter($row))) continue;
-                
-                $this->preview[] = [
-                    'row' => $idx + 2,
-                    'course_slug' => $row[0] ?? '',
-                    'lesson_slug' => $row[1] ?? '',
-                    'unit_code' => $row[2] ?? '',
-                    'material_type' => $row[3] ?? '',
-                    'title' => $row[4] ?? '',
-                    'description' => $row[5] ?? '',
-                    'youtube_url' => $row[6] ?? '',
-                    'pdf_key' => $row[7] ?? '',
-                    'sort_order' => $row[8] ?? 0,
-                    'is_required' => $row[9] ?? 0,
-                    'status' => $row[10] ?? 'draft',
-                ];
-            }
-
-            ToastService::info($this, 'Preview Dimuat', 'Berhasil memuat ' . count($this->preview) . ' baris data.');
-        } catch (\Exception $e) {
-            Log::error('Bulk upload preview error: ' . $e->getMessage());
-            ToastService::error($this, 'Gagal Membaca File', $e->getMessage());
+            $this->importResult = app(BulkImportService::class)->apply($this->previewId, auth()->user());
+        } catch (HttpExceptionInterface $e) {
+            $this->addError('import', $e->getMessage());
         }
     }
 
-    public function importData()
+    public function uploadPdf(): void
     {
-        if (empty($this->preview)) {
-            ToastService::warning($this, 'Tidak Ada Data', 'Silakan upload dan preview file terlebih dahulu.');
-            return;
-        }
+        $this->assertAdmin();
+        $this->validate(['pdf' => 'required|file|mimes:pdf|max:10240']);
+        app(LmsUploadService::class)->receive(auth()->user(), $this->pdf, 'course_material');
+        $this->pdf = null;
+    }
 
-        $created = 0;
-        $updated = 0;
-        $skipped = 0;
-        $errors = [];
+    public function downloadErrors()
+    {
+        $this->assertAdmin();
+        $preview = LmsImport::whereKey($this->previewId)->where('user_id', auth()->id())->firstOrFail();
 
-        DB::beginTransaction();
-        try {
-            foreach ($this->preview as $item) {
-                $course = Course::where('slug', $item['course_slug'])->first();
-                if (!$course) {
-                    $errors[] = "Row {$item['row']}: Course '{$item['course_slug']}' not found.";
-                    $skipped++;
-                    continue;
-                }
+        return LmsImportController::errorDownload($preview);
+    }
 
-                $lesson = Lesson::where('slug', $item['lesson_slug'])
-                    ->where('course_id', $course->id)
-                    ->first();
-                if (!$lesson) {
-                    $errors[] = "Row {$item['row']}: Lesson '{$item['lesson_slug']}' not found.";
-                    $skipped++;
-                    continue;
-                }
-
-                $existing = LearningMaterial::where('lesson_id', $lesson->id)
-                    ->where('unit_code', $item['unit_code'])
-                    ->first();
-
-                $data = [
-                    'lesson_id' => $lesson->id,
-                    'unit_code' => $item['unit_code'],
-                    'material_type' => $item['material_type'],
-                    'title' => $item['title'],
-                    'description' => $item['description'],
-                    'youtube_url' => $item['youtube_url'],
-                    'pdf_object_key' => $item['pdf_key'],
-                    'sort_order' => (int)$item['sort_order'],
-                    'is_required' => (bool)$item['is_required'],
-                    'status' => $item['status'],
-                ];
-
-                if ($existing) {
-                    $existing->update($data);
-                    $updated++;
-                } else {
-                    LearningMaterial::create($data);
-                    $created++;
-                }
-            }
-
-            DB::commit();
-            $this->importResult = compact('created', 'updated', 'skipped', 'errors');
-            $this->preview = [];
-            ToastService::importComplete($this, $created, $updated, $skipped);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Bulk import error: ' . $e->getMessage());
-            ToastService::importFailed($this, $e->getMessage());
-        }
+    private function assertAdmin(): void
+    {
+        abort_unless(auth()->user()?->isSuperAdmin(), 403);
     }
 
     public function render()
     {
-        return view('livewire.bulk-upload');
+        $this->assertAdmin();
+
+        return view('livewire.bulk-upload', ['summary' => $this->previewId ? app(BulkImportService::class)->data(LmsImport::whereKey($this->previewId)->where('user_id', auth()->id())->firstOrFail()) : null,
+            'uploads' => LmsUpload::where('user_id', auth()->id())->latest()->limit(30)->get()]);
     }
 }

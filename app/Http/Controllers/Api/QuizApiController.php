@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Quiz;
-use App\Models\QuizAttempt;
 use App\Models\QuizQuestion;
+use App\Services\LmsQuizPlacementService;
+use App\Services\QuizDefinitionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class QuizApiController extends Controller
 {
@@ -20,13 +20,17 @@ class QuizApiController extends Controller
         $validated = $request->validate([
             'learning_material_id' => ['nullable', 'integer', 'exists:learning_materials,id'],
             'is_active' => ['nullable', 'boolean'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'per_page' => ['sometimes', 'integer', 'min:0', 'max:10'],
             'with_questions' => ['nullable', 'boolean'],
         ]);
 
         $query = Quiz::with('learningMaterial.lesson.course');
+        if (! auth('sanctum')->user()?->isSuperAdmin()) {
+            $query->where('is_active', true)->whereHas('learningMaterial', fn ($q) => $q->published()
+                ->whereHas('lesson', fn ($q) => $q->where('status', 'published')->whereHas('course', fn ($q) => $q->published())));
+        }
 
-        if (!empty($validated['learning_material_id'])) {
+        if (! empty($validated['learning_material_id'])) {
             $query->where('learning_material_id', $validated['learning_material_id']);
         }
 
@@ -34,7 +38,7 @@ class QuizApiController extends Controller
             $query->where('is_active', $validated['is_active']);
         }
 
-        if (!empty($validated['with_questions'])) {
+        if (! empty($validated['with_questions'])) {
             $query->with('questions');
         }
 
@@ -60,35 +64,6 @@ class QuizApiController extends Controller
     {
         $quiz = Quiz::with(['learningMaterial.lesson.course', 'questions'])->findOrFail($id);
 
-        // For student taking the quiz, hide correct answers
-        $userId = auth()->id();
-        if ($userId) {
-            $attemptCount = $quiz->attemptCountBy($userId);
-            $hasPassed = $quiz->hasPassedBy($userId);
-            $exhausted = $quiz->attemptsExhaustedBy($userId);
-
-            $data = $quiz->toArray();
-            $data['_meta'] = [
-                'user_attempt_count' => $attemptCount,
-                'user_has_passed' => $hasPassed,
-                'attempts_exhausted' => $exhausted,
-                'can_take' => !$hasPassed && !$exhausted && $quiz->is_active,
-            ];
-
-            // Hide correct answers unless user has passed
-            if (!$hasPassed) {
-                foreach ($data['questions'] as &$q) {
-                    unset($q['correct_answer']);
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'message' => 'Quiz retrieved successfully',
-            ]);
-        }
-
         return response()->json([
             'success' => true,
             'data' => $quiz,
@@ -105,14 +80,17 @@ class QuizApiController extends Controller
             'learning_material_id' => ['required', 'integer', 'exists:learning_materials,id'],
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'max_attempts' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'max_attempts' => ['sometimes', 'integer', 'min:0', 'max:10'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:300'],
+            'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:240'],
             'is_active' => ['nullable', 'boolean'],
+            'grading_mode' => 'sometimes|in:auto,manual,hybrid', 'grading_policy' => 'sometimes|in:highest,latest,average',
+            'shuffle_questions' => 'sometimes|boolean', 'shuffle_options' => 'sometimes|boolean', 'placement' => 'sometimes|nullable|in:after_material,end_of_module,end_of_course', 'is_required' => 'sometimes|boolean',
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        $quiz = Quiz::create($validated);
+        $validated = app(LmsQuizPlacementService::class)->configure(new Quiz, $validated);
+        $quiz = Quiz::create(['max_attempts' => 0, 'passing_score' => 70, 'time_limit_minutes' => null, ...$validated]);
 
         return response()->json([
             'success' => true,
@@ -131,13 +109,16 @@ class QuizApiController extends Controller
         $validated = $request->validate([
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'max_attempts' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'max_attempts' => ['sometimes', 'integer', 'min:0', 'max:10'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
-            'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:300'],
+            'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:240'],
             'is_active' => ['nullable', 'boolean'],
+            'grading_mode' => 'sometimes|in:auto,manual,hybrid', 'grading_policy' => 'sometimes|in:highest,latest,average',
+            'shuffle_questions' => 'sometimes|boolean', 'shuffle_options' => 'sometimes|boolean', 'placement' => 'sometimes|nullable|in:after_material,end_of_module,end_of_course', 'is_required' => 'sometimes|boolean',
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
 
+        $validated = app(LmsQuizPlacementService::class)->configure($quiz, $validated);
         $quiz->update($validated);
 
         return response()->json([
@@ -153,6 +134,7 @@ class QuizApiController extends Controller
     public function destroy(int $id): JsonResponse
     {
         $quiz = Quiz::findOrFail($id);
+        abort_if($quiz->attempts()->exists(), 409, 'Kuis memiliki riwayat attempt; nonaktifkan, jangan hapus.');
         $quiz->delete();
 
         return response()->json([
@@ -171,15 +153,7 @@ class QuizApiController extends Controller
     {
         $quiz = Quiz::findOrFail($quizId);
 
-        $validated = $request->validate([
-            'question_text' => ['required', 'string'],
-            'options' => ['required', 'array', 'min:2'],
-            'options.*.label' => ['required', 'string'],
-            'options.*.value' => ['required', 'string'],
-            'correct_answer' => ['required', 'string'],
-            'points' => ['nullable', 'integer', 'min:0'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-        ]);
+        $validated = app(QuizDefinitionService::class)->question(['points' => 1, 'sort_order' => 0, ...$request->all()]);
 
         $question = $quiz->questions()->create($validated);
 
@@ -197,12 +171,8 @@ class QuizApiController extends Controller
     {
         $question = QuizQuestion::findOrFail($questionId);
 
-        $validated = $request->validate([
-            'question_text' => ['nullable', 'string'],
-            'options' => ['nullable', 'array', 'min:2'],
-            'correct_answer' => ['nullable', 'string'],
-            'points' => ['nullable', 'integer', 'min:0'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
+        $validated = app(QuizDefinitionService::class)->question([
+            ...$question->only(['question_type', 'question_text', 'options', 'correct_answer', 'points', 'sort_order', 'answer_aliases', 'rubric']), ...$request->all(),
         ]);
 
         $question->update($validated);
@@ -236,91 +206,11 @@ class QuizApiController extends Controller
      */
     public function startAttempt(int $id): JsonResponse
     {
-        $quiz = Quiz::findOrFail($id);
-
-        $userId = auth()->id();
-        if (!$userId) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
-
-        if (!$quiz->is_active) {
-            return response()->json(['success' => false, 'message' => 'Quiz is not active'], 422);
-        }
-
-        if ($quiz->hasPassedBy($userId)) {
-            return response()->json(['success' => false, 'message' => 'You have already passed this quiz'], 409);
-        }
-
-        if ($quiz->attemptsExhaustedBy($userId)) {
-            return response()->json(['success' => false, 'message' => 'No attempts remaining'], 409);
-        }
-
-        $attempt = QuizAttempt::create([
-            'quiz_id' => $quiz->id,
-            'user_id' => $userId,
-            'started_at' => now(),
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'data' => $attempt,
-            'message' => 'Quiz attempt started',
-        ], 201);
+        return response()->json(['success' => false, 'code' => 'TRUSTED_ATTEMPT_REQUIRED', 'message' => 'Gunakan endpoint LMS attempt.'], 410);
     }
 
-    /**
-     * Submit a quiz attempt.
-     */
     public function submitAttempt(Request $request, int $id): JsonResponse
     {
-        $quiz = Quiz::with('questions')->findOrFail($id);
-
-        $userId = auth()->id();
-        if (!$userId) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
-
-        $attempt = QuizAttempt::where('quiz_id', $quiz->id)
-            ->where('user_id', $userId)
-            ->whereNull('submitted_at')
-            ->firstOrFail();
-
-        $validated = $request->validate([
-            'answers' => ['required', 'array'],
-        ]);
-
-        // Score calculation
-        $totalPoints = 0;
-        $earnedPoints = 0;
-
-        foreach ($quiz->questions as $question) {
-            $totalPoints += $question->points;
-            $userAnswer = $validated['answers'][$question->id] ?? null;
-
-            if ($userAnswer === $question->correct_answer) {
-                $earnedPoints += $question->points;
-            }
-        }
-
-        $score = $totalPoints > 0 ? round(($earnedPoints / $totalPoints) * 100) : 0;
-        $isPassed = $score >= $quiz->passing_score;
-
-        $attempt->update([
-            'score' => $score,
-            'is_passed' => $isPassed,
-            'answers' => $validated['answers'],
-            'submitted_at' => now(),
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                ...$attempt->toArray(),
-                'passing_score' => $quiz->passing_score,
-                'max_attempts' => $quiz->max_attempts,
-                'remaining_attempts' => max(0, $quiz->max_attempts - $quiz->attemptCountBy($userId)),
-            ],
-            'message' => $isPassed ? 'Quiz passed!' : 'Quiz not passed',
-        ]);
+        return response()->json(['success' => false, 'code' => 'TRUSTED_ATTEMPT_REQUIRED', 'message' => 'Gunakan endpoint LMS attempt.'], 410);
     }
 }

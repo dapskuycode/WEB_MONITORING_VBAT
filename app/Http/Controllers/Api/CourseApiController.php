@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Services\LmsAuthoringService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class CourseApiController extends Controller
@@ -22,19 +22,22 @@ class CourseApiController extends Controller
             'is_free_class' => ['nullable', 'boolean'],
             'is_featured' => ['nullable', 'boolean'],
             'search' => ['nullable', 'string', 'max:100'],
-            'sort_by' => ['nullable', Rule::in(['sort_order', 'created_at', 'title', 'published_at'])],
+            'sort_by' => ['nullable', Rule::in(['created_at', 'title', 'published_at'])],
             'sort_dir' => ['nullable', Rule::in(['asc', 'desc'])],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'with_lessons' => ['nullable', 'boolean'],
         ]);
 
         $query = Course::query();
+        if (! auth('sanctum')->user()?->isSuperAdmin()) {
+            $query->published();
+        }
 
-        if (!empty($validated['type'])) {
+        if (! empty($validated['type'])) {
             $query->where('type', $validated['type']);
         }
 
-        if (!empty($validated['status'])) {
+        if (! empty($validated['status'])) {
             if ($validated['status'] === 'archived') {
                 $query->whereNotNull('archived_at');
             } elseif ($validated['status'] !== 'all') {
@@ -53,11 +56,11 @@ class CourseApiController extends Controller
             $query->where('is_featured', $validated['is_featured']);
         }
 
-        if (!empty($validated['search'])) {
-            $search = '%' . $validated['search'] . '%';
+        if (! empty($validated['search'])) {
+            $search = '%'.$validated['search'].'%';
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', $search)
-                  ->orWhere('description', 'like', $search);
+                    ->orWhere('description', 'like', $search);
             });
         }
 
@@ -67,7 +70,7 @@ class CourseApiController extends Controller
 
         $perPage = $validated['per_page'] ?? 15;
 
-        if (!empty($validated['with_lessons'])) {
+        if (! empty($validated['with_lessons'])) {
             $query->with('lessons');
         }
 
@@ -101,17 +104,17 @@ class CourseApiController extends Controller
             ->where('is_free_class', true)
             ->orderBy('created_at', 'desc');
 
-        if (!empty($validated['search'])) {
-            $search = '%' . $validated['search'] . '%';
+        if (! empty($validated['search'])) {
+            $search = '%'.$validated['search'].'%';
             $query->where(function ($q) use ($search) {
                 $q->where('title', 'like', $search)
-                  ->orWhere('description', 'like', $search);
+                    ->orWhere('description', 'like', $search);
             });
         }
 
         $perPage = $validated['per_page'] ?? 15;
 
-        if (!empty($validated['with_lessons'])) {
+        if (! empty($validated['with_lessons'])) {
             $query->with('lessons');
         }
 
@@ -135,28 +138,10 @@ class CourseApiController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:courses,slug'],
-            'description' => ['nullable', 'string'],
-            'thumbnail_path' => ['nullable', 'string', 'max:500'],
-            'status' => ['nullable', Rule::in(['draft', 'published', 'archived'])],
-            'type' => ['nullable', Rule::in(Course::TYPES)],
-            'is_free_class' => ['nullable', 'boolean'],
-            'is_featured' => ['nullable', 'boolean'],
-        ]);
-
-        $validated['slug'] = $validated['slug'] ?? Str::slug($validated['title']) . '-' . Str::random(5);
-        $validated['status'] = $validated['status'] ?? 'draft';
-        $validated['type'] = $validated['type'] ?? Course::TYPE_ANDROID;
-        $validated['is_free_class'] = $validated['is_free_class'] ?? false;
-        $validated['is_featured'] = $validated['is_featured'] ?? false;
-
-        if ($validated['status'] === 'published' && empty($validated['published_at'])) {
-            $validated['published_at'] = now();
-        }
-
-        $course = Course::create($validated);
+        $input = $request->all();
+        $input['status'] = $input['status'] ?? 'draft';
+        $input['type'] = $input['type'] ?? Course::TYPE_ANDROID;
+        $course = app(LmsAuthoringService::class)->saveCourse($input);
 
         return response()->json([
             'success' => true,
@@ -186,30 +171,8 @@ class CourseApiController extends Controller
     {
         $course = Course::findOrFail($id);
 
-        $validated = $request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', Rule::unique('courses')->ignore($course->id)],
-            'description' => ['nullable', 'string'],
-            'thumbnail_path' => ['nullable', 'string', 'max:500'],
-            'status' => ['nullable', Rule::in(['draft', 'published', 'archived'])],
-            'type' => ['nullable', Rule::in(Course::TYPES)],
-            'is_free_class' => ['nullable', 'boolean'],
-            'is_featured' => ['nullable', 'boolean'],
-        ]);
-
-        if (isset($validated['status'])) {
-            if ($validated['status'] === 'published' && $course->status !== 'published') {
-                $validated['published_at'] = now();
-            }
-            if ($validated['status'] === 'archived' && $course->archived_at === null) {
-                $validated['archived_at'] = now();
-            }
-            if ($validated['status'] === 'published' || $validated['status'] === 'draft') {
-                $validated['archived_at'] = null;
-            }
-        }
-
-        $course->update($validated);
+        $input = [...$course->getAttributes(), ...$request->all()];
+        $course = app(LmsAuthoringService::class)->saveCourse($input, $id);
 
         return response()->json([
             'success' => true,
@@ -221,13 +184,10 @@ class CourseApiController extends Controller
     /**
      * Archive a course (soft-archive).
      */
-    public function archive(int $id): JsonResponse
+    public function archive(Request $request, int $id): JsonResponse
     {
         $course = Course::findOrFail($id);
-        $course->update([
-            'status' => 'archived',
-            'archived_at' => now(),
-        ]);
+        $course = app(LmsAuthoringService::class)->archive($course, $request->integer('expected_revision'));
 
         return response()->json([
             'success' => true,
@@ -239,15 +199,15 @@ class CourseApiController extends Controller
     /**
      * Delete a course.
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $course = Course::findOrFail($id);
-        $course->delete();
+        app(LmsAuthoringService::class)->archive($course, $request->integer('expected_revision'));
 
         return response()->json([
             'success' => true,
             'data' => null,
-            'message' => 'Course deleted successfully',
+            'message' => 'Course archived; learning history retained',
         ]);
     }
 }

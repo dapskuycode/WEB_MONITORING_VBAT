@@ -1,4 +1,10 @@
 <div class="flex flex-col gap-6 py-2">
+    @if(auth()->user()?->isSuperAdmin())
+        <a href="{{ route('admin.content') }}" wire:navigate aria-label="Konten belajar LMS" class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 dark:text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2" title="Konten belajar LMS">
+            <flux:icon.book-open class="size-5 shrink-0" aria-hidden="true" />
+            <span x-show="sidebarOpen">Konten belajar LMS</span>
+        </a>
+    @endif
     @if(auth()->user()?->isSponsor())
         {{-- SPONSOR MENU --}}
         <div>

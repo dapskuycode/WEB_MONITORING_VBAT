@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthApiController extends Controller
 {
@@ -19,16 +20,16 @@ class AuthApiController extends Controller
     public function register(Request $request): JsonResponse
     {
         $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ]);
 
         $user = User::create([
-            'name'              => $request->name,
-            'email'             => $request->email,
-            'password'          => Hash::make($request->password),
-            'role'              => 'student',
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'student',
             'profile_completed' => false,
         ]);
 
@@ -37,15 +38,15 @@ class AuthApiController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Registrasi berhasil',
-            'data'    => [
-                'user'  => [
-                    'id'    => $user->id,
-                    'name'  => $user->name,
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
                     'email' => $user->email,
-                    'role'  => $user->role,
+                    'role' => $user->role,
                 ],
                 'token' => $token,
-                'type'  => 'Bearer',
+                'type' => 'Bearer',
             ],
         ], 201);
     }
@@ -58,7 +59,7 @@ class AuthApiController extends Controller
     public function login(Request $request): JsonResponse
     {
         $request->validate([
-            'email'    => ['required', 'email'],
+            'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
 
@@ -74,15 +75,15 @@ class AuthApiController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'user'  => [
-                    'id'         => $user->id,
-                    'name'       => $user->name,
-                    'email'      => $user->email,
-                    'role'       => $user->role,
+            'data' => [
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
                 ],
                 'token' => $token,
-                'type'  => 'Bearer',
+                'type' => 'Bearer',
             ],
         ]);
     }
@@ -94,7 +95,10 @@ class AuthApiController extends Controller
      */
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $token = $request->user()->currentAccessToken();
+        if ($token instanceof PersonalAccessToken) {
+            $token->delete();
+        }
 
         return response()->json([
             'success' => true,
@@ -113,30 +117,30 @@ class AuthApiController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'id'                => $user->id,
-                'name'              => $user->name,
-                'email'             => $user->email,
-                'role'              => $user->role,
-                'birth_date'        => $user->birth_date?->format('Y-m-d'),
-                'gender'            => $user->gender,
-                'phone'             => $user->phone,
-                'whatsapp'          => $user->whatsapp,
-                'address'           => $user->address,
-                'province_id'       => $user->province_id,
-                'province'          => $user->province?->name,
-                'city_id'           => $user->city_id,
-                'city'              => $user->city?->name,
-                'district'          => $user->district,
-                'village'           => $user->village,
-                'instagram'         => $user->instagram,
-                'facebook'          => $user->facebook,
-                'tiktok'            => $user->tiktok,
-                'youtube'           => $user->youtube,
-                'profile_completed' => (bool)$user->isProfileComplete(),
-                'membership'        => $user->membership?->membership_number,
-                'is_active_member'  => $user->membership?->isActive() ?? false,
-                'created_at'        => $user->created_at?->toIso8601String(),
+            'data' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'birth_date' => $user->birth_date?->format('Y-m-d'),
+                'gender' => $user->gender,
+                'phone' => $user->phone,
+                'whatsapp' => $user->whatsapp,
+                'address' => $user->address,
+                'province_id' => $user->province_id,
+                'province' => $user->province?->name,
+                'city_id' => $user->city_id,
+                'city' => $user->city?->name,
+                'district' => $user->district,
+                'village' => $user->village,
+                'instagram' => $user->instagram,
+                'facebook' => $user->facebook,
+                'tiktok' => $user->tiktok,
+                'youtube' => $user->youtube,
+                'profile_completed' => (bool) $user->isProfileComplete(),
+                'membership' => $user->membership?->membership_number,
+                'is_active_member' => $user->membership?->isActive() ?? false,
+                'created_at' => $user->created_at?->toIso8601String(),
             ],
         ]);
     }

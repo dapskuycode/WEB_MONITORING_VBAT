@@ -1,0 +1,464 @@
+{
+  "date": "2026-11-10",
+  "baseline": "5aebf5f",
+  "notice": "Registrasi route existing, bukan bukti otorisasi/perilaku runtime.",
+  "routes": [
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/courses",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\CourseApiController@index",
+      "middleware": [
+        "api"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/courses",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\CourseApiController@store",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/courses/free-class",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\CourseApiController@freeClass",
+      "middleware": [
+        "api"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/courses/{id}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\CourseApiController@show",
+      "middleware": [
+        "api"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "PUT",
+      "uri": "api/v1/courses/{id}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\CourseApiController@update",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "DELETE",
+      "uri": "api/v1/courses/{id}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\CourseApiController@destroy",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/courses/{id}/archive",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\CourseApiController@archive",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/entitlements",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\EntitlementApiController@index",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/entitlements/courses/{courseId}/access",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\EntitlementApiController@checkAccess",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/entitlements/courses/{courseId}/kta-certificate",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\EntitlementApiController@issueKtaCertificate",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/entitlements/courses/{courseId}/manifest",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\EntitlementApiController@downloadManifest",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/learning-materials",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@index",
+      "middleware": [
+        "api"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/learning-materials",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@store",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/learning-materials/bulk-import",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@bulkImport",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/learning-materials/bulk-import/template",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@bulkImportTemplate",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/learning-materials/validate-youtube",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@validateYouTube",
+      "middleware": [
+        "api"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/learning-materials/{material}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@show",
+      "middleware": [
+        "api"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "PUT",
+      "uri": "api/v1/learning-materials/{material}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@update",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "DELETE",
+      "uri": "api/v1/learning-materials/{material}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@destroy",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/learning-materials/{material}/analytics",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@analytics",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/learning-materials/{material}/pdf",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@uploadPdf",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/learning-materials/{material}/progress",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@recordProgress",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/learning-materials/{material}/thumbnail",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LearningMaterialApiController@uploadThumbnail",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/lessons",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LessonApiController@index",
+      "middleware": [
+        "api"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/lessons",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LessonApiController@store",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/lessons/{id}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LessonApiController@show",
+      "middleware": [
+        "api"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "PUT",
+      "uri": "api/v1/lessons/{id}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LessonApiController@update",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "DELETE",
+      "uri": "api/v1/lessons/{id}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\LessonApiController@destroy",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/membership/activate",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\MembershipController@activate",
+      "middleware": [
+        "api"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "PUT",
+      "uri": "api/v1/quiz-questions/{id}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\QuizApiController@updateQuestion",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "DELETE",
+      "uri": "api/v1/quiz-questions/{id}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\QuizApiController@deleteQuestion",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/quizzes",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\QuizApiController@index",
+      "middleware": [
+        "api"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/quizzes",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\QuizApiController@store",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "GET|HEAD",
+      "uri": "api/v1/quizzes/{id}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\QuizApiController@show",
+      "middleware": [
+        "api"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "PUT",
+      "uri": "api/v1/quizzes/{id}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\QuizApiController@update",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "DELETE",
+      "uri": "api/v1/quizzes/{id}",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\QuizApiController@destroy",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/quizzes/{id}/questions",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\QuizApiController@addQuestion",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/quizzes/{id}/start-attempt",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\QuizApiController@startAttempt",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    },
+    {
+      "domain": null,
+      "method": "POST",
+      "uri": "api/v1/quizzes/{id}/submit-attempt",
+      "name": null,
+      "action": "App\\Http\\Controllers\\Api\\QuizApiController@submitAttempt",
+      "middleware": [
+        "api",
+        "Illuminate\\Auth\\Middleware\\Authenticate:sanctum"
+      ],
+      "path": null
+    }
+  ]
+}

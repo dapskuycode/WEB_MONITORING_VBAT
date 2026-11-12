@@ -3,10 +3,11 @@
 namespace Tests\Feature\Api;
 
 use App\Models\Course;
-use App\Models\Lesson;
 use App\Models\LearningMaterial;
+use App\Models\Lesson;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class LearningMaterialApiTest extends TestCase
@@ -95,6 +96,8 @@ class LearningMaterialApiTest extends TestCase
 
     public function test_can_create_youtube_material(): void
     {
+        config(['services.youtube.api_key' => 'test-key']);
+        Http::fake(['www.googleapis.com/*' => Http::response(['items' => [['id' => 'dQw4w9WgXcQ', 'status' => ['embeddable' => true, 'privacyStatus' => 'unlisted', 'uploadStatus' => 'processed']]]])]);
         $this->actingAs($this->adminUser());
 
         [$course, $lesson] = $this->createCourseAndLesson();
@@ -145,7 +148,7 @@ class LearningMaterialApiTest extends TestCase
         $response = $this->postJson('/api/v1/learning-materials', $payload);
 
         $response->assertStatus(422)
-            ->assertJsonPath('success', false);
+            ->assertJsonValidationErrors('youtube_url');
     }
 
     public function test_can_show_material_with_computed_attributes(): void
@@ -181,10 +184,13 @@ class LearningMaterialApiTest extends TestCase
         $material = LearningMaterial::factory()->create([
             'lesson_id' => $lesson->id,
             'title' => 'Old Title',
+            'material_type' => 'text_content',
+            'content_text' => 'Fixture content',
             'status' => 'draft',
         ]);
 
         $response = $this->putJson("/api/v1/learning-materials/{$material->id}", [
+            'expected_revision' => $material->revision,
             'title' => 'Updated Title',
             'description' => 'New description here',
             'is_required' => false,
@@ -204,12 +210,12 @@ class LearningMaterialApiTest extends TestCase
 
         $material = LearningMaterial::factory()->create(['lesson_id' => $lesson->id]);
 
-        $response = $this->deleteJson("/api/v1/learning-materials/{$material->id}");
+        $response = $this->deleteJson("/api/v1/learning-materials/{$material->id}", ['expected_revision' => $material->revision]);
 
         $response->assertOk()
             ->assertJsonPath('success', true);
 
-        $this->assertSoftDeleted('learning_materials', ['id' => $material->id]);
+        $this->assertDatabaseHas('learning_materials', ['id' => $material->id, 'status' => 'archived', 'deleted_at' => null]);
     }
 
     public function test_unit_code_must_be_unique(): void
@@ -260,7 +266,7 @@ class LearningMaterialApiTest extends TestCase
         LearningMaterial::factory()->create(['lesson_id' => $lesson->id, 'status' => 'published']);
         LearningMaterial::factory()->create(['lesson_id' => $lesson->id, 'status' => 'draft']);
 
-        $response = $this->getJson('/api/v1/learning-materials?status=draft');
+        $response = $this->actingAs($this->adminUser())->getJson('/api/v1/learning-materials?status=draft');
 
         $response->assertOk()
             ->assertJsonCount(1, 'data')

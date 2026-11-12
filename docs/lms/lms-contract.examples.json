@@ -1,0 +1,549 @@
+{
+  "contract_status": "draft_not_implemented",
+  "version": "0.1",
+  "date": "2026-11-10",
+  "timezone": "Asia/Jakarta",
+  "baseline": {
+    "web": "5aebf5f",
+    "mobile": "02c5e0c"
+  },
+  "fixture_notice": "Semua ID, nilai, waktu, video_id dan kebijakan adalah fixture usulan, bukan data nyata, hasil runtime atau persetujuan LMS-01. Contoh independen; attempt_start mengasumsikan prerequisite telah terpenuhi.",
+  "scope": "Pilot student dan admin. Tugas, grading manual, offline, billing dan upload mempunyai kontrak tambahan pada batch terkait; route ini bukan indeks lengkap seluruh FSD.",
+  "namespace_proposal": "Path /lms memisahkan DTO target dari root legacy; perlu review T09 sebelum dibekukan.",
+  "auth": {
+    "student": "Bearer token; owner dari server",
+    "admin": "Bearer token + kapabilitas admin LMS",
+    "role_mapping": "super_admin/student/teknisi dipetakan berdasarkan kapabilitas existing; bukan menerima role baru dari client"
+  },
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/v1/lms/courses/my",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Kelas milik akun dan ringkasan progres"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/lms/courses/{course_id}",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Detail kelas milik akun"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/lms/courses/{course_id}/syllabus",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Modul dan urutan aktivitas materi/kuis"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/lms/courses/{course_id}/progress",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Progres dan aktivitas berikutnya"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lms/materials/{material_id}/access",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Grant media pendek dan sesi playback"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lms/materials/{material_id}/progress-events",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Observasi playback; bukan keputusan completion"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lms/materials/{material_id}/completion",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Completion bacaan/link; video ditolak"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/lms/quizzes/{quiz_id}",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Instruksi dan aturan kuis tanpa kunci"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lms/quizzes/{quiz_id}/attempts",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Buat atau lanjut attempt aktif"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/lms/quiz-attempts/{attempt_id}",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Resume snapshot dan jawaban milik akun"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/lms/quiz-attempts/{attempt_id}/answers",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Autosave berurutan"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/lms/quiz-attempts/{attempt_id}/submit",
+      "scope": "authenticated_student_owner",
+      "status": "planned",
+      "purpose": "Finalisasi attempt idempotent"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/lms/courses",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Daftar kelas admin"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/lms/courses",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Buat kelas Draft"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/lms/courses/{course_id}",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Edit kelas dengan revision"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/lms/courses/{course_id}/modules",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Buat modul Draft"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/lms/modules/{module_id}",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Edit modul"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/lms/courses/{course_id}/modules/order",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Urutkan seluruh modul dalam kelas"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/lms/modules/{module_id}/materials",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Tambahkan materi Draft"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/lms/materials/{material_id}",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Edit materi canonical"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/v1/admin/lms/modules/{module_id}/activities/order",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Urutkan aktivitas pada parent yang sama"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/lms/courses/{course_id}/quizzes",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Buat kuis dengan penempatan per materi/modul/kelas"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/lms/quizzes/{quiz_id}",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Edit kuis/revisi dan penempatan"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/lms/courses/{course_id}/preview-session",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Preview terisolasi dari progres siswa"
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/v1/admin/lms/courses/{course_id}/status",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Publish/archive setelah validasi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/admin/lms/imports/template",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Template dengan referensi kode canonical"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/lms/imports/preview",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Validasi seluruh berkas tanpa menulis konten"
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/admin/lms/imports/{import_id}/apply",
+      "scope": "authorized_lms_admin",
+      "status": "planned",
+      "purpose": "Terapkan hasil tervalidasi sebagai Draft"
+    }
+  ],
+  "examples": {
+    "my_courses": {
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/lms/courses/my?page=1&per_page=20"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": [
+            {
+              "id": 101,
+              "code": "FIXTURE-ANDROID",
+              "title": "Kelas Android Uji",
+              "type": "android",
+              "revision": 1,
+              "cover_url": null,
+              "duration_seconds": 1200,
+              "module_count": 1,
+              "access": {
+                "state": "accessible",
+                "can_access": true,
+                "reason": null,
+                "access_until": "2027-01-15T00:00:00Z"
+              },
+              "progress": {
+                "completed_required_units": 0,
+                "total_required_units": 3,
+                "progress_percent": 0
+              },
+              "next_unit": {
+                "kind": "material",
+                "id": 201,
+                "module_id": 11
+              }
+            }
+          ],
+          "request_id": "10000000-0000-4000-8000-000000000001",
+          "meta": {
+            "current_page": 1,
+            "per_page": 20,
+            "total": 1,
+            "last_page": 1
+          }
+        }
+      }
+    },
+    "syllabus": {
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/lms/courses/101/syllabus"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "course_id": 101,
+            "revision": 1,
+            "modules": [
+              {
+                "id": 11,
+                "title": "Modul Uji",
+                "position": 1,
+                "activities": [
+                  {
+                    "kind": "material",
+                    "id": 201,
+                    "title": "Video Uji 1",
+                    "type": "video",
+                    "provider": "youtube",
+                    "position": 1,
+                    "is_required": true,
+                    "access_state": "accessible",
+                    "completion_state": "not_started"
+                  },
+                  {
+                    "kind": "material",
+                    "id": 202,
+                    "title": "Video Uji 2",
+                    "type": "video",
+                    "provider": "youtube",
+                    "position": 2,
+                    "is_required": true,
+                    "access_state": "locked_prerequisite",
+                    "completion_state": "not_started"
+                  },
+                  {
+                    "kind": "quiz",
+                    "id": 31,
+                    "title": "Kuis Uji",
+                    "position": 3,
+                    "is_required": true,
+                    "access_state": "locked_prerequisite",
+                    "completion_state": "not_started"
+                  }
+                ]
+              }
+            ]
+          },
+          "request_id": "10000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    "course_create": {
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/admin/lms/courses",
+        "headers": {
+          "Idempotency-Key": "20000000-0000-4000-8000-000000000001"
+        },
+        "body": {
+          "code": "FIXTURE-ANDROID",
+          "title": "Kelas Android Uji",
+          "type": "android",
+          "description": "Konten fixture",
+          "status": "draft"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "data": {
+            "id": 101,
+            "code": "FIXTURE-ANDROID",
+            "title": "Kelas Android Uji",
+            "type": "android",
+            "status": "draft",
+            "revision": 1
+          },
+          "request_id": "10000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    "media_grant": {
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/lms/materials/201/access",
+        "headers": {
+          "Idempotency-Key": "20000000-0000-4000-8000-000000000002"
+        },
+        "body": {
+          "device_id": "fixture-device"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "data": {
+            "material_id": 201,
+            "playback_session_id": "30000000-0000-4000-8000-000000000001",
+            "expires_at": "2026-11-10T03:05:00Z",
+            "provider": "youtube",
+            "video_id": "fixture_001",
+            "resume_position_seconds": 0,
+            "policy_version": "fixture-policy-v1"
+          },
+          "request_id": "10000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    "playback_event": {
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/lms/materials/201/progress-events",
+        "headers": {
+          "Idempotency-Key": "20000000-0000-4000-8000-000000000003"
+        },
+        "body": {
+          "client_event_id": "40000000-0000-4000-8000-000000000001",
+          "session_id": "30000000-0000-4000-8000-000000000001",
+          "position_seconds": 15,
+          "duration_seconds": 600,
+          "played_delta_seconds": 15
+        }
+      },
+      "response": {
+        "status": 202,
+        "body": {
+          "success": true,
+          "data": {
+            "accepted": true,
+            "material_id": 201,
+            "status": "in_progress",
+            "last_position_seconds": 15,
+            "max_position_seconds": 15,
+            "progress_percent": 2.5,
+            "completed_at": null,
+            "next_unit": {
+              "kind": "material",
+              "id": 201,
+              "module_id": 11
+            }
+          },
+          "request_id": "10000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    "attempt_start": {
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/lms/quizzes/31/attempts",
+        "headers": {
+          "Idempotency-Key": "20000000-0000-4000-8000-000000000004"
+        },
+        "body": {}
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "data": {
+            "id": 401,
+            "quiz_id": 31,
+            "status": "in_progress",
+            "attempt_no": 1,
+            "started_at": "2026-11-10T03:00:00Z",
+            "deadline_at": "2026-11-10T03:20:00Z",
+            "saved_sequence": 0,
+            "questions": [
+              {
+                "id": 301,
+                "type": "mcq",
+                "prompt": "Pertanyaan fixture",
+                "points": 1,
+                "position": 1,
+                "options": [
+                  {
+                    "id": "q301o1",
+                    "body": "Opsi fixture satu"
+                  },
+                  {
+                    "id": "q301o2",
+                    "body": "Opsi fixture dua"
+                  }
+                ]
+              }
+            ]
+          },
+          "request_id": "10000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    "answer_autosave": {
+      "request": {
+        "method": "PUT",
+        "path": "/api/v1/lms/quiz-attempts/401/answers",
+        "headers": {
+          "Idempotency-Key": "20000000-0000-4000-8000-000000000005"
+        },
+        "body": {
+          "client_sequence": 1,
+          "answers": [
+            {
+              "question_id": 301,
+              "answer": {
+                "option_id": "q301o1"
+              }
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "attempt_id": 401,
+            "saved_sequence": 1,
+            "saved_at": "2026-11-10T03:01:00Z"
+          },
+          "request_id": "10000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    "attempt_submit": {
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/lms/quiz-attempts/401/submit",
+        "headers": {
+          "Idempotency-Key": "20000000-0000-4000-8000-000000000006"
+        },
+        "body": {
+          "confirm_submit": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "id": 401,
+            "quiz_id": 31,
+            "status": "graded",
+            "grade_status": "published",
+            "score": 1,
+            "max_score": 1,
+            "score_percent": 100,
+            "passed": true,
+            "submitted_at": "2026-11-10T03:02:00Z"
+          },
+          "request_id": "10000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    "access_denied": {
+      "request": {
+        "method": "POST",
+        "path": "/api/v1/lms/materials/201/access",
+        "headers": {
+          "Idempotency-Key": "20000000-0000-4000-8000-000000000007"
+        },
+        "body": {
+          "device_id": "fixture-device"
+        }
+      },
+      "response": {
+        "status": 403,
+        "body": {
+          "success": false,
+          "error": {
+            "code": "COURSE_ACCESS_EXPIRED",
+            "message": "Masa akses kelas telah berakhir.",
+            "fields": {}
+          },
+          "request_id": "10000000-0000-4000-8000-000000000001"
+        }
+      }
+    }
+  }
+}

@@ -31,24 +31,11 @@ class PaymentApiController extends Controller
      */
     public function createTransaction(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'package_id' => 'required|exists:payment_packages,id',
-        ]);
-
-        $package = PaymentPackage::findOrFail($validated['package_id']);
-
-        if (!$package->is_active) {
-            return response()->json(['error' => 'Package not available'], 400);
-        }
-
-        $user = Auth::user();
-
-        try {
-            $result = $this->midtrans->createTransaction($user, $package);
-            return response()->json(['data' => $result], 201);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Failed to create transaction', 'message' => $e->getMessage()], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'error' => ['code' => 'PURCHASES_UNAVAILABLE'],
+            'message' => 'Pembelian menunggu integrasi pembayaran dan entitlement yang terverifikasi.',
+        ], 503);
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Certificate;
+use App\Models\Course;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -10,21 +11,14 @@ class CertificateService
 {
     public static function issueCertificate(User $user, array $data): Certificate
     {
-        $certificate = Certificate::create([
-            'user_id' => $user->id,
-            'course_id' => $data['course_id'],
-            'certificate_number' => self::generateCertificateNumber(),
-            'status' => 'valid',
-            'issued_at' => now(),
-            'signed_url' => null, // Generated on demand
-            'qr_code' => null, // Generated on demand
-        ]);
-
-        return $certificate;
+        return app(LmsCredentialService::class)->issue($user, Course::findOrFail($data['course_id']));
     }
 
     public static function reissueCertificate(Certificate $certificate): Certificate
     {
+        if ($certificate->type === 'course_completion') {
+            return $certificate;
+        }
         $certificate->update([
             'status' => 'valid',
             'issued_at' => now(),
@@ -35,13 +29,7 @@ class CertificateService
 
     public static function revokeCertificate(Certificate $certificate, ?string $reason = null): Certificate
     {
-        $certificate->update([
-            'status' => 'revoked',
-            'revoked_at' => now(),
-            'revoke_reason' => $reason,
-        ]);
-
-        return $certificate;
+        return app(LmsCredentialService::class)->revoke(auth()->user(), $certificate->id, $reason ?? 'Peninjauan administrasi sertifikat.');
     }
 
     public static function getVerificationUrl(Certificate $certificate): string
@@ -58,7 +46,7 @@ class CertificateService
     {
         $certificate = Certificate::where('certificate_number', $certificateNumber)->first();
 
-        if (!$certificate) {
+        if (! $certificate) {
             return null;
         }
 

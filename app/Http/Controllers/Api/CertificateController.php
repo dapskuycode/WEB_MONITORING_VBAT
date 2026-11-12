@@ -16,7 +16,7 @@ class CertificateController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $certificates->map(fn($cert) => [
+            'data' => $certificates->map(fn ($cert) => [
                 'id' => $cert->id,
                 'title' => $cert->title,
                 'certificate_number' => $cert->certificate_number,
@@ -62,7 +62,7 @@ class CertificateController extends Controller
             ->where('is_public', true)
             ->first();
 
-        if (!$certificate) {
+        if (! $certificate) {
             return response()->json([
                 'success' => false,
                 'message' => 'Certificate not found or not publicly verifiable',
@@ -74,7 +74,7 @@ class CertificateController extends Controller
             'data' => [
                 'certificate_number' => $certificate->certificate_number,
                 'title' => $certificate->title,
-                'user_name' => $certificate->user->name,
+                'user_name' => $certificate->identity_snapshot['name'] ?? $certificate->user->name,
                 'type' => $certificate->type,
                 'issued_at' => $certificate->issued_at->toISOString(),
                 'expires_at' => $certificate->expires_at?->toISOString(),
