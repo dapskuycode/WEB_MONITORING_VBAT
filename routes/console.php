@@ -4,11 +4,15 @@ use App\Models\LearningMaterial;
 use App\Models\LmsUpload;
 use App\Models\QuizAttempt;
 use App\Services\LmsFileService;
+use App\Services\LmsNotificationService;
+use App\Services\LmsOfflineService;
 use App\Services\LmsUploadService;
 use App\Services\QuizAttemptService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 Artisan::command('inspire', function () {
@@ -92,3 +96,38 @@ Artisan::command('lms:scan-uploads {--id=}', function () {
     }
 });
 Schedule::command('lms:scan-uploads')->everyMinute()->withoutOverlapping();
+
+Artisan::command('lms:send-assignment-reminders', function () {
+    $sent = app(LmsNotificationService::class)->sendDeadlineReminders();
+    $this->info("Assignment reminders enqueued: {$sent}");
+})->purpose('Enqueue H-1 (24h) deadline reminders for published LMS assignments');
+Schedule::command('lms:send-assignment-reminders')->hourly()->withoutOverlapping();
+
+Artisan::command('lms:cleanup-offline-licenses', function () {
+    $expired = app(LmsOfflineService::class)->cleanupExpiredLicenses();
+    $this->info("Offline licenses marked expired: {$expired}");
+})->purpose('Mark expired offline reading licenses as expired');
+Schedule::command('lms:cleanup-offline-licenses')->everyFifteenMinutes()->withoutOverlapping();
+
+Artisan::command('lms:ops-status', function () {
+    $quarantine = Schema::hasTable('lms_uploads') ? LmsUpload::where('status', 'quarantine')->count() : 0;
+    $expiredAttempts = Schema::hasTable('quiz_attempts')
+        ? QuizAttempt::where('status', 'active')->where('deadline_at', '<=', now())->count()
+        : 0;
+    $activeLicenses = Schema::hasTable('lms_offline_licenses')
+        ? DB::table('lms_offline_licenses')->where('status', 'active')->count()
+        : 0;
+    $queuedDispatches = Schema::hasTable('lms_notification_dispatches')
+        ? DB::table('lms_notification_dispatches')->where('status', 'queued')->count()
+        : 0;
+    $failedDispatches = Schema::hasTable('lms_notification_dispatches')
+        ? DB::table('lms_notification_dispatches')->where('status', 'failed')->count()
+        : 0;
+    $this->info(json_encode([
+        'quarantine_uploads' => $quarantine,
+        'overdue_quiz_attempts' => $expiredAttempts,
+        'active_offline_licenses' => $activeLicenses,
+        'queued_notification_dispatches' => $queuedDispatches,
+        'failed_notification_dispatches' => $failedDispatches,
+    ], JSON_THROW_ON_ERROR));
+})->purpose('Report operational queue, scan, attempt timeout, offline license, and notification dispatch counts');

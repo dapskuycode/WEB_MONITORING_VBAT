@@ -6,7 +6,9 @@ use App\Models\AuditLog;
 use App\Models\Course;
 use App\Models\LearningMaterial;
 use App\Models\Lesson;
+use App\Models\LmsAssignment;
 use App\Models\Quiz;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -20,7 +22,7 @@ class LmsAuthoringService
     public function saveCourse(array $input, ?int $id = null): Course
     {
         return DB::transaction(function () use ($input, $id) {
-            $this->authorize();
+            $this->authorize($id);
             $course = $id ? Course::lockForUpdate()->findOrFail($id) : new Course;
             $this->revision($course, $input);
             $data = Validator::make($input, [
@@ -60,9 +62,9 @@ class LmsAuthoringService
     public function saveLesson(array $input, ?int $id = null): Lesson
     {
         return DB::transaction(function () use ($input, $id) {
-            $this->authorize();
             Validator::make($input, ['course_id' => 'required|integer|exists:courses,id'])->validate();
             $course = Course::lockForUpdate()->whereKey($input['course_id'])->firstOrFail();
+            $this->authorize((int) $course->id);
             $lesson = $id ? Lesson::lockForUpdate()->findOrFail($id) : new Lesson;
             $this->revision($lesson, $input);
             if ($id && $lesson->course_id !== $course->id) {
@@ -95,10 +97,10 @@ class LmsAuthoringService
     public function saveMaterial(array $input, ?int $id = null): LearningMaterial
     {
         return DB::transaction(function () use ($input, $id) {
-            $this->authorize();
             Validator::make($input, ['lesson_id' => 'required|integer|exists:lessons,id'])->validate();
             $parent = Lesson::whereKey($input['lesson_id'])->firstOrFail();
             $course = Course::lockForUpdate()->findOrFail($parent->course_id);
+            $this->authorize((int) $course->id);
             $lesson = Lesson::lockForUpdate()->findOrFail($parent->id);
             $material = $id ? LearningMaterial::lockForUpdate()->findOrFail($id) : new LearningMaterial;
             $this->revision($material, $input);
@@ -157,15 +159,18 @@ class LmsAuthoringService
     public function archive(Course|Lesson|LearningMaterial $model, int $expectedRevision): Course|Lesson|LearningMaterial
     {
         return DB::transaction(function () use ($model, $expectedRevision) {
-            $this->authorize();
             abort_unless(in_array($model::class, [Course::class, Lesson::class, LearningMaterial::class], true), 422);
             $course = null;
             $lesson = null;
-            if ($model instanceof Lesson) {
+            if ($model instanceof Course) {
+                $this->authorize((int) $model->id);
+            } elseif ($model instanceof Lesson) {
                 $course = Course::lockForUpdate()->findOrFail($model->course_id);
+                $this->authorize((int) $course->id);
             } elseif ($model instanceof LearningMaterial) {
                 $parent = Lesson::findOrFail($model->lesson_id);
                 $course = Course::lockForUpdate()->findOrFail($parent->course_id);
+                $this->authorize((int) $course->id);
                 $lesson = Lesson::lockForUpdate()->findOrFail($parent->id);
             }
             $model = $model->newQuery()->lockForUpdate()->findOrFail($model->id);
@@ -191,9 +196,11 @@ class LmsAuthoringService
     public function reorder(Course|Lesson $parent, array $items, int $expectedRevision): void
     {
         DB::transaction(function () use ($parent, $items, $expectedRevision) {
-            $this->authorize();
             if ($parent instanceof Lesson) {
                 $course = Course::lockForUpdate()->findOrFail($parent->course_id);
+                $this->authorize((int) $course->id);
+            } else {
+                $this->authorize((int) $parent->id);
             }
             $parent = $parent->newQuery()->lockForUpdate()->findOrFail($parent->id);
             $this->revision($parent, ['expected_revision' => $expectedRevision]);
@@ -242,6 +249,9 @@ class LmsAuthoringService
         $materials = $lesson->exists ? $lesson->learningMaterials()->where('status', '!=', 'archived')->get() : collect();
         if (! $materials->contains('status', 'published') || $materials->where('is_required', true)->contains('status', 'draft')) {
             throw ValidationException::withMessages(['status' => 'Modul membutuhkan materi terbit; semua materi wajib harus terbit.']);
+        }
+        if ($lesson->exists && LmsAssignment::where('lesson_id', $lesson->id)->where('is_required', true)->where('status', 'draft')->exists()) {
+            throw ValidationException::withMessages(['status' => 'Semua tugas wajib pada modul ini harus terbit sebelum modul dipublikasikan.']);
         }
         $this->assertScopedQuizzes($lesson->course_id, $lesson->id);
         foreach ($materials->where('status', 'published') as $material) {
@@ -297,9 +307,70 @@ class LmsAuthoringService
         }
     }
 
-    private function authorize(): void
+    /**
+     * @param  list<int>  $coInstructorIds
+     */
+    public function assignInstructors(Course $course, ?int $primaryInstructorId, array $coInstructorIds = []): Course
     {
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        return DB::transaction(function () use ($course, $primaryInstructorId, $coInstructorIds) {
+            abort_unless((bool) auth()->user()?->isSuperAdmin(), 403);
+            $course = Course::lockForUpdate()->findOrFail($course->id);
+            if ($primaryInstructorId !== null) {
+                $primary = User::whereKey($primaryInstructorId)->where('role', 'instructor')->first();
+                if (! $primary) {
+                    throw ValidationException::withMessages(['instructor_id' => 'Instruktur utama harus pengguna aktif dengan peran instructor.']);
+                }
+            }
+            $cleanCoIds = array_values(array_unique(array_filter(
+                array_map('intval', $coInstructorIds),
+                fn (int $id) => $id > 0 && $id !== $primaryInstructorId
+            )));
+            if ($cleanCoIds !== []) {
+                $validCount = User::whereIn('id', $cleanCoIds)->where('role', 'instructor')->count();
+                if ($validCount !== count($cleanCoIds)) {
+                    throw ValidationException::withMessages(['co_instructor_ids' => 'Seluruh instruktur pendamping harus memiliki peran instructor.']);
+                }
+            }
+            $oldPrimary = $course->instructor_id;
+            $oldCo = DB::table('lms_course_instructors')->where('course_id', $course->id)->pluck('user_id')->map(fn ($id) => (int) $id)->all();
+            $course->instructor_id = $primaryInstructorId;
+            $course->save();
+            DB::table('lms_course_instructors')->where('course_id', $course->id)->delete();
+            foreach ($cleanCoIds as $uid) {
+                DB::table('lms_course_instructors')->insert([
+                    'course_id' => $course->id,
+                    'user_id' => $uid,
+                    'assigned_by' => auth()->id(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            AuditLog::create([
+                'actor_type' => 'admin',
+                'actor_id' => auth()->id(),
+                'action' => 'lms.instructors_assigned',
+                'auditable_type' => Course::class,
+                'auditable_id' => $course->id,
+                'old_values' => ['instructor_id' => $oldPrimary, 'co_instructor_ids' => $oldCo],
+                'new_values' => ['instructor_id' => $primaryInstructorId, 'co_instructor_ids' => $cleanCoIds],
+                'ip_address' => request()->ip(),
+                'user_agent' => Str::limit(request()->userAgent() ?? '', 200, ''),
+            ]);
+
+            return $course->fresh(['instructor', 'coInstructors']);
+        });
+    }
+
+    private function authorize(?int $courseId = null): void
+    {
+        $user = auth()->user();
+        abort_unless((bool) $user?->isLmsManager(), 403);
+        if ($courseId === null) {
+            abort_unless($user->isSuperAdmin(), 403);
+
+            return;
+        }
+        abort_unless($user->canManageCourse($courseId), 403);
     }
 
     /** @param array<string, mixed> $input */

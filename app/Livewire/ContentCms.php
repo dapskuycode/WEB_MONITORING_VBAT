@@ -5,7 +5,10 @@ namespace App\Livewire;
 use App\Models\Course;
 use App\Models\LearningMaterial;
 use App\Models\Lesson;
+use App\Models\LmsAssignment;
 use App\Models\LmsUpload;
+use App\Models\User;
+use App\Services\LmsAssignmentService;
 use App\Services\LmsAuthoringService;
 use App\Services\LmsUploadService;
 use Illuminate\Contracts\View\View;
@@ -110,12 +113,48 @@ class ContentCms extends Component
     #[Locked]
     public ?string $materialPdfPath = null;
 
+    #[Locked]
+    public ?int $selectedAssignmentId = null;
+
+    #[Locked]
+    public int $assignmentRevision = 1;
+
+    public string $assignmentTitle = '';
+
+    public string $assignmentCode = '';
+
+    public string $assignmentInstructions = '';
+
+    public string $assignmentStatus = 'draft';
+
+    public int $assignmentSortOrder = 0;
+
+    public bool $assignmentIsRequired = false;
+
+    public float $assignmentMaxScore = 100;
+
+    public float $assignmentPassingScore = 70;
+
+    public float $assignmentWeight = 1;
+
+    public bool $assignmentRequiresText = false;
+
+    public bool $assignmentRequiresAttachment = false;
+
+    public ?string $assignmentDueAt = null;
+
+    public bool $assignmentLateAllowed = false;
+
+    public ?string $assignmentLateUntil = null;
+
+    public ?int $courseInstructorId = null;
+
     /** @var list<array{0: string, 1: string}> */
     private array $pendingUploads = [];
 
     public function boot(): void
     {
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        abort_unless((bool) auth()->user()?->isLmsManager(), 403);
     }
 
     public function updatedSearch(): void
@@ -147,12 +186,14 @@ class ContentCms extends Component
     private function loadCourse(): void
     {
         $course = Course::findOrFail($this->selectedCourseId);
+        abort_unless((bool) auth()->user()?->canManageCourse($course), 403);
         $this->courseRevision = $course->revision;
         $this->courseTitle = $course->title;
         $this->courseSlug = $course->slug;
         $this->courseCode = $course->code ?? '';
         $this->courseType = $course->type;
         $this->coursePrerequisiteId = $course->prerequisite_course_id;
+        $this->courseInstructorId = $course->instructor_id;
         $this->courseDescription = $course->description ?? '';
         $this->courseStatus = $course->status;
         $this->courseCoverPath = $course->thumbnail_path;
@@ -175,6 +216,9 @@ class ContentCms extends Component
                 'prerequisite_course_id' => $this->coursePrerequisiteId, 'type' => $this->courseType, 'description' => $this->courseDescription,
                 'status' => $this->courseStatus, 'thumbnail_path' => $path, 'expected_revision' => $this->courseRevision,
             ], $this->selectedCourseId);
+            if (auth()->user()?->isSuperAdmin() && $course->instructor_id !== $this->courseInstructorId) {
+                $service->assignInstructors($course, $this->courseInstructorId ?: null, $course->coInstructors()->pluck('users.id')->all());
+            }
             $this->selectCourse($course->id);
         });
     }
@@ -197,6 +241,7 @@ class ContentCms extends Component
         $this->lessonStatus = $lesson->status;
         $this->lessonSortOrder = $lesson->sort_order;
         $this->newMaterial();
+        $this->newAssignment();
         $this->activeTab = 'lessons';
     }
 
@@ -247,7 +292,7 @@ class ContentCms extends Component
 
     public function uploadMaterialPdf(): void
     {
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        abort_unless((bool) auth()->user()?->isLmsManager(), 403);
         $this->validate(['materialPdfFile' => 'required|file|mimes:pdf|max:10240']);
         $upload = app(LmsUploadService::class)->receive(auth()->user(), $this->materialPdfFile, 'course_material');
         $this->materialPdfUploadId = $upload->id;
@@ -257,9 +302,65 @@ class ContentCms extends Component
 
     public function checkMaterialPdf(): void
     {
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        abort_unless((bool) auth()->user()?->isLmsManager(), 403);
         $upload = LmsUpload::whereKey($this->materialPdfUploadId)->where('user_id', auth()->id())->firstOrFail();
         $this->materialPdfStatus = $upload->status.' — '.($upload->reason ?? $upload->original_name);
+    }
+
+    public function newAssignment(): void
+    {
+        $this->reset('selectedAssignmentId', 'assignmentRevision', 'assignmentTitle', 'assignmentCode', 'assignmentInstructions', 'assignmentStatus', 'assignmentIsRequired', 'assignmentMaxScore', 'assignmentPassingScore', 'assignmentWeight', 'assignmentRequiresText', 'assignmentRequiresAttachment', 'assignmentDueAt', 'assignmentLateAllowed', 'assignmentLateUntil');
+        $this->assignmentSortOrder = $this->selectedLessonId ? (LmsAssignment::where('lesson_id', $this->selectedLessonId)->max('sort_order') ?? -1) + 1 : 0;
+        $this->resetValidation();
+    }
+
+    public function selectAssignment(int $id): void
+    {
+        $assignment = LmsAssignment::where('lesson_id', $this->selectedLessonId)->findOrFail($id);
+        abort_unless((bool) auth()->user()?->canManageCourse($assignment->course_id), 403);
+        $this->selectedAssignmentId = $assignment->id;
+        $this->assignmentRevision = (int) $assignment->revision;
+        $this->assignmentTitle = $assignment->title;
+        $this->assignmentCode = $assignment->code;
+        $this->assignmentInstructions = $assignment->instructions;
+        $this->assignmentStatus = $assignment->status;
+        $this->assignmentSortOrder = (int) $assignment->sort_order;
+        $this->assignmentIsRequired = (bool) $assignment->is_required;
+        $this->assignmentMaxScore = (float) $assignment->max_score;
+        $this->assignmentPassingScore = (float) $assignment->passing_score;
+        $this->assignmentWeight = (float) $assignment->weight;
+        $this->assignmentRequiresText = (bool) $assignment->requires_text;
+        $this->assignmentRequiresAttachment = (bool) $assignment->requires_attachment;
+        $this->assignmentDueAt = $assignment->due_at?->format('Y-m-d\TH:i');
+        $this->assignmentLateAllowed = (bool) $assignment->late_submission_allowed;
+        $this->assignmentLateUntil = $assignment->late_until?->format('Y-m-d\TH:i');
+        $this->activeTab = 'assignments';
+        $this->resetValidation();
+    }
+
+    public function saveAssignment(): void
+    {
+        $this->perform(function () {
+            $assignment = app(LmsAssignmentService::class)->saveAssignment(auth()->user(), [
+                'lesson_id' => $this->selectedLessonId,
+                'code' => $this->assignmentCode ?: null,
+                'title' => $this->assignmentTitle,
+                'instructions' => $this->assignmentInstructions,
+                'status' => $this->assignmentStatus,
+                'sort_order' => $this->assignmentSortOrder,
+                'is_required' => $this->assignmentIsRequired,
+                'max_score' => $this->assignmentMaxScore,
+                'passing_score' => $this->assignmentPassingScore,
+                'weight' => $this->assignmentWeight,
+                'requires_text' => $this->assignmentRequiresText,
+                'requires_attachment' => $this->assignmentRequiresAttachment,
+                'due_at' => $this->assignmentDueAt ?: null,
+                'late_submission_allowed' => $this->assignmentLateAllowed,
+                'late_until' => $this->assignmentLateUntil ?: null,
+                'expected_revision' => $this->assignmentRevision,
+            ], $this->selectedAssignmentId);
+            $this->selectAssignment($assignment->id);
+        });
     }
 
     public function saveMaterial(): void
@@ -368,13 +469,22 @@ class ContentCms extends Component
 
     public function render(): View
     {
+        $user = auth()->user();
+        $coursesQuery = Course::query()
+            ->when($user && ! $user->isSuperAdmin(), fn ($q) => $q->whereIn('id', $user->managedCourseIds()))
+            ->when($this->search !== '', fn ($q) => $q->where('title', 'like', '%'.$this->search.'%'))
+            ->when(in_array($this->statusFilter, ['draft', 'published', 'archived'], true), fn ($q) => $q->where('status', $this->statusFilter))
+            ->orderByDesc('updated_at')->orderBy('id');
+
         return view('livewire.content-cms', [
-            'courses' => Course::query()->when($this->search !== '', fn ($q) => $q->where('title', 'like', '%'.$this->search.'%'))
-                ->when(in_array($this->statusFilter, ['draft', 'published', 'archived'], true), fn ($q) => $q->where('status', $this->statusFilter))
-                ->orderByDesc('updated_at')->orderBy('id')->paginate(10),
+            'courses' => $coursesQuery->paginate(10),
             'prerequisiteCourses' => Course::whereIn('type', ['android', 'iphone'])->where('status', '!=', 'archived')->orderBy('title')->get(['id', 'title']),
+            'instructors' => User::where('role', 'instructor')->orderBy('name')->get(['id', 'name', 'email']),
             'lessons' => $this->selectedCourseId ? Lesson::where('course_id', $this->selectedCourseId)->orderBy('sort_order')->orderBy('id')->get() : collect(),
             'materials' => $this->selectedLessonId ? LearningMaterial::where('lesson_id', $this->selectedLessonId)->orderBy('sort_order')->orderBy('id')->get() : collect(),
+            'assignments' => $this->selectedLessonId ? LmsAssignment::where('lesson_id', $this->selectedLessonId)->orderBy('sort_order')->orderBy('id')->get() : collect(),
+        ])->layout('layouts.admin', [
+            'title' => 'Konten belajar LMS',
         ]);
     }
 }

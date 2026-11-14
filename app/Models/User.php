@@ -5,11 +5,13 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
@@ -81,6 +83,60 @@ class User extends Authenticatable implements PasskeyUser
     public function isTeknisi(): bool
     {
         return $this->role === 'teknisi';
+    }
+
+    public function isInstructor(): bool
+    {
+        return $this->role === 'instructor';
+    }
+
+    public function isLmsManager(): bool
+    {
+        return $this->isSuperAdmin() || $this->isInstructor();
+    }
+
+    /**
+     * @return BelongsToMany<Course, $this>
+     */
+    public function assignedCourses(): BelongsToMany
+    {
+        return $this->belongsToMany(Course::class, 'lms_course_instructors', 'user_id', 'course_id')
+            ->withPivot('assigned_by')
+            ->withTimestamps();
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function managedCourseIds(): array
+    {
+        if ($this->isSuperAdmin()) {
+            return Course::query()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        }
+        if (! $this->isInstructor()) {
+            return [];
+        }
+        $primary = Course::query()->where('instructor_id', $this->id)->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $co = DB::table('lms_course_instructors')->where('user_id', $this->id)->pluck('course_id')->map(fn ($id) => (int) $id)->all();
+
+        return array_values(array_unique(array_merge($primary, $co)));
+    }
+
+    public function canManageCourse(Course|int|null $course): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+        if (! $this->isInstructor() || $course === null) {
+            return false;
+        }
+        $courseId = $course instanceof Course ? (int) $course->id : (int) $course;
+        if ($course instanceof Course && (int) $course->instructor_id === (int) $this->id) {
+            return true;
+        }
+
+        return Course::query()->whereKey($courseId)->where('instructor_id', $this->id)->exists()
+            || DB::table('lms_course_instructors')->where('course_id', $courseId)->where('user_id', $this->id)->exists();
     }
 
     /**
@@ -170,13 +226,13 @@ class User extends Authenticatable implements PasskeyUser
 
     public function isProfileComplete(): bool
     {
-        return !empty($this->name)
-            && !empty($this->birth_date)
-            && !empty($this->gender)
-            && !empty($this->phone)
-            && !empty($this->whatsapp)
-            && !empty($this->address)
-            && !empty($this->province_id)
-            && !empty($this->city_id);
+        return ! empty($this->name)
+            && ! empty($this->birth_date)
+            && ! empty($this->gender)
+            && ! empty($this->phone)
+            && ! empty($this->whatsapp)
+            && ! empty($this->address)
+            && ! empty($this->province_id)
+            && ! empty($this->city_id);
     }
 }

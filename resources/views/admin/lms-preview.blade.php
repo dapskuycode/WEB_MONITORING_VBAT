@@ -1,4 +1,4 @@
-<x-layouts::app :title="'Pratinjau kelas VBAT'">
+<x-layouts::admin :title="'Pratinjau kelas VBAT'">
 <div class="space-y-6 text-zinc-900 dark:text-zinc-100">
     <header><flux:heading level="1" size="xl">Pratinjau admin: {{ $course->title }}</flux:heading><p class="mt-2">Mode baca saja. Draft dapat terlihat di sini. Tidak membuat enrollment, progres, jawaban atau percobaan kuis siswa.</p><p>Status kelas: {{ $course->status }} · Paket: {{ $course->type }} · Revisi: {{ $course->revision }}</p></header>
     <p class="rounded border border-zinc-500 p-3">Simulasi siswa tanpa paket: {{ $course->status !== 'published' ? 'terkunci karena kelas belum terbit' : ($course->type === 'free_class' ? 'Free Class dapat diakses setelah login' : 'terkunci sampai entitlement dan prasyarat akun terpenuhi') }}. Media di bawah dibuka dengan izin admin, bukan akun siswa.</p>
@@ -16,4 +16,4 @@
         </article>@empty<p>Modul belum memiliki materi.</p>@endforelse
     </section>@empty<p>Kelas belum memiliki modul.</p>@endforelse
 </div>
-</x-layouts::app>
+</x-layouts::admin>

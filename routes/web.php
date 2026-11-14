@@ -10,18 +10,38 @@ use App\Livewire\QuizManager;
 use App\Livewire\RuleConfigManager;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'pages.auth.login')->name('home');
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('home.redirect');
+    }
+
+    return response()
+        ->view('pages.auth.login')
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Pragma', 'no-cache');
+})->name('home');
 
 Route::get('/home', function () {
     $user = auth()->user();
     if ($user && $user->isSponsor()) {
         return redirect()->route('sponsor.dashboard');
     }
+    if ($user && $user->isInstructor()) {
+        return redirect()->route('admin.content');
+    }
 
     return redirect()->route('dashboard');
 })->middleware('auth')->name('home.redirect');
 
 Route::middleware(['auth'])->group(function () {
+    Route::middleware(['role:super_admin,instructor'])->group(function () {
+        Route::get('admin/lms/reviews', GradeReview::class)->name('admin.lms.reviews');
+        Route::get('admin/lms/preview/{id}', [LmsPreviewController::class, 'show'])->name('admin.lms.preview');
+        Route::get('admin/lms/preview-media/{id}', [LmsPreviewController::class, 'media'])->name('admin.lms.preview-media');
+        Route::get('admin/content', ContentCms::class)->name('admin.content');
+        Route::get('admin/quizzes', QuizManager::class)->name('admin.quizzes');
+    });
+
     // 1. Dashboard & Modul Admin/Owner (Hanya Super Admin & Owner)
     Route::middleware(['role:super_admin'])->group(function () {
         Route::view('dashboard', 'dashboard')->name('dashboard');
@@ -31,15 +51,10 @@ Route::middleware(['auth'])->group(function () {
         Route::view('admin/campaigns', 'pages.admin.campaigns')->name('admin.campaigns');
         Route::view('admin/events', 'pages.admin.events')->name('admin.events');
         Route::view('admin/best-deals', 'pages.admin.best-deals')->name('admin.best-deals');
-        Route::get('admin/lms/reviews', GradeReview::class)->name('admin.lms.reviews');
         Route::view('admin/bulk-upload', 'pages.admin.bulk-upload')->name('admin.bulk-upload');
         Route::view('admin/notifications', 'pages.admin.notifications')->name('admin.notifications');
         Route::view('admin/users', 'pages.admin.users')->name('admin.users');
-        Route::get('admin/lms/preview/{id}', [LmsPreviewController::class, 'show'])->name('admin.lms.preview');
-        Route::get('admin/lms/preview-media/{id}', [LmsPreviewController::class, 'media'])->name('admin.lms.preview-media');
-        Route::get('admin/content', ContentCms::class)->name('admin.content');
         Route::get('admin/feed', FeedManager::class)->name('admin.feed');
-        Route::get('admin/quizzes', QuizManager::class)->name('admin.quizzes');
         Route::get('admin/rules', RuleConfigManager::class)->name('admin.rules');
         Route::get('admin/analytics', AnalyticsDashboard::class)->name('admin.analytics');
         Route::get('admin/export/analytics', [AnalyticsExportController::class, 'export'])->name('admin.export.analytics');

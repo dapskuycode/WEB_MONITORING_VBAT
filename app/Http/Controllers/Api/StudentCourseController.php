@@ -85,6 +85,27 @@ class StudentCourseController extends Controller
                         'reason' => ! $access['has_access'] ? $access['reason'] : ($quizOpen ? 'accessible' : 'prerequisite_incomplete'), 'progress' => $quizUnit['progress']];
                 }
             }
+            foreach ($lesson->assignments as $assignment) {
+                $asgUnit = $curriculum['assignments'][$assignment->id] ?? ['unlocked' => false, 'progress' => ['available' => true, 'completed' => false, 'percent' => 0]];
+                $asgOpen = $access['has_access'] && $asgUnit['unlocked'];
+                $activity = [
+                    'kind' => 'assignment',
+                    'id' => $assignment->id,
+                    'course_id' => $course->id,
+                    'module_id' => $lesson->id,
+                    'title' => $assignment->title,
+                    'sort_order' => $assignment->sort_order,
+                    'is_required' => (bool) $assignment->is_required,
+                    'due_at' => $assignment->due_at?->toIso8601String(),
+                    'can_open' => $asgOpen,
+                    'reason' => ! $access['has_access'] ? $access['reason'] : ($asgOpen ? 'accessible' : 'prerequisite_incomplete'),
+                    'progress' => $asgUnit['progress'],
+                ];
+                if ($first === null) {
+                    $first = $activity;
+                }
+                $activities[] = $activity;
+            }
             $modules[] = ['id' => $lesson->id, 'title' => $lesson->title, 'description' => $lesson->description, 'sort_order' => $lesson->sort_order,
                 'revision' => $lesson->revision, 'activities' => $activities,
                 'progress' => $curriculum['modules'][$lesson->id] ?? ['available' => true, 'percent' => 0, 'required_units' => 0, 'completed_units' => 0]];
@@ -105,6 +126,7 @@ class StudentCourseController extends Controller
             'lessons' => fn ($q) => $q->where('status', 'published')->orderBy('sort_order')->orderBy('id'),
             'lessons.learningMaterials' => fn ($q) => $q->published()->select('id', 'lesson_id', 'title', 'material_type', 'sort_order', 'status', 'is_required', 'is_preview', 'duration_seconds', 'quiz_id', 'quiz_required', 'youtube_video_id', 'revision')->orderBy('sort_order')->orderBy('id'),
             'lessons.learningMaterials.quizzes' => fn ($q) => $q->where('is_active', true)->select('id', 'learning_material_id', 'title'),
+            'lessons.assignments' => fn ($q) => $q->whereIn('status', ['published', 'closed'])->orderBy('sort_order')->orderBy('id'),
         ]);
     }
 

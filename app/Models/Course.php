@@ -6,6 +6,8 @@ use Database\Factories\CourseFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
@@ -33,6 +35,7 @@ class Course extends Model
 
     protected $fillable = [
         'prerequisite_course_id',
+        'instructor_id',
         'code',
         'revision',
 
@@ -77,6 +80,32 @@ class Course extends Model
     public function learningMaterials(): HasManyThrough
     {
         return $this->hasManyThrough(LearningMaterial::class, Lesson::class)->orderBy('learning_materials.sort_order');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function instructor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'instructor_id');
+    }
+
+    /**
+     * @return BelongsToMany<User, $this>
+     */
+    public function coInstructors(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'lms_course_instructors', 'course_id', 'user_id')
+            ->withPivot('assigned_by')
+            ->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<LmsAssignment, $this>
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(LmsAssignment::class)->orderBy('sort_order');
     }
 
     /**

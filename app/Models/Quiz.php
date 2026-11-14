@@ -11,10 +11,10 @@ class Quiz extends Model
 {
     use HasFactory;
 
-    protected $attributes = ['grading_mode' => 'hybrid', 'grading_policy' => 'highest', 'shuffle_questions' => false, 'shuffle_options' => false, 'max_attempts' => 0, 'passing_score' => 70, 'time_limit_minutes' => null];
+    protected $attributes = ['grading_mode' => 'hybrid', 'grading_policy' => 'highest', 'shuffle_questions' => false, 'shuffle_options' => false, 'max_attempts' => 0, 'passing_score' => 70, 'weight' => 1, 'time_limit_minutes' => null];
 
     protected $fillable = [
-        'grading_mode', 'grading_policy', 'shuffle_questions', 'shuffle_options', 'placement', 'target_course_id', 'target_module_id', 'is_required',
+        'grading_mode', 'grading_policy', 'shuffle_questions', 'shuffle_options', 'placement', 'target_course_id', 'target_module_id', 'is_required', 'weight',
         'code', 'learning_material_id',
         'title',
         'description',
@@ -29,6 +29,7 @@ class Quiz extends Model
         'shuffle_questions' => 'boolean', 'shuffle_options' => 'boolean', 'is_required' => 'boolean',
         'max_attempts' => 'integer',
         'passing_score' => 'integer',
+        'weight' => 'float',
         'time_limit_minutes' => 'integer',
         'is_active' => 'boolean',
         'sort_order' => 'integer',

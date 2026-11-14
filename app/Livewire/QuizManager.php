@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\LearningMaterial;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
+use App\Services\LmsGradingService;
 use App\Services\LmsQuizPlacementService;
 use App\Services\QuizDefinitionService;
 use Illuminate\Support\Str;
@@ -17,7 +18,7 @@ class QuizManager extends Component
 
     public function boot(): void
     {
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        abort_unless((bool) auth()->user()?->isLmsManager(), 403);
     }
 
     public string $quizGradingMode = 'hybrid';
@@ -82,6 +83,13 @@ class QuizManager extends Component
     public function getQuizzesProperty()
     {
         $query = Quiz::with('learningMaterial');
+        if (! auth()->user()?->isSuperAdmin()) {
+            $courseIds = auth()->user()?->managedCourseIds() ?? [];
+            $query->where(function ($q) use ($courseIds) {
+                $q->whereIn('target_course_id', $courseIds)
+                    ->orWhereHas('learningMaterial.lesson', fn ($lq) => $lq->whereIn('course_id', $courseIds));
+            });
+        }
 
         if ($this->searchTerm) {
             $query->where('title', 'like', "%{$this->searchTerm}%");
@@ -96,9 +104,13 @@ class QuizManager extends Component
 
     public function getMaterialsProperty()
     {
-        return LearningMaterial::select('id', 'title')
-            ->orderBy('title')
-            ->get();
+        $query = LearningMaterial::select('id', 'title', 'lesson_id');
+        if (! auth()->user()?->isSuperAdmin()) {
+            $courseIds = auth()->user()?->managedCourseIds() ?? [];
+            $query->whereHas('lesson', fn ($lq) => $lq->whereIn('course_id', $courseIds));
+        }
+
+        return $query->orderBy('title')->get();
     }
 
     public function getQuestionsProperty()
@@ -116,6 +128,7 @@ class QuizManager extends Component
     public function editQuiz($id)
     {
         $quiz = Quiz::findOrFail($id);
+        abort_unless((bool) auth()->user()?->canManageCourse(app(LmsGradingService::class)->courseIdForQuiz($quiz)), 403);
         $this->selectedQuizId = $quiz->id;
         $this->quizGradingMode = $quiz->grading_mode;
         $this->quizGradingPolicy = $quiz->grading_policy;
@@ -160,8 +173,12 @@ class QuizManager extends Component
             'sort_order' => $this->quizSortOrder,
         ];
 
+        $targetMat = LearningMaterial::with('lesson')->findOrFail($this->quizMaterialId);
+        abort_unless((bool) auth()->user()?->canManageCourse($targetMat->lesson?->course_id), 403);
+
         if ($this->selectedQuizId) {
             $quiz = Quiz::findOrFail($this->selectedQuizId);
+            abort_unless((bool) auth()->user()?->canManageCourse(app(LmsGradingService::class)->courseIdForQuiz($quiz)), 403);
             abort_if($quiz->learning_material_id != $this->quizMaterialId && $quiz->attempts()->exists(), 409, 'Kuis dengan attempt tidak dapat dipindah materi.');
             $data = app(LmsQuizPlacementService::class)->configure($quiz, $data);
             $quiz->update($data);
@@ -177,6 +194,7 @@ class QuizManager extends Component
     public function deleteQuiz($id)
     {
         $quiz = Quiz::findOrFail($id);
+        abort_unless((bool) auth()->user()?->canManageCourse(app(LmsGradingService::class)->courseIdForQuiz($quiz)), 403);
         if ($quiz->attempts()->exists()) {
             $quiz->update(['is_active' => false]);
             session()->flash('message', 'Kuis dinonaktifkan; riwayat attempt tetap tersedia.');
@@ -203,6 +221,8 @@ class QuizManager extends Component
     // ===== QUESTION CRUD =====
     public function manageQuestions($quizId)
     {
+        $quiz = Quiz::findOrFail($quizId);
+        abort_unless((bool) auth()->user()?->canManageCourse(app(LmsGradingService::class)->courseIdForQuiz($quiz)), 403);
         $this->managingQuizId = $quizId;
         $this->activeTab = 'questions';
     }
@@ -279,6 +299,8 @@ class QuizManager extends Component
             'sort_order' => $this->questionSortOrder,
         ];
 
+        $quiz = Quiz::findOrFail($this->managingQuizId);
+        abort_unless((bool) auth()->user()?->canManageCourse(app(LmsGradingService::class)->courseIdForQuiz($quiz)), 403);
         $data = ['quiz_id' => $this->managingQuizId, ...app(QuizDefinitionService::class)->question([...$data, 'correct_answer' => (string) $this->questionCorrectAnswer])];
         if ($this->selectedQuestionId) {
             QuizQuestion::where('quiz_id', $this->managingQuizId)->findOrFail($this->selectedQuestionId)->update($data);
@@ -293,7 +315,9 @@ class QuizManager extends Component
 
     public function deleteQuestion($id)
     {
-        QuizQuestion::findOrFail($id)->delete();
+        $question = QuizQuestion::with('quiz')->findOrFail($id);
+        abort_unless($question->quiz && (bool) auth()->user()?->canManageCourse(app(LmsGradingService::class)->courseIdForQuiz($question->quiz)), 403);
+        $question->delete();
         session()->flash('message', 'Question deleted.');
     }
 
@@ -322,6 +346,8 @@ class QuizManager extends Component
             'quizzes' => $this->quizzes,
             'materials' => $this->materials,
             'questions' => $this->questions,
+        ])->layout('layouts.admin', [
+            'title' => 'Manajemen Kuis LMS',
         ]);
     }
 }

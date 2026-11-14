@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\LearningMaterial;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
+use App\Services\LmsGradingService;
 use App\Services\LmsQuizPlacementService;
 use App\Services\QuizDefinitionService;
 use Illuminate\Http\JsonResponse;
@@ -82,12 +84,16 @@ class QuizApiController extends Controller
             'description' => ['nullable', 'string'],
             'max_attempts' => ['sometimes', 'integer', 'min:0', 'max:10'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'weight' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:240'],
             'is_active' => ['nullable', 'boolean'],
             'grading_mode' => 'sometimes|in:auto,manual,hybrid', 'grading_policy' => 'sometimes|in:highest,latest,average',
             'shuffle_questions' => 'sometimes|boolean', 'shuffle_options' => 'sometimes|boolean', 'placement' => 'sometimes|nullable|in:after_material,end_of_module,end_of_course', 'is_required' => 'sometimes|boolean',
             'sort_order' => ['nullable', 'integer', 'min:0'],
         ]);
+
+        $material = LearningMaterial::with('lesson')->findOrFail($validated['learning_material_id']);
+        abort_unless((bool) $request->user()?->canManageCourse($material->lesson?->course_id), 403);
 
         $validated = app(LmsQuizPlacementService::class)->configure(new Quiz, $validated);
         $quiz = Quiz::create(['max_attempts' => 0, 'passing_score' => 70, 'time_limit_minutes' => null, ...$validated]);
@@ -105,12 +111,14 @@ class QuizApiController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $quiz = Quiz::findOrFail($id);
+        abort_unless((bool) $request->user()?->canManageCourse(app(LmsGradingService::class)->courseIdForQuiz($quiz)), 403);
 
         $validated = $request->validate([
             'title' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'max_attempts' => ['sometimes', 'integer', 'min:0', 'max:10'],
             'passing_score' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'weight' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:240'],
             'is_active' => ['nullable', 'boolean'],
             'grading_mode' => 'sometimes|in:auto,manual,hybrid', 'grading_policy' => 'sometimes|in:highest,latest,average',
@@ -131,9 +139,10 @@ class QuizApiController extends Controller
     /**
      * Delete a quiz.
      */
-    public function destroy(int $id): JsonResponse
+    public function destroy(Request $request, int $id): JsonResponse
     {
         $quiz = Quiz::findOrFail($id);
+        abort_unless((bool) $request->user()?->canManageCourse(app(LmsGradingService::class)->courseIdForQuiz($quiz)), 403);
         abort_if($quiz->attempts()->exists(), 409, 'Kuis memiliki riwayat attempt; nonaktifkan, jangan hapus.');
         $quiz->delete();
 
@@ -152,6 +161,7 @@ class QuizApiController extends Controller
     public function addQuestion(Request $request, int $quizId): JsonResponse
     {
         $quiz = Quiz::findOrFail($quizId);
+        abort_unless((bool) $request->user()?->canManageCourse(app(LmsGradingService::class)->courseIdForQuiz($quiz)), 403);
 
         $validated = app(QuizDefinitionService::class)->question(['points' => 1, 'sort_order' => 0, ...$request->all()]);
 
@@ -169,7 +179,8 @@ class QuizApiController extends Controller
      */
     public function updateQuestion(Request $request, int $questionId): JsonResponse
     {
-        $question = QuizQuestion::findOrFail($questionId);
+        $question = QuizQuestion::with('quiz')->findOrFail($questionId);
+        abort_unless($question->quiz && (bool) $request->user()?->canManageCourse(app(LmsGradingService::class)->courseIdForQuiz($question->quiz)), 403);
 
         $validated = app(QuizDefinitionService::class)->question([
             ...$question->only(['question_type', 'question_text', 'options', 'correct_answer', 'points', 'sort_order', 'answer_aliases', 'rubric']), ...$request->all(),
@@ -187,9 +198,10 @@ class QuizApiController extends Controller
     /**
      * Delete a question.
      */
-    public function deleteQuestion(int $questionId): JsonResponse
+    public function deleteQuestion(Request $request, int $questionId): JsonResponse
     {
-        $question = QuizQuestion::findOrFail($questionId);
+        $question = QuizQuestion::with('quiz')->findOrFail($questionId);
+        abort_unless($question->quiz && (bool) $request->user()?->canManageCourse(app(LmsGradingService::class)->courseIdForQuiz($question->quiz)), 403);
         $question->delete();
 
         return response()->json([

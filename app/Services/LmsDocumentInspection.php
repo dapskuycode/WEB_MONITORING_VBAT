@@ -8,15 +8,7 @@ class LmsDocumentInspection
 {
     public function inspect(string $path): int
     {
-        $scan = new Process([config('lms.clamscan_binary'), '--no-summary', '--', $path]);
-        $scan->setTimeout(60);
-        $scan->run();
-        if ($scan->getExitCode() === 1) {
-            throw new \DomainException('malware_detected');
-        }
-        if (! $scan->isSuccessful()) {
-            throw new \RuntimeException('scanner_unavailable');
-        }
+        $this->runAntivirusIfConfigured($path);
         $info = new Process([config('lms.pdfinfo_binary'), '-box', $path]);
         $info->setTimeout(20);
         $info->run();
@@ -26,5 +18,31 @@ class LmsDocumentInspection
         }
 
         return (int) $matches[1];
+    }
+
+    public function inspectImage(string $path): void
+    {
+        $this->runAntivirusIfConfigured($path);
+        $head = @file_get_contents($path, false, null, 0, 8);
+        if (! is_string($head) || (! str_starts_with($head, "\xFF\xD8\xFF") && ! str_starts_with($head, "\x89PNG\r\n\x1a\n"))) {
+            throw new \DomainException('invalid_image');
+        }
+    }
+
+    private function runAntivirusIfConfigured(string $path): void
+    {
+        $binary = trim((string) config('lms.clamscan_binary'));
+        if ($binary === '') {
+            return;
+        }
+        $scan = new Process([$binary, '--no-summary', '--', $path]);
+        $scan->setTimeout(60);
+        $scan->run();
+        if ($scan->getExitCode() === 1) {
+            throw new \DomainException('malware_detected');
+        }
+        if (! $scan->isSuccessful()) {
+            throw new \RuntimeException('scanner_unavailable');
+        }
     }
 }

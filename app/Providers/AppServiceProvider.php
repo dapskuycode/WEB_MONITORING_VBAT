@@ -37,6 +37,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('lms-import', fn ($r) => Limit::perMinute(10)->by('lms-import:'.$r->user()->id));
         RateLimiter::for('lms-upload', fn ($r) => Limit::perMinute(10)->by('lms-upload:'.$r->user()->id));
         RateLimiter::for('lms-reading', fn ($r) => Limit::perMinute(60)->by('lms-reading:'.$r->user()->id));
+        RateLimiter::for('lms-assignment-save', fn ($r) => Limit::perMinute(60)->by('lms-assignment-save:'.$r->user()->id.':'.$r->route('id')));
+        RateLimiter::for('lms-assignment-submit', fn ($r) => Limit::perMinute(15)->by('lms-assignment-submit:'.$r->user()->id.':'.$r->route('id')));
         $this->configureDefaults();
         $this->configureGates();
     }
@@ -46,9 +48,11 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function configureGates(): void
     {
-        Gate::define('access-admin', fn (User $user): bool => $user->isSuperAdmin() || $user->isOwner());
+        Gate::define('access-admin', fn (User $user): bool => $user->isSuperAdmin() || (method_exists($user, 'isOwner') && $user->isOwner()));
 
-        Gate::define('access-sponsor-portal', fn (User $user): bool => $user->isSponsor() || $user->isSuperAdmin() || $user->isOwner());
+        Gate::define('access-lms-admin', fn (User $user): bool => $user->isLmsManager());
+
+        Gate::define('access-sponsor-portal', fn (User $user): bool => $user->isSponsor() || $user->isSuperAdmin() || (method_exists($user, 'isOwner') && $user->isOwner()));
     }
 
     /**

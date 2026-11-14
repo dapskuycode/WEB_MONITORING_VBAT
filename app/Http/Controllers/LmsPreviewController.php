@@ -14,7 +14,7 @@ class LmsPreviewController extends Controller
 {
     public function show(Request $request, int $id): Response
     {
-        abort_unless($request->user()?->isSuperAdmin(), 403);
+        abort_unless((bool) $request->user()?->isLmsManager() && $request->user()->canManageCourse($id), 403);
         $course = Course::with('lessons.learningMaterials')->findOrFail($id);
         $mediaUrls = [];
         foreach ($course->lessons as $lesson) {
@@ -32,9 +32,10 @@ class LmsPreviewController extends Controller
 
     public function media(Request $request, int $id): BinaryFileResponse
     {
-        abort_unless($request->user()?->isSuperAdmin() && $request->hasValidSignature()
+        abort_unless((bool) $request->user()?->isLmsManager() && $request->hasValidSignature()
             && (string) $request->query('user') === (string) $request->user()->id, 403);
-        $material = LearningMaterial::findOrFail($id);
+        $material = LearningMaterial::with('lesson')->findOrFail($id);
+        abort_unless($request->user()->canManageCourse($material->lesson?->course_id), 403);
         abort_unless($material->material_type === 'pdf_document', 404);
         $path = app(LmsFileService::class)->path('lms', $material->pdf_path);
         abort_unless($path !== null, 404);

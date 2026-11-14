@@ -1,10 +1,4 @@
 <div class="flex flex-col gap-6 py-2">
-    @if(auth()->user()?->isSuperAdmin())
-        <a href="{{ route('admin.content') }}" wire:navigate aria-label="Konten belajar LMS" class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-800 dark:text-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2" title="Konten belajar LMS">
-            <flux:icon.book-open class="size-5 shrink-0" aria-hidden="true" />
-            <span x-show="sidebarOpen">Konten belajar LMS</span>
-        </a>
-    @endif
     @if(auth()->user()?->isSponsor())
         {{-- SPONSOR MENU --}}
         <div>
@@ -206,6 +200,30 @@
                 <i class="fas fa-cloud-upload-alt w-5 h-5 shrink-0 {{ request()->routeIs('admin.bulk-upload') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
                 <span x-show="sidebarOpen" x-transition.opacity class="truncate">Bulk Upload Materi Kelas</span>
             </a>
+
+            @if(auth()->user()?->isSuperAdmin() || auth()->user()?->isInstructor())
+                <a 
+                    href="{{ route('admin.content') }}" 
+                    wire:navigate 
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->routeIs('admin.content') ? 'bg-[#EBF3FE] text-[#1a68f0] dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-slate-800 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800' }}"
+                    :class="sidebarOpen ? '' : 'justify-center px-0'"
+                    :title="!sidebarOpen ? 'Konten belajar LMS' : ''"
+                >
+                    <i class="fas fa-book-open w-5 h-5 shrink-0 {{ request()->routeIs('admin.content') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    <span x-show="sidebarOpen" x-transition.opacity class="truncate">Konten belajar LMS</span>
+                </a>
+
+                <a 
+                    href="{{ route('admin.lms.reviews') }}" 
+                    wire:navigate 
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors {{ request()->routeIs('admin.lms.reviews') ? 'bg-[#EBF3FE] text-[#1a68f0] dark:bg-blue-950/50 dark:text-blue-400 font-semibold' : 'text-slate-800 dark:text-zinc-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-zinc-800' }}"
+                    :class="sidebarOpen ? '' : 'justify-center px-0'"
+                    :title="!sidebarOpen ? 'Review Nilai LMS' : ''"
+                >
+                    <i class="fas fa-clipboard-check w-5 h-5 shrink-0 {{ request()->routeIs('admin.lms.reviews') ? 'text-[#1a68f0] dark:text-blue-400' : 'text-slate-500 dark:text-zinc-400' }}"></i>
+                    <span x-show="sidebarOpen" x-transition.opacity class="truncate">Review Nilai LMS</span>
+                </a>
+            @endif
 
             <a 
                 href="{{ route('admin.notifications') }}" 

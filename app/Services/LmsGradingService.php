@@ -7,6 +7,7 @@ use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
@@ -47,13 +48,38 @@ class LmsGradingService
         $this->revision($attempt, $grades, $pending ? 'draft' : 'published', null, 'Penilaian otomatis snapshot; jawaban manual menunggu reviewer.');
     }
 
+    public function courseIdForQuiz(Quiz $quiz): ?int
+    {
+        if ($quiz->target_course_id) {
+            return (int) $quiz->target_course_id;
+        }
+        if ($quiz->learning_material_id) {
+            $material = $quiz->relationLoaded('learningMaterial') ? $quiz->learningMaterial : $quiz->learningMaterial()->with('lesson')->first();
+
+            return $material?->lesson?->course_id ? (int) $material->lesson->course_id : null;
+        }
+
+        return null;
+    }
+
+    public function assertCanManageAttempt(User $actor, QuizAttempt $attempt): void
+    {
+        abort_unless($actor->isLmsManager(), 403);
+        if ($actor->isSuperAdmin()) {
+            return;
+        }
+        $quiz = $attempt->relationLoaded('quiz') ? $attempt->quiz : Quiz::find($attempt->quiz_id);
+        $courseId = $quiz ? $this->courseIdForQuiz($quiz) : null;
+        abort_unless($actor->canManageCourse($courseId), 403, 'Anda tidak memiliki akses ke kelas ini.');
+    }
+
     /**
      * @param  array<string, mixed>  $input
      * @return array<string, mixed>
      */
     public function change(User $actor, int $id, array $input, bool $publish): array
     {
-        abort_unless($actor->isSuperAdmin(), 403);
+        abort_unless($actor->isLmsManager(), 403);
         $input = Validator::make($input, ['request_id' => 'required|uuid', 'expected_version' => 'required|integer|min:0',
             'reason' => 'required|string|min:5|max:2000', 'grades' => $publish ? 'prohibited' : 'required|array|min:1|max:100',
             'grades.*.question_id' => 'required|integer|min:1', 'grades.*.points' => 'present|nullable|numeric|min:0|max:1000',
@@ -62,6 +88,7 @@ class LmsGradingService
 
         return DB::transaction(function () use ($actor, $id, $input, $publish) {
             $owner = QuizAttempt::whereKey($id)->firstOrFail();
+            $this->assertCanManageAttempt($actor, $owner);
             User::whereKey($owner->user_id)->lockForUpdate()->firstOrFail();
             Quiz::whereKey($owner->quiz_id)->lockForUpdate()->firstOrFail();
             $attempt = QuizAttempt::whereKey($id)->lockForUpdate()->firstOrFail();
@@ -150,6 +177,7 @@ class LmsGradingService
             'question_grades' => json_encode($grades, JSON_THROW_ON_ERROR), 'score' => $score, 'passed' => $passed, 'reason' => $reason,
             'published_at' => $status === 'published' ? now() : null, 'created_at' => now(), 'updated_at' => now()]);
         $before = $attempt->only(['score', 'is_passed', 'grade_status', 'grade_version', 'published_revision']);
+        $wasAlreadyPublished = $attempt->published_revision !== null;
         $attempt->grade_version = $next;
         if ($status === 'published') {
             $attempt->score = $score;
@@ -165,6 +193,9 @@ class LmsGradingService
         AuditLog::create(['actor_type' => $actor === null ? 'system' : 'admin', 'actor_id' => $actor, 'action' => 'lms.grade.'.$status,
             'auditable_type' => QuizAttempt::class, 'auditable_id' => $attempt->id, 'old_values' => $before,
             'new_values' => [...$attempt->only(['score', 'is_passed', 'grade_status', 'grade_version', 'published_revision']), 'reason' => $reason], 'ip_address' => request()->ip()]);
+        if ($status === 'published' && $actor !== null && Schema::hasTable('lms_notification_dispatches')) {
+            app(LmsNotificationService::class)->notifyQuizGradePublished($attempt, $next, $wasAlreadyPublished);
+        }
     }
 
     /**

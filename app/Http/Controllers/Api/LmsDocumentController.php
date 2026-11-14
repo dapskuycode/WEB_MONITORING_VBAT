@@ -13,13 +13,24 @@ class LmsDocumentController extends Controller
 {
     public function upload(Request $request, LmsUploadService $service): JsonResponse
     {
-        $data = $request->validate(['file' => 'required|file', 'purpose' => 'required|in:course_material']);
+        $purpose = (string) $request->input('purpose', '');
+        if ($purpose === 'course_material') {
+            abort_unless((bool) $request->user()?->isLmsManager(), 403);
+        } else {
+            abort_if((bool) $request->user()?->isSponsor(), 403);
+        }
+        $data = $request->validate(['file' => 'required|file', 'purpose' => 'required|string']);
+        $upload = $service->receive($request->user(), $data['file'], $data['purpose']);
+        if (config('lms.auto_scan_on_upload')) {
+            $upload = $service->scan($upload->id);
+        }
 
-        return response()->json(['success' => true, 'data' => $service->data($service->receive($request->user(), $data['file'], $data['purpose']))], 202)->header('Cache-Control', 'private, no-store');
+        return response()->json(['success' => true, 'data' => $service->data($upload)], 202)->header('Cache-Control', 'private, no-store');
     }
 
     public function status(Request $request, string $id, LmsUploadService $service): JsonResponse
     {
+        abort_if((bool) $request->user()?->isSponsor(), 403);
         $upload = LmsUpload::whereKey($id)->where('user_id', $request->user()->id)->firstOrFail();
 
         return response()->json(['success' => true, 'data' => $service->data($upload)])->header('Cache-Control', 'private, no-store');

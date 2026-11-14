@@ -47,4 +47,12 @@ class Lesson extends Model
     {
         return $this->hasMany(LearningMaterial::class)->orderBy('sort_order');
     }
+
+    /**
+     * @return HasMany<LmsAssignment, $this>
+     */
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(LmsAssignment::class)->orderBy('sort_order');
+    }
 }

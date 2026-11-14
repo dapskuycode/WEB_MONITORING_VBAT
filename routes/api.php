@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\InfoContentController;
 use App\Http\Controllers\Api\LearningMaterialApiController;
 use App\Http\Controllers\Api\LegalController;
 use App\Http\Controllers\Api\LessonApiController;
+use App\Http\Controllers\Api\LmsAssignmentController;
+use App\Http\Controllers\Api\LmsBatch11Controller;
 use App\Http\Controllers\Api\LmsDocumentController;
 use App\Http\Controllers\Api\LmsGradeController;
 use App\Http\Controllers\Api\LmsImportController;
@@ -71,17 +73,44 @@ Route::prefix('v1')->group(function () {
         Route::post('/lms/credentials/{id}/visibility', [LmsOutcomeController::class, 'visibility'])->whereNumber('id');
         Route::get('/lms/credentials/{id}/document', [LmsOutcomeController::class, 'document'])->whereNumber('id');
         Route::post('/admin/lms/credentials/{id}/revoke', [LmsOutcomeController::class, 'revoke'])->whereNumber('id')->middleware('role:super_admin');
-        Route::get('/admin/lms/reviews', [LmsGradeController::class, 'index'])->middleware('role:super_admin');
-        Route::get('/admin/lms/reviews/{id}', [LmsGradeController::class, 'show'])->whereNumber('id')->middleware('role:super_admin');
-        Route::post('/admin/lms/reviews/{id}/draft', [LmsGradeController::class, 'draft'])->whereNumber('id')->middleware('role:super_admin');
-        Route::post('/admin/lms/reviews/{id}/publish', [LmsGradeController::class, 'publish'])->whereNumber('id')->middleware('role:super_admin');
+        Route::get('/admin/lms/reviews', [LmsGradeController::class, 'index'])->middleware('role:super_admin,instructor');
+        Route::get('/admin/lms/reviews/{id}', [LmsGradeController::class, 'show'])->whereNumber('id')->middleware('role:super_admin,instructor');
+        Route::post('/admin/lms/reviews/{id}/draft', [LmsGradeController::class, 'draft'])->whereNumber('id')->middleware('role:super_admin,instructor');
+        Route::post('/admin/lms/reviews/{id}/publish', [LmsGradeController::class, 'publish'])->whereNumber('id')->middleware('role:super_admin,instructor');
+        Route::get('/admin/lms/assignments', [LmsAssignmentController::class, 'indexAdmin'])->middleware('role:super_admin,instructor');
+        Route::post('/admin/lms/assignments', [LmsAssignmentController::class, 'storeAdmin'])->middleware('role:super_admin,instructor');
+        Route::put('/admin/lms/assignments/{id}', [LmsAssignmentController::class, 'updateAdmin'])->whereNumber('id')->middleware('role:super_admin,instructor');
+        Route::post('/admin/lms/assignments/{id}/status', [LmsAssignmentController::class, 'transitionStatus'])->whereNumber('id')->middleware('role:super_admin,instructor');
+        Route::get('/admin/lms/submissions', [LmsAssignmentController::class, 'indexSubmissions'])->middleware('role:super_admin,instructor');
+        Route::get('/admin/lms/submissions/{id}', [LmsAssignmentController::class, 'showSubmission'])->whereNumber('id')->middleware('role:super_admin,instructor');
+        Route::post('/admin/lms/submissions/{id}/draft', [LmsAssignmentController::class, 'draftGrade'])->whereNumber('id')->middleware('role:super_admin,instructor');
+        Route::post('/admin/lms/submissions/{id}/publish', [LmsAssignmentController::class, 'publishGrade'])->whereNumber('id')->middleware('role:super_admin,instructor');
+        Route::post('/admin/lms/submissions/{id}/return', [LmsAssignmentController::class, 'returnSubmission'])->whereNumber('id')->middleware('role:super_admin,instructor');
+        Route::get('/admin/lms/courses/{id}/gradebook', [LmsAssignmentController::class, 'courseGradebook'])->whereNumber('id')->middleware('role:super_admin,instructor');
+        Route::post('/admin/lms/gradebook/bulk-publish', [LmsAssignmentController::class, 'bulkPublishGradebook'])->middleware('role:super_admin,instructor');
+        Route::put('/admin/lms/courses/{id}/instructors', [LmsAssignmentController::class, 'assignInstructors'])->whereNumber('id')->middleware('role:super_admin');
         Route::get('/lms/imports/template', [LmsImportController::class, 'template'])->middleware('role:super_admin');
         Route::post('/lms/imports', [LmsImportController::class, 'preview'])->middleware(['role:super_admin', 'throttle:lms-import']);
         Route::get('/lms/imports/{id}', [LmsImportController::class, 'show'])->whereUuid('id')->middleware('role:super_admin');
         Route::post('/lms/imports/{id}/apply', [LmsImportController::class, 'apply'])->whereUuid('id')->middleware('role:super_admin');
         Route::get('/lms/imports/{id}/errors', [LmsImportController::class, 'errors'])->whereUuid('id')->middleware('role:super_admin');
-        Route::post('/lms/uploads', [LmsDocumentController::class, 'upload'])->middleware(['role:super_admin', 'throttle:lms-upload']);
-        Route::get('/lms/uploads/{id}', [LmsDocumentController::class, 'status'])->whereUuid('id')->middleware('role:super_admin');
+        Route::post('/lms/uploads', [LmsDocumentController::class, 'upload'])->middleware('throttle:lms-upload');
+        Route::get('/lms/uploads/{id}', [LmsDocumentController::class, 'status'])->whereUuid('id');
+        Route::get('/lms/assignments/{id}', [LmsAssignmentController::class, 'showStudent'])->whereNumber('id');
+        Route::put('/lms/assignments/{id}/draft', [LmsAssignmentController::class, 'saveDraft'])->whereNumber('id')->middleware('throttle:lms-assignment-save');
+        Route::post('/lms/assignments/{id}/submit', [LmsAssignmentController::class, 'submit'])->whereNumber('id')->middleware('throttle:lms-assignment-submit');
+        Route::get('/lms/submissions/{id}/files/{uploadId}', [LmsAssignmentController::class, 'downloadFile'])->whereNumber('id')->whereUuid('uploadId');
+        Route::get('/lms/courses/{id}/grades', [LmsAssignmentController::class, 'studentCourseGrades'])->whereNumber('id');
+        Route::get('/lms/offline/licenses', [LmsBatch11Controller::class, 'listOfflineLicenses']);
+        Route::post('/lms/materials/{id}/offline-license', [LmsBatch11Controller::class, 'issueOfflineLicense'])->whereNumber('id');
+        Route::post('/lms/offline/licenses/{id}/renew', [LmsBatch11Controller::class, 'renewOfflineLicense'])->whereUuid('id');
+        Route::post('/lms/offline/licenses/{id}/revoke', [LmsBatch11Controller::class, 'revokeOfflineLicense'])->whereUuid('id');
+        Route::get('/lms/offline/licenses/{id}/file', [LmsBatch11Controller::class, 'downloadOfflineFile'])->whereUuid('id');
+        Route::post('/lms/offline/sync', [LmsBatch11Controller::class, 'syncOfflineEvents']);
+        Route::post('/lms/offline/devices/{deviceId}/revoke', [LmsBatch11Controller::class, 'revokeOfflineDevice']);
+        Route::post('/lms/notifications/push-token', [LmsBatch11Controller::class, 'registerPushToken']);
+        Route::post('/lms/notifications/push-token/revoke', [LmsBatch11Controller::class, 'revokePushToken']);
+        Route::post('/lms/notifications/resolve-deep-link', [LmsBatch11Controller::class, 'resolveDeepLink']);
         Route::post('/lms/materials/{id}/reading', [LmsDocumentController::class, 'start'])->whereNumber('id')->middleware('throttle:lms-reading');
         Route::post('/lms/reading/{id}/events', [LmsDocumentController::class, 'event'])->whereUuid('id')->middleware('throttle:lms-reading');
         Route::get('/lms/quizzes/{id}', [StudentQuizController::class, 'show'])->whereNumber('id')->middleware('throttle:lms-quiz-read');
@@ -210,30 +239,30 @@ Route::prefix('v1')->group(function () {
         Route::delete('/products/{product}/best-deal', [SponsorProductApiController::class, 'removeFromBestDeal']);
 
         // 3. Learning Material — Write operations
-        Route::post('/learning-materials', [LearningMaterialApiController::class, 'store'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::put('/learning-materials/{material}', [LearningMaterialApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::delete('/learning-materials/{material}', [LearningMaterialApiController::class, 'destroy'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::post('/learning-materials/{material}/thumbnail', [LearningMaterialApiController::class, 'uploadThumbnail'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::post('/learning-materials/{material}/pdf', [LearningMaterialApiController::class, 'uploadPdf'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::post('/learning-materials', [LearningMaterialApiController::class, 'store'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
+        Route::put('/learning-materials/{material}', [LearningMaterialApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
+        Route::delete('/learning-materials/{material}', [LearningMaterialApiController::class, 'destroy'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
+        Route::post('/learning-materials/{material}/thumbnail', [LearningMaterialApiController::class, 'uploadThumbnail'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
+        Route::post('/learning-materials/{material}/pdf', [LearningMaterialApiController::class, 'uploadPdf'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
         Route::post('/learning-materials/{material}/progress', [LearningMaterialApiController::class, 'recordProgress']);
-        Route::get('/learning-materials/{material}/analytics', [LearningMaterialApiController::class, 'analytics'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::get('/learning-materials/{material}/analytics', [LearningMaterialApiController::class, 'analytics'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
 
         // 3a. Course & Lesson — Write operations
         Route::post('/courses', [CourseApiController::class, 'store'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::put('/courses/{id}', [CourseApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::put('/courses/{id}', [CourseApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
         Route::post('/courses/{id}/archive', [CourseApiController::class, 'archive'])->middleware(['auth:sanctum', 'role:super_admin']);
         Route::delete('/courses/{id}', [CourseApiController::class, 'destroy'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::post('/lessons', [LessonApiController::class, 'store'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::put('/lessons/{id}', [LessonApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::delete('/lessons/{id}', [LessonApiController::class, 'destroy'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::post('/lessons', [LessonApiController::class, 'store'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
+        Route::put('/lessons/{id}', [LessonApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
+        Route::delete('/lessons/{id}', [LessonApiController::class, 'destroy'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
 
         // 3b. Quiz — Write operations & attempts
-        Route::post('/quizzes', [QuizApiController::class, 'store'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::put('/quizzes/{id}', [QuizApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::delete('/quizzes/{id}', [QuizApiController::class, 'destroy'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::post('/quizzes/{id}/questions', [QuizApiController::class, 'addQuestion'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::put('/quiz-questions/{id}', [QuizApiController::class, 'updateQuestion'])->middleware(['auth:sanctum', 'role:super_admin']);
-        Route::delete('/quiz-questions/{id}', [QuizApiController::class, 'deleteQuestion'])->middleware(['auth:sanctum', 'role:super_admin']);
+        Route::post('/quizzes', [QuizApiController::class, 'store'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
+        Route::put('/quizzes/{id}', [QuizApiController::class, 'update'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
+        Route::delete('/quizzes/{id}', [QuizApiController::class, 'destroy'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
+        Route::post('/quizzes/{id}/questions', [QuizApiController::class, 'addQuestion'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
+        Route::put('/quiz-questions/{id}', [QuizApiController::class, 'updateQuestion'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
+        Route::delete('/quiz-questions/{id}', [QuizApiController::class, 'deleteQuestion'])->middleware(['auth:sanctum', 'role:super_admin,instructor']);
         Route::post('/quizzes/{id}/start-attempt', [QuizApiController::class, 'startAttempt']);
         Route::post('/quizzes/{id}/submit-attempt', [QuizApiController::class, 'submitAttempt']);
 
@@ -242,7 +271,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/bookmarks/toggle', [BookmarkApiController::class, 'toggle'])->middleware(SanitizeLmsCatalog::class);
         Route::post('/bookmarks/check', [BookmarkApiController::class, 'check'])->middleware(SanitizeLmsCatalog::class);
 
-        Route::put('/lms-admin/{kind}/{id}/order', [LmsOrderController::class, 'update'])->where('kind', 'courses|lessons')->middleware('role:super_admin');
+        Route::put('/lms-admin/{kind}/{id}/order', [LmsOrderController::class, 'update'])->where('kind', 'courses|lessons')->middleware('role:super_admin,instructor');
 
         // 3d. Entitlements — Access gating & certificates
         Route::get('/entitlements/access', [EntitlementApiController::class, 'snapshot']);

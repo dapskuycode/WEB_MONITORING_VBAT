@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Course;
 use App\Models\LearningMaterial;
+use App\Models\LmsAssignment;
+use App\Models\LmsAssignmentSubmission;
 use App\Models\LmsUpload;
 use App\Models\QuizAttempt;
 use App\Models\User;
@@ -31,6 +33,18 @@ class LmsProgressService
         }
         $grades = QuizAttempt::where('user_id', $user->id)->whereIn('quiz_id', $quizIds)
             ->whereIn('status', ['submitted', 'expired'])->get();
+        $courseAssignments = LmsAssignment::where('course_id', $course->id)
+            ->whereIn('status', ['published', 'closed'])
+            ->whereHas('lesson', fn ($q) => $q->where('status', 'published'))
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->groupBy('lesson_id');
+        $assignmentSubs = LmsAssignmentSubmission::where('user_id', $user->id)
+            ->whereIn('assignment_id', $courseAssignments->flatten()->pluck('id'))
+            ->orderByDesc('version')
+            ->get()
+            ->groupBy('assignment_id');
         $states = [];
         foreach ($materials as $material) {
             $row = $progress->get($material->id);
@@ -43,6 +57,9 @@ class LmsProgressService
         }
         $quizSlots = [];
         $quizzes = [];
+        $assignments = [];
+        $processedAssignmentLessons = [];
+        $materialsByLesson = $materials->groupBy('lesson_id');
         $unlocked = true;
         $units = [];
         $required = $placement['missing'];
@@ -124,6 +141,81 @@ class LmsProgressService
                     $next = null;
                 }
             }
+            $lastInLesson = ($materialsByLesson->get($material->lesson_id)?->last()?->id === $material->id);
+            if ($lastInLesson && ! isset($processedAssignmentLessons[$material->lesson_id])) {
+                $processedAssignmentLessons[$material->lesson_id] = true;
+                foreach ($courseAssignments->get($material->lesson_id, collect()) as $asg) {
+                    $latestSub = ($assignmentSubs->get($asg->id) ?? collect())->first();
+                    $asgPassed = $latestSub && $latestSub->grade_status === 'published' && (bool) $latestSub->is_passed;
+                    $asgPending = $latestSub && $latestSub->grade_status === 'pending_review';
+                    $asgReturned = $latestSub && $latestSub->status === 'returned';
+                    $asgOpen = $unlocked || $latestSub !== null;
+                    $assignments[$asg->id] = [
+                        'unlocked' => $asgOpen,
+                        'module_id' => $asg->lesson_id,
+                        'progress' => [
+                            'available' => true,
+                            'completed' => (bool) $asgPassed,
+                            'percent' => $asgPassed ? 100 : ($asgPending ? 50 : 0),
+                            'best_score' => ($latestSub && $latestSub->grade_status === 'published' && $latestSub->score_percent !== null) ? (float) $latestSub->score_percent : null,
+                            'pending_review' => (bool) $asgPending,
+                            'returned' => (bool) $asgReturned,
+                        ],
+                    ];
+                    if ($asg->is_required) {
+                        $required++;
+                        $completed += $asgPassed ? 1 : 0;
+                        $modules[$asg->lesson_id]['required_units']++;
+                        $modules[$asg->lesson_id]['completed_units'] += $asgPassed ? 1 : 0;
+                        if (! $nextChosen && ! $asgPassed) {
+                            $next = ['kind' => 'assignment', 'id' => $asg->id, 'course_id' => $course->id, 'module_id' => $asg->lesson_id];
+                            $nextChosen = true;
+                        }
+                        if (! $asgPassed && ! $asgPending) {
+                            $unlocked = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        foreach ($courseAssignments as $lessonId => $lessonAssignments) {
+            if (isset($processedAssignmentLessons[$lessonId])) {
+                continue;
+            }
+            $modules[$lessonId] ??= ['required_units' => 0, 'completed_units' => 0];
+            foreach ($lessonAssignments as $asg) {
+                $latestSub = ($assignmentSubs->get($asg->id) ?? collect())->first();
+                $asgPassed = $latestSub && $latestSub->grade_status === 'published' && (bool) $latestSub->is_passed;
+                $asgPending = $latestSub && $latestSub->grade_status === 'pending_review';
+                $asgReturned = $latestSub && $latestSub->status === 'returned';
+                $asgOpen = $unlocked || $latestSub !== null;
+                $assignments[$asg->id] = [
+                    'unlocked' => $asgOpen,
+                    'module_id' => $asg->lesson_id,
+                    'progress' => [
+                        'available' => true,
+                        'completed' => (bool) $asgPassed,
+                        'percent' => $asgPassed ? 100 : ($asgPending ? 50 : 0),
+                        'best_score' => ($latestSub && $latestSub->grade_status === 'published' && $latestSub->score_percent !== null) ? (float) $latestSub->score_percent : null,
+                        'pending_review' => (bool) $asgPending,
+                        'returned' => (bool) $asgReturned,
+                    ],
+                ];
+                if ($asg->is_required) {
+                    $required++;
+                    $completed += $asgPassed ? 1 : 0;
+                    $modules[$asg->lesson_id]['required_units']++;
+                    $modules[$asg->lesson_id]['completed_units'] += $asgPassed ? 1 : 0;
+                    if (! $nextChosen && ! $asgPassed) {
+                        $next = ['kind' => 'assignment', 'id' => $asg->id, 'course_id' => $course->id, 'module_id' => $asg->lesson_id];
+                        $nextChosen = true;
+                    }
+                    if (! $asgPassed && ! $asgPending) {
+                        $unlocked = false;
+                    }
+                }
+            }
         }
 
         foreach ($modules as &$module) {
@@ -131,7 +223,7 @@ class LmsProgressService
             $module['percent'] = $module['required_units'] ? round($module['completed_units'] / $module['required_units'] * 100, 2) : 0;
         }
 
-        return ['quiz_slots' => $quizSlots, 'units' => $units, 'quizzes' => $quizzes, 'modules' => $modules, 'next_unit' => $next, 'next_unit_reason' => $next ? 'next_required_activity' : ($nextChosen ? 'curriculum_unavailable' : 'no_next_activity'),
+        return ['quiz_slots' => $quizSlots, 'units' => $units, 'quizzes' => $quizzes, 'assignments' => $assignments, 'modules' => $modules, 'next_unit' => $next, 'next_unit_reason' => $next ? 'next_required_activity' : ($nextChosen ? 'curriculum_unavailable' : 'no_next_activity'),
             'progress' => ['available' => true, 'percent' => $required ? round($completed / $required * 100, 2) : 0,
                 'completed_units' => $completed, 'required_units' => $required, 'completed' => $required > 0 && $completed === $required]];
     }

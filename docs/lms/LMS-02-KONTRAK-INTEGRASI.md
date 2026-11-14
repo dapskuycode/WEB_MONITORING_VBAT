@@ -182,4 +182,29 @@ Semua skenario berikut masih rencana tes. Tidak ditandai lulus hanya karena cont
 - [ ] Namespace T09, representasi enrollment/revisi dan strategi adapter disepakati sebelum kontrak dibekukan.
 - [ ] Implementasi, migrasi fixture dan contract test membuktikan perilaku target.
 
-LMS-02 berstatus **draft teknis selesai disusun, finalisasi masih terbuka**. Batch berikutnya yang diusulkan B02 adalah LMS-03/LMS-04 (identitas dan otorisasi), dengan batas perubahan dan bukti tes terpisah. Pemetaan teknis tidak mengesahkan keputusan komersial atau retensi.
+LMS-02 berstatus **draft teknis selesai disusun dan diselaraskan hingga Batch B11**.
+
+### Tambahan Kontrak Aktual B10 & B11 (`routes/api.php`)
+
+- **Tugas, Gradebook & Instructor (`B10`):**
+  - `GET /api/v1/lms/courses/{course}/assignments` & `GET /api/v1/lms/assignments/{assignment}`
+  - `POST /api/v1/lms/assignments/{assignment}/draft`
+  - `POST /api/v1/lms/assignments/{assignment}/files` & `DELETE /api/v1/lms/assignments/{assignment}/files/{file}`
+  - `GET /api/v1/lms/assignment-files/{file}/download`
+  - `POST /api/v1/lms/assignments/{assignment}/submit`
+  - `GET /api/v1/lms/assignments/{assignment}/result`
+  - `GET /api/v1/lms/courses/{course}/grades` (siswa)
+  - `GET /api/v1/lms/courses/{course}/gradebook` & `POST /api/v1/lms/gradebook/bulk-publish` (admin/instructor sesuai scope)
+  - `POST /api/v1/lms/assignment-submissions/{submission}/grade` & `POST /api/v1/lms/assignment-submissions/{submission}/return`
+- **Offline Media, Notifikasi LMS & Operasional (`B11`):**
+  - `GET /api/v1/lms/offline/licenses`
+  - `POST /api/v1/lms/materials/{material}/offline-license`
+  - `GET /api/v1/lms/offline/licenses/{licenseId}/download` (menyertakan header `X-LMS-SHA256`)
+  - `POST /api/v1/lms/offline/licenses/{licenseId}/renew`
+  - `POST /api/v1/lms/offline/licenses/{licenseId}/revoke`
+  - `POST /api/v1/lms/offline/devices/{deviceId}/revoke`
+  - `POST /api/v1/lms/offline/sync` (respons per-event `accepted` / `rejected` beserta `reason_code`)
+  - `GET /api/v1/user/notifications`
+  - `POST /api/v1/lms/notifications/push-token` & `POST /api/v1/lms/notifications/push-token/revoke`
+  - `POST /api/v1/lms/notifications/resolve-deep-link`
+  - Seluruh request dan response API LMS mempropagasi header korelasi `X-Request-Id`.

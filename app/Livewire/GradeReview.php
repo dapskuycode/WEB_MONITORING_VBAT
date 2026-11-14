@@ -2,7 +2,11 @@
 
 namespace App\Livewire;
 
+use App\Models\Course;
+use App\Models\LmsAssignmentSubmission;
 use App\Models\QuizAttempt;
+use App\Services\LmsAssignmentService;
+use App\Services\LmsGradebookService;
 use App\Services\LmsGradingService;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -14,6 +18,8 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 class GradeReview extends Component
 {
     use WithPagination;
+
+    public string $mode = 'quizzes';
 
     #[Locked]
     public ?int $attemptId = null;
@@ -36,9 +42,37 @@ class GradeReview extends Component
 
     public string $filter = 'pending_review';
 
+    #[Locked]
+    public ?int $submissionId = null;
+
+    #[Locked]
+    public int $submissionGradeVersion = 0;
+
+    #[Locked]
+    public ?array $submissionReview = null;
+
+    #[Locked]
+    public string $subSaveKey = '';
+
+    #[Locked]
+    public string $subPublishKey = '';
+
+    #[Locked]
+    public string $subReturnKey = '';
+
+    public ?float $submissionScore = null;
+
+    public string $submissionFeedback = '';
+
+    public string $submissionReason = '';
+
+    public ?string $resubmitDeadline = null;
+
+    public ?int $gradebookCourseId = null;
+
     public function boot(): void
     {
-        abort_unless(auth()->user()?->isSuperAdmin(), 403);
+        abort_unless((bool) auth()->user()?->isLmsManager(), 403);
     }
 
     public function updatedFilter(): void
@@ -49,6 +83,7 @@ class GradeReview extends Component
     public function open(int $id): void
     {
         $attempt = QuizAttempt::whereIn('status', ['submitted', 'expired'])->findOrFail($id);
+        app(LmsGradingService::class)->assertCanManageAttempt(auth()->user(), $attempt);
         $this->adopt(app(LmsGradingService::class)->detail($attempt));
         $this->reason = '';
         $this->resetValidation();
@@ -114,9 +149,115 @@ class GradeReview extends Component
         }
     }
 
+    public function openSubmission(int $id): void
+    {
+        $detail = app(LmsAssignmentService::class)->submissionDetail(auth()->user(), $id);
+        $this->submissionReview = $detail;
+        $this->submissionId = (int) $detail['id'];
+        $this->submissionGradeVersion = (int) $detail['grade_version'];
+        $this->subSaveKey = (string) Str::uuid();
+        $this->subPublishKey = (string) Str::uuid();
+        $this->subReturnKey = (string) Str::uuid();
+        $latest = collect($detail['history'] ?? [])->last();
+        $this->submissionScore = isset($latest['score']) && $latest['score'] !== null ? (float) $latest['score'] : ($detail['score'] ?? null);
+        $this->submissionFeedback = (string) ($latest['feedback'] ?? '');
+        $this->submissionReason = '';
+        $this->resubmitDeadline = null;
+        $this->resetValidation();
+    }
+
+    public function saveSubmissionDraft(): void
+    {
+        $this->changeSubmission(false);
+    }
+
+    public function publishSubmission(): void
+    {
+        $this->changeSubmission(true);
+    }
+
+    private function changeSubmission(bool $publish): void
+    {
+        abort_unless($this->submissionId && $this->submissionReview, 422);
+        try {
+            $detail = app(LmsAssignmentService::class)->gradeSubmission(auth()->user(), $this->submissionId, [
+                'request_id' => $publish ? $this->subPublishKey : $this->subSaveKey,
+                'expected_version' => $this->submissionGradeVersion,
+                'score' => $this->submissionScore,
+                'feedback' => $this->submissionFeedback,
+                'reason' => $this->submissionReason,
+            ], $publish);
+            $this->openSubmission((int) $detail['id']);
+            session()->flash('message', $publish ? 'Nilai tugas dipublikasikan.' : 'Draft review tugas tersimpan.');
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $key => $messages) {
+                $this->addError($key, implode(' ', $messages));
+            }
+        } catch (HttpExceptionInterface $e) {
+            $this->addError('submission', $e->getStatusCode() === 409 ? 'Status submission berubah. Muat ulang review.' : $e->getMessage());
+        }
+    }
+
+    public function returnSubmission(): void
+    {
+        abort_unless($this->submissionId && $this->submissionReview, 422);
+        try {
+            $detail = app(LmsAssignmentService::class)->returnSubmission(auth()->user(), $this->submissionId, [
+                'request_id' => $this->subReturnKey,
+                'expected_version' => $this->submissionGradeVersion,
+                'feedback' => $this->submissionFeedback,
+                'reason' => $this->submissionReason,
+                'resubmit_deadline_at' => $this->resubmitDeadline ?: null,
+            ]);
+            $this->openSubmission((int) $detail['id']);
+            session()->flash('message', 'Tugas dikembalikan ke siswa untuk direvisi.');
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $key => $messages) {
+                $this->addError($key, implode(' ', $messages));
+            }
+        } catch (HttpExceptionInterface $e) {
+            $this->addError('submission', $e->getStatusCode() === 409 ? 'Status submission berubah. Muat ulang review.' : $e->getMessage());
+        }
+    }
+
     public function render()
     {
-        return view('livewire.grade-review', ['attempts' => QuizAttempt::whereIn('status', ['submitted', 'expired'])->when($this->filter !== 'all', fn ($q) => $q->where('grade_status', $this->filter))->latest('id')->paginate(20)])
-            ->layout('layouts.app');
+        $user = auth()->user();
+        $managedCourseIds = $user?->managedCourseIds() ?? [];
+
+        $attemptsQuery = QuizAttempt::whereIn('status', ['submitted', 'expired'])
+            ->when(! $user?->isSuperAdmin(), function ($q) use ($managedCourseIds) {
+                $q->whereHas('quiz', function ($qq) use ($managedCourseIds) {
+                    $qq->whereIn('target_course_id', $managedCourseIds)
+                        ->orWhereHas('learningMaterial.lesson', fn ($lq) => $lq->whereIn('course_id', $managedCourseIds));
+                });
+            })
+            ->when($this->filter !== 'all', fn ($q) => $q->where('grade_status', $this->filter));
+
+        $submissionsQuery = LmsAssignmentSubmission::with(['assignment:id,course_id,title,max_score', 'user:id,name,email'])
+            ->when(! $user?->isSuperAdmin(), fn ($q) => $q->whereHas('assignment', fn ($aq) => $aq->whereIn('course_id', $managedCourseIds)))
+            ->when($this->filter !== 'all', fn ($q) => $this->filter === 'returned' ? $q->where('status', 'returned') : $q->where('grade_status', $this->filter));
+
+        $courses = Course::query()
+            ->when(! $user?->isSuperAdmin(), fn ($q) => $q->whereIn('id', $managedCourseIds))
+            ->orderBy('title')
+            ->get(['id', 'title', 'code', 'status']);
+
+        $gradebook = null;
+        if ($this->mode === 'gradebook' && $this->gradebookCourseId) {
+            $course = $courses->firstWhere('id', $this->gradebookCourseId);
+            if ($course) {
+                $gradebook = app(LmsGradebookService::class)->courseGradebook($user, $course);
+            }
+        }
+
+        return view('livewire.grade-review', [
+            'attempts' => $attemptsQuery->latest('id')->paginate(20),
+            'submissions' => $submissionsQuery->latest('id')->paginate(20, ['*'], 'subPage'),
+            'courses' => $courses,
+            'gradebook' => $gradebook,
+        ])->layout('layouts.admin', [
+            'title' => 'Review & Buku Nilai LMS',
+        ]);
     }
 }
