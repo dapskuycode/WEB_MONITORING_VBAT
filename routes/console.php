@@ -118,12 +118,15 @@ Artisan::command('lms:ops-status', function () {
         ? DB::table('lms_offline_licenses')->where('status', 'active')->count()
         : 0;
     $queuedDispatches = Schema::hasTable('lms_notification_dispatches')
-        ? DB::table('lms_notification_dispatches')->where('status', 'queued')->count()
+        ? DB::table('lms_notification_dispatches')->whereIn('status', ['queued', 'processing'])->count()
         : 0;
     $failedDispatches = Schema::hasTable('lms_notification_dispatches')
         ? DB::table('lms_notification_dispatches')->where('status', 'failed')->count()
         : 0;
     $this->info(json_encode([
+        'push_project_configured' => filled(config('lms.fcm_project_id')),
+        'push_credentials_available' => is_string(config('lms.fcm_credentials')) && is_file(config('lms.fcm_credentials')),
+        'antivirus_configured' => filled(config('lms.clamscan_binary')),
         'quarantine_uploads' => $quarantine,
         'overdue_quiz_attempts' => $expiredAttempts,
         'active_offline_licenses' => $activeLicenses,

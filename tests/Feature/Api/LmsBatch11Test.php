@@ -10,6 +10,7 @@ use App\Models\Lesson;
 use App\Models\LmsAssignment;
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\FcmAccessToken;
 use App\Services\LmsDocumentInspection;
 use App\Services\LmsNotificationService;
 use App\Services\LmsRedactionService;
@@ -18,6 +19,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -33,6 +35,10 @@ class LmsBatch11Test extends TestCase
         parent::setUp();
         Storage::fake('lms');
         Storage::fake('public');
+        config(['lms.fcm_project_id' => 'vbat-qa-fixture']);
+        $this->mock(FcmAccessToken::class, fn ($m) => $m->shouldReceive('get')->andReturn('fixture-access-token'));
+        Http::preventStrayRequests();
+        Http::fake(['fcm.googleapis.com/*' => Http::response(['name' => 'projects/vbat-qa-fixture/messages/fixture'])]);
     }
 
     private function createPublishedPdfCourse(User $admin): array
@@ -468,7 +474,7 @@ class LmsBatch11Test extends TestCase
             ->first();
         $this->assertNotNull($dispatchRow);
         $this->assertSame('sent', $dispatchRow->status);
-        $this->assertStringStartsWith('PUSH-', (string) $dispatchRow->provider_receipt);
+        $this->assertStringContainsString('projects/vbat-qa-fixture/messages/fixture', (string) $dispatchRow->provider_receipt);
 
         $beforeCount = Notification::where('recipient_id', $studentA->id)->count();
         (new DispatchLmsNotificationJob((int) $dispatchRow->id))->handle(app(LmsNotificationService::class));

@@ -1,5 +1,8 @@
 # Hasil Batch B11: Offline Media, Notifikasi LMS Nyata, dan Operasional
 
+> **Koreksi 15 November 2026:** laporan ini adalah snapshot implementasi sebelumnya. Push default/integrasi offline dan beberapa nilai runbook sempat tidak sesuai source; perbaikan serta batas terbaru ada di [LMS-B11-PERBAIKAN.md](LMS-B11-PERBAIKAN.md). Jangan memakai klaim selesai di laporan ini sebagai bukti FCM/perangkat/staging sudah teruji.
+
+
 Tanggal: 13 November 2026
 Status: **Implementasi selesai lokal & teruji otomatis (Backend + Mobile); belum migrasi DB produksi atau uji perangkat fisik/staging**
 

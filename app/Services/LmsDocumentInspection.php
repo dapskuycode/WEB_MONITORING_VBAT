@@ -33,7 +33,10 @@ class LmsDocumentInspection
     {
         $binary = trim((string) config('lms.clamscan_binary'));
         if ($binary === '') {
-            return;
+            if (app()->environment('local', 'testing') && config('lms.allow_unscanned_uploads') === true) {
+                return;
+            }
+            throw new \RuntimeException('scanner_unavailable');
         }
         $scan = new Process([$binary, '--no-summary', '--', $path]);
         $scan->setTimeout(60);

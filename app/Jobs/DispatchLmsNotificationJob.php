@@ -15,10 +15,16 @@ class DispatchLmsNotificationJob implements ShouldQueue
 
     public int $tries = 3;
 
+    /** @var list<int> */
+    public array $backoff = [30, 120, 300];
+
     public function __construct(public int $dispatchId) {}
 
     public function handle(LmsNotificationService $service): void
     {
-        $service->processDispatch($this->dispatchId);
+        $result = $service->processDispatch($this->dispatchId);
+        if (($result['status'] ?? null) === 'failed') {
+            throw new \RuntimeException('lms_push_delivery_failed');
+        }
     }
 }

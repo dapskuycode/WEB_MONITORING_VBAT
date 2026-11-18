@@ -18,7 +18,7 @@ Tujuan: admin mengelola dan menerbitkan kelas melalui panel Laravel; siswa belaj
 
 ## Pelaksanaan per batch
 
-Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.md). B00/LMS-01 sudah memiliki usulan keputusan; B01/LMS-02 sudah memiliki draft pemetaan, rancangan migrasi dan contoh kontrak. Keduanya belum final karena review keputusan terkait masih terbuka. B02 sudah memiliki implementasi lokal identitas/otorisasi beserta hasil tes di [LMS_B02_HASIL.md](LMS_B02_HASIL.md). B03 sudah memiliki fondasi lokal entitlement/media beserta tes di [LMS_B03_HASIL.md](LMS_B03_HASIL.md); LMS-05/LMS-06 tetap terbuka untuk kebijakan, enrollment, provider/publish, perangkat dan migrasi data. B04 sudah memiliki CMS/preview dan fondasi schema/revisi teruji di [LMS_B04_HASIL.md](LMS_B04_HASIL.md). B05 telah menyambungkan kelas/silabus melalui API dan Flutter; bukti di [LMS_B05_HASIL.md](LMS_B05_HASIL.md). B06–B10 telah dikerjakan lokal; laporan terbaru [LMS_B10_HASIL.md](LMS_B10_HASIL.md). Berikutnya B11: offline, notifikasi nyata, dan operasional; gate perangkat/staging tetap terbuka. Tidak ada kode aplikasi yang diubah pada B00/B01; perubahan kode dimulai di B02.
+Rincian pembagian dan dependensi tersedia di [LMS-BATCH-PLAN.md](LMS-BATCH-PLAN.md). B00/LMS-01 sudah memiliki usulan keputusan; B01/LMS-02 sudah memiliki draft pemetaan, rancangan migrasi dan contoh kontrak. Keduanya belum final karena review keputusan terkait masih terbuka. B02 sudah memiliki implementasi lokal identitas/otorisasi beserta hasil tes di [LMS-B02-HASIL.md](LMS-B02-HASIL.md). B03 sudah memiliki fondasi lokal entitlement/media beserta tes di [LMS-B03-HASIL.md](LMS-B03-HASIL.md); LMS-05/LMS-06 tetap terbuka untuk kebijakan, enrollment, provider/publish, perangkat dan migrasi data. B04 sudah memiliki CMS/preview dan fondasi schema/revisi teruji di [LMS-B04-HASIL.md](LMS-B04-HASIL.md). B05 telah menyambungkan kelas/silabus melalui API dan Flutter; bukti di [LMS-B05-HASIL.md](LMS-B05-HASIL.md). B06–B10 telah dikerjakan lokal; laporan terbaru [LMS-B10-HASIL.md](LMS-B10-HASIL.md). Berikutnya B11: offline, notifikasi nyata, dan operasional; gate perangkat/staging tetap terbuka. Tidak ada kode aplikasi yang diubah pada B00/B01; perubahan kode dimulai di B02.
 
 ## Batas milestone
 
@@ -33,7 +33,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-01 | P0 | Keputusan produk dan batas rilis
 
-**Status 9 November 2026:** usulan keputusan dan 18 skenario review tersedia di [LMS_01_KEPUTUSAN_PRODUK.md](LMS_01_KEPUTUSAN_PRODUK.md). Menunggu review K1–K6; checklist belum dicentang. Salinan identik tersedia di `docs/lms/LMS-01-KEPUTUSAN-PRODUK.md` pada kedua repo.
+**Status 9 November 2026:** usulan keputusan dan 18 skenario review tersedia di [LMS-01-KEPUTUSAN-PRODUK.md](LMS-01-KEPUTUSAN-PRODUK.md). Menunggu review K1–K6; checklist belum dicentang. Salinan identik tersedia di `docs/lms/LMS-01-KEPUTUSAN-PRODUK.md` pada kedua repo.
 
 - [ ] Tetapkan admin web sebagai pengelola awal; putuskan kapan instructor dan tugas aktif, sumber video awal, serta requirement yang wajib pada rilis pertama.
 - Kunci aturan akses kelas Android/iPhone/bundling, premium, preview, masa akses, syarat HS, sertifikat/KTA, dan akses setelah premium berakhir. Pisahkan hak belajar dari status kelulusan.
@@ -43,7 +43,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-02 | P0 | Petakan skema dan kontrak backend existing
 
-**Status 10 November 2026:** draft teknis B01 tersedia di [LMS_02_KONTRAK_INTEGRASI.md](LMS_02_KONTRAK_INTEGRASI.md), dengan `lms-contract.examples.json` (28 route planned dan 9 contoh pertukaran fixture) serta `lms-existing-routes.json` (39 registrasi route existing). Usulan namespace dan keputusan terkait LMS-01 belum final; checklist belum dicentang. Salinan tersedia pada kedua repo.
+**Status 10 November 2026:** draft teknis B01 tersedia di [LMS-02-KONTRAK-INTEGRASI.md](LMS-02-KONTRAK-INTEGRASI.md), dengan `lms-contract.examples.json` (28 route planned dan 9 contoh pertukaran fixture) serta `lms-existing-routes.json` (39 registrasi route existing). Usulan namespace dan keputusan terkait LMS-01 belum final; checklist belum dicentang. Salinan tersedia pada kedua repo.
 
 - [ ] Tetapkan pemetaan `Course → kelas`, `Lesson → modul`, `LearningMaterial → materi`, termasuk posisi `Unit`, video, quiz, enrollment dan entitlement; telusuri model/field yang dirujuk CMS tetapi belum tersedia/selaras.
 - Putuskan migrasi tambahan dan backfill yang mempertahankan ID/relasi/data existing. Jangan mengganti seluruh ID menjadi UUID hanya karena skema usulan FSD memakai UUID.
@@ -54,7 +54,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-03 | P0 | Satukan autentikasi dan hilangkan sukses palsu
 
-**Status B02, 10 November 2026:** implementasi lokal dan tes identitas/role/penyaringan respons tersedia; lihat [LMS_B02_HASIL.md](LMS_B02_HASIL.md). Backend terkait 48 tes/200 assertions dan mobile fungsional 30 tes lulus. Verifikasi perangkat/staging serta penuntasan akses media/entitlement lintas batch masih terbuka; checklist penuh belum dicentang.
+**Status B02, 10 November 2026:** implementasi lokal dan tes identitas/role/penyaringan respons tersedia; lihat [LMS-B02-HASIL.md](LMS-B02-HASIL.md). Backend terkait 48 tes/200 assertions dan mobile fungsional 30 tes lulus. Verifikasi perangkat/staging serta penuntasan akses media/entitlement lintas batch masih terbuka; checklist penuh belum dicentang.
 
 - [ ] Gunakan identitas dari token server; satukan jalur login repository dan SessionManager, validasi sesi melalui `/auth/me`, serta gunakan penyimpanan token aman platform.
 - Pisahkan demo dari build produksi; API gagal tidak boleh membuat token/sesi atau menyatakan berhasil. Verifikasi credential OAuth di server, atau nonaktifkan jalur OAuth sampai benar.
@@ -64,7 +64,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-04 | P0 | Policies admin, student dan kepemilikan resource
 
-**Status B02, 10 November 2026:** implementasi lokal dan tes identitas/role/penyaringan respons tersedia; lihat [LMS_B02_HASIL.md](LMS_B02_HASIL.md). Backend terkait 48 tes/200 assertions dan mobile fungsional 30 tes lulus. Verifikasi perangkat/staging serta penuntasan akses media/entitlement lintas batch masih terbuka; checklist penuh belum dicentang.
+**Status B02, 10 November 2026:** implementasi lokal dan tes identitas/role/penyaringan respons tersedia; lihat [LMS-B02-HASIL.md](LMS-B02-HASIL.md). Backend terkait 48 tes/200 assertions dan mobile fungsional 30 tes lulus. Verifikasi perangkat/staging serta penuntasan akses media/entitlement lintas batch masih terbuka; checklist penuh belum dicentang.
 
 - [ ] Lindungi setiap operasi LMS di API maupun Livewire: mutasi/publikasi hanya pengelola berwenang; student hanya membaca/mengubah resource belajarnya sendiri.
 - Pisahkan katalog/preview publik dari isi terlindungi. Gunakan serializer student yang tidak pernah menyertakan answer key, keyword/rubrik internal atau object key privat.
@@ -73,7 +73,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-05 | P0 | Satu sumber enrollment dan entitlement
 
-**Status B03:** layanan akses memakai schema existing dan snapshot server; aktivasi publik/grant lokal ditutup; waktu/status/paket teruji. Pembelian baru ditutup menunggu LMS-30. Enrollment dan keputusan premium/durasi tetap terbuka; belum dicentang. Lihat [LMS_B03_HASIL.md](LMS_B03_HASIL.md).
+**Status B03:** layanan akses memakai schema existing dan snapshot server; aktivasi publik/grant lokal ditutup; waktu/status/paket teruji. Pembelian baru ditutup menunggu LMS-30. Enrollment dan keputusan premium/durasi tetap terbuka; belum dicentang. Lihat [LMS-B03-HASIL.md](LMS-B03-HASIL.md).
 
 - [ ] Selaraskan EntitlementService dengan model/migrasi yang memakai `package_type`, `status`, dan masa akses; tentukan relasi enrollment sesuai kontrak LMS-02.
 - Tutup aktivasi membership publik yang dapat memberi akses dari email/user_id/fallback. Grant hanya melalui transaksi tervalidasi atau tindakan admin yang berotorisasi dan diaudit.
@@ -96,7 +96,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-07 | P1 | Struktur kelas, modul dan materi
 
-**Status B04:** migrasi kompatibel code/revision/status modul/is_preview, layanan canonical, urutan per parent dan arsip yang mempertahankan riwayat tersedia. Audit/backfill data existing dan kebijakan snapshot/revisi belajar masih terbuka; checklist keseluruhan belum dicentang. Lihat [LMS_B04_HASIL.md](LMS_B04_HASIL.md).
+**Status B04:** migrasi kompatibel code/revision/status modul/is_preview, layanan canonical, urutan per parent dan arsip yang mempertahankan riwayat tersedia. Audit/backfill data existing dan kebijakan snapshot/revisi belajar masih terbuka; checklist keseluruhan belum dicentang. Lihat [LMS-B04-HASIL.md](LMS-B04-HASIL.md).
 
 - [ ] Implementasikan migrasi tambahan, relasi, kode unik, urutan, required/preview serta draft/published/archived sesuai LMS-02. Tetapkan validasi publikasi dan perilaku arsip tanpa menghapus riwayat belajar.
 - **Selesai bila:** dua modul/materi tidak berbagi urutan yang dilarang; draft tidak muncul ke student; arsip dan perubahan konten mempertahankan data belajar sesuai kebijakan.
@@ -137,7 +137,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-12 | P0 | Progres belajar dan prerequisite di server
 
-**Status B06:** implementasi lokal dan tes lulus; ambang video ≥95% disetujui pengguna. Video terverifikasi tersedia; B07 menambahkan completion kuis yang dinilai server. B08 menambahkan progres bacaan PDF; file wajib berstatus ready setelah scan. Migrasi utama dan uji provider/native/staging tetap terbuka. Lihat `LMS_B06_HASIL.md`.
+**Status B06:** implementasi lokal dan tes lulus; ambang video ≥95% disetujui pengguna. Video terverifikasi tersedia; B07 menambahkan completion kuis yang dinilai server. B08 menambahkan progres bacaan PDF; file wajib berstatus ready setelah scan. Migrasi utama dan uji provider/native/staging tetap terbuka. Lihat `LMS-B06-HASIL.md`.
 
 - [x] Implementasikan sesi playback, heartbeat, event ID unik, resume position dan perhitungan completion sesuai LMS-01. Validasi akses, durasi, selang waktu dan event replay; seek ke akhir tidak otomatis menuntaskan video.
 - Hitung progres materi/modul/kelas dan `next_unit`; kunci unit berikutnya berdasarkan hasil server. Telemetri menonton bukan jaminan perhatian atau pemahaman siswa.
@@ -155,7 +155,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-14 | P0 | Backend kuis dan attempt pilihan ganda
 
-**Status B07:** terimplementasi lokal: format CMS/API canonical, snapshot, batas opsional, deadline server, autosave/version, idempotensi start/submit dan finalisasi scheduler. Default testing 70/tanpa batas waktu dan percobaan/nilai tertinggi; hasil legacy diabaikan. Lihat `LMS_B07_HASIL.md`.
+**Status B07:** terimplementasi lokal: format CMS/API canonical, snapshot, batas opsional, deadline server, autosave/version, idempotensi start/submit dan finalisasi scheduler. Default testing 70/tanpa batas waktu dan percobaan/nilai tertinggi; hasil legacy diabaikan. Lihat `LMS-B07-HASIL.md`.
 
 - [x] Selaraskan editor admin dengan penilaian server untuk format opsi/jawaban benar. Tambahkan posisi kuis, required/pass score, timer/attempt limit, snapshot soal, deadline server, autosave, submit idempotent dan aturan nilai.
 - Terapkan transaksi/concurrency untuk start dan submit; finalisasi attempt kedaluwarsa termasuk saat aplikasi ditutup; perubahan soal tidak mengubah attempt yang sudah berjalan.
@@ -183,7 +183,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-17 | P1 | Unggah privat dan viewer PDF/e-book
 
-**Status B08: sebagian.** Pipeline karantina/scan/ready, owner/purpose/checksum, publish gate, reader PDF dan completion server terimplementasi serta teruji lokal. E-book pilot berbentuk PDF; EPUB belum didukung. Penyimpanan pilot masih disk privat lokal, bukan object storage cloud yang sudah dikonfigurasi. Scanner nyata, cloud dan uji Android/iOS/staging tetap terbuka. PDF legacy tanpa hasil scan diblokir sampai didaftarkan ulang melalui pipeline. Lihat `LMS_B08_HASIL.md`.
+**Status B08: sebagian.** Pipeline karantina/scan/ready, owner/purpose/checksum, publish gate, reader PDF dan completion server terimplementasi serta teruji lokal. E-book pilot berbentuk PDF; EPUB belum didukung. Penyimpanan pilot masih disk privat lokal, bukan object storage cloud yang sudah dikonfigurasi. Scanner nyata, cloud dan uji Android/iOS/staging tetap terbuka. PDF legacy tanpa hasil scan diblokir sampai didaftarkan ulang melalui pipeline. Lihat `LMS-B08-HASIL.md`.
 
 - [ ] Buat upload yang memeriksa pemilik, purpose, ukuran, MIME aktual, nama dan status scanning/quarantine/ready/rejected. Pakai object storage privat dan unduhan berotorisasi dengan masa berlaku terbatas.
 - Hubungkan penambahan materi di admin dan viewer mobile ke berkas nyata; definisikan penyelesaian bacaan sesuai LMS-01; hilangkan URL dummy.
@@ -212,7 +212,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 - [x] Implementasi lokal: tambahkan model/editor/DTO tiga jenis soal, alias jawaban, rubric/bobot, grading auto/manual/hybrid, pengacakan soal/opsi, tiga posisi kuis dan aturan pengambilan nilai.
 - Jangan memakai keyword sebagai satu-satunya bukti kualitas studi kasus; sediakan review/override berotorisasi sesuai mode dan audit. Pisahkan hasil sementara, menunggu penilaian, dan nilai published.
 - **Selesai bila:** semua jenis soal bekerja dari admin sampai siswa; revisi tidak mengubah snapshot lama; nilai draft/kunci tidak bocor; hasil manual tidak membuka prerequisite sebelum diterbitkan.
-**Status B09:** tiga jenis soal, editor alias/rubrik, mode penilaian, snapshot/pengacakan, tiga posisi dan agregasi nilai terimplementasi serta teruji lokal. Studi kasus wajib review manusia; draft tidak membuka prerequisite. Uji native/staging tetap terbuka. Lihat `LMS_B09_HASIL.md`.
+**Status B09:** tiga jenis soal, editor alias/rubrik, mode penilaian, snapshot/pengacakan, tiga posisi dan agregasi nilai terimplementasi serta teruji lokal. Studi kasus wajib review manusia; draft tidak membuka prerequisite. Uji native/staging tetap terbuka. Lihat `LMS-B09-HASIL.md`.
 
 - **Rujukan:** FSD bagian 5.7–5.9, 4 Kuis/ujian; WF bagian Pengaturan kuis; INV 13, 15. **Dependensi:** LMS-14, LMS-15, LMS-24.
 
@@ -229,7 +229,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-22 | P1 | Tugas dan submission server
 
-**Status B10:** terimplementasi dan teruji lokal (`LmsAssignmentService`, pipeline upload `assignment_submission` maksimal 5 berkas PDF/JPG/PNG @ 20 MB, draft ber-versi & idempoten, pengiriman immutable dengan bukti `SUB-YYYYMMDD-...`, deadline/late server, dan return/resubmit). Lihat [LMS_B10_HASIL.md](LMS_B10_HASIL.md).
+**Status B10:** terimplementasi dan teruji lokal (`LmsAssignmentService`, pipeline upload `assignment_submission` maksimal 5 berkas PDF/JPG/PNG @ 20 MB, draft ber-versi & idempoten, pengiriman immutable dengan bukti `SUB-YYYYMMDD-...`, deadline/late server, dan return/resubmit). Lihat [LMS-B10-HASIL.md](LMS-B10-HASIL.md).
 
 - [x] Tambahkan tugas per modul, due/late policy, max score, file limits, draft dan submit versi immutable, ownership, idempotency dan return/resubmit.
 - **Selesai bila:** submit kosong/file belum bersih ditolak; waktu server menetapkan late; request ulang tidak menggandakan submission; versi lama tetap tersedia; siswa lain tidak dapat mengakses jawaban/lampiran.
@@ -237,7 +237,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-23 | P1 | Composer tugas dan receipt Flutter
 
-**Status B10:** terimplementasi dan teruji lokal (`AssignmentRepository`, `AssignmentController`, `AssignmentPage`, integrasi silabus & route `/assignment`, isolasi sesi saat logout, serta uji widget pada tema terang/gelap & skala teks 200%). Lihat [LMS_B10_HASIL.md](LMS_B10_HASIL.md).
+**Status B10:** terimplementasi dan teruji lokal (`AssignmentRepository`, `AssignmentController`, `AssignmentPage`, integrasi silabus & route `/assignment`, isolasi sesi saat logout, serta uji widget pada tema terang/gelap & skala teks 200%). Lihat [LMS-B10-HASIL.md](LMS-B10-HASIL.md).
 
 - [x] Buat instruksi, deadline WIB, draft/autosave, unggah/hapus lampiran, retry, konfirmasi kirim, receipt dan revisi. Jangan mencampur draft lokal antarakun.
 - **Selesai bila:** keluar/masuk layar tidak kehilangan draft tersimpan; submit terkonfirmasi server mengunci versi; gagal upload/submit jelas; siswa melihat status terlambat dan revisi yang benar.
@@ -247,13 +247,13 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 - [x] Sediakan penilaian jawaban kuis/tugas oleh admin: rentang skor, rubric, feedback, draft/publish, expected version, revisi dengan alasan, return untuk perbaikan dan histori aktor/waktu.
 - **Selesai bila:** siswa hanya menerima nilai/feedback yang boleh dilihat; draft tersembunyi; konflik editor terdeteksi; revisi mempertahankan versi lama dan memperbarui kelulusan secara atomik.
-**Status B10:** selesai implementasi lokal untuk kuis (B09) maupun tugas (B10: review draft/publish, return untuk revisi, histori revisi nilai, sinkronisasi kelulusan/HS, serta dukungan reviewer `instructor` sesuai scope kelas). Lihat [LMS_B10_HASIL.md](LMS_B10_HASIL.md).
+**Status B10:** selesai implementasi lokal untuk kuis (B09) maupun tugas (B10: review draft/publish, return untuk revisi, histori revisi nilai, sinkronisasi kelulusan/HS, serta dukungan reviewer `instructor` sesuai scope kelas). Lihat [LMS-B10-HASIL.md](LMS-B10-HASIL.md).
 
 - **Rujukan:** FSD bagian 4 Penilaian/gradebook dan review attempt, 8; WF bagian 8. **Dependensi:** LMS-04, LMS-14. Penilaian tugas juga memerlukan LMS-22.
 
 ### LMS-25 | P1 | Gradebook dan nilai siswa
 
-**Status B10:** terimplementasi dan teruji lokal (`LmsGradebookService`, endpoint `/lms/courses/{course}/gradebook`, `/lms/gradebook/bulk-publish`, dan `/lms/courses/{course}/grades`, serta integrasi tab Buku Nilai di `GradeReview` Livewire dan `AssignmentRepository.courseGrades` di Flutter). Lihat [LMS_B10_HASIL.md](LMS_B10_HASIL.md).
+**Status B10:** terimplementasi dan teruji lokal (`LmsGradebookService`, endpoint `/lms/courses/{course}/gradebook`, `/lms/gradebook/bulk-publish`, dan `/lms/courses/{course}/grades`, serta integrasi tab Buku Nilai di `GradeReview` Livewire dan `AssignmentRepository.courseGrades` di Flutter). Lihat [LMS-B10-HASIL.md](LMS-B10-HASIL.md).
 
 - [x] Buat antrean penilaian/filter/pagination, gradebook, hasil siswa, agregasi nilai sesuai bobot, detail feedback dan publikasi batch yang memiliki audit/concurrency.
 - **Selesai bila:** nilai kosong berbeda dari nol/draft; agregasi sesuai nilai yang eligible; publish batch tidak bocor ke siswa/kelas lain; pending review terlihat di mobile.
@@ -261,7 +261,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-26 | P1 | Instructor dan scope kursus, bila diaktifkan
 
-**Status B10:** diaktifkan atas keputusan pengguna dan terimplementasi/teruji lokal (`courses.instructor_id`, pivot co-instructor `lms_course_instructors`, pembatasan per kelas di `LmsAuthoringService`, `LmsAssignmentService`, `LmsGradingService`, `LmsGradebookService`, dan Livewire CMS/Quiz/GradeReview). Lihat [LMS_B10_HASIL.md](LMS_B10_HASIL.md).
+**Status B10:** diaktifkan atas keputusan pengguna dan terimplementasi/teruji lokal (`courses.instructor_id`, pivot co-instructor `lms_course_instructors`, pembatasan per kelas di `LmsAuthoringService`, `LmsAssignmentService`, `LmsGradingService`, `LmsGradebookService`, dan Livewire CMS/Quiz/GradeReview). Lihat [LMS-B10-HASIL.md](LMS-B10-HASIL.md).
 
 - [x] Tambahkan role instructor, kepemilikan/co-instructor ACL, authoring dan grading dalam scope kursus; gunakan layanan/domain yang sama dengan admin.
 - **Selesai bila:** instructor kelas X tidak bisa mengubah/menilai kelas Y; akses di luar scope ditolak server; pencabutan assignment instructor berlaku pada request berikutnya.
@@ -270,9 +270,11 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ## M4: offline, notifikasi dan operasional
 
+> **Status perbaikan B11, 15 November 2026:** baca `LMS-B11-PERBAIKAN.md`. Jalur offline/transport push diperbaiki dan teruji lokal; penerimaan FCM/perangkat, SDK Android, staging, audit data lama dan graph tetap belum dibuktikan.
+
 ### LMS-27 | P1 | Offline media dan sinkronisasi
 
-**Status B11:** terimplementasi dan teruji lokal (`LmsOfflineService`, `LmsBatch11Controller`, dan `OfflineMediaManager` Flutter) sesuai keputusan kebijakan `K6`/`D15` (khusus materi PDF/E-Book berlisensi, maks 2 perangkat aktif per pengguna, TTL 7 hari atau sisa masa aktif kelas, verifikasi SHA-256, batas usia event sync 24 jam, toleransi clock skew 5 menit, penolakan YouTube/kuis/tugas offline, dan pembersihan instan saat logout). Lihat [LMS_B11_HASIL.md](LMS_B11_HASIL.md).
+**Status B11:** terimplementasi dan teruji lokal (`LmsOfflineService`, `LmsBatch11Controller`, dan `OfflineMediaManager` Flutter) sesuai keputusan kebijakan `K6`/`D15` (khusus materi PDF/E-Book berlisensi, maks 2 perangkat aktif per pengguna, TTL 7 hari atau sisa masa aktif kelas, verifikasi SHA-256, batas usia event sync 24 jam, toleransi clock skew 5 menit, penolakan YouTube/kuis/tugas offline, dan pembersihan instan saat logout). Lihat [LMS-B11-HASIL.md](LMS-B11-HASIL.md).
 
 - [x] Implementasikan download file nyata, penyimpanan terlindungi, license/grant perangkat, antrean event unik, expiry, batas usia/clock skew dan hasil sync per event. Hanya aktif untuk provider/media yang memang mendukung.
 - **Selesai bila:** bukan sekadar menyimpan URL terobfusikasi; offline tidak membuka hak baru; event replay/ditolak ditangani; cache akun lain tidak terbaca; tidak ada submit kuis/tugas offline yang melewati aturan server.
@@ -280,7 +282,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-28 | P2 | Notifikasi LMS nyata
 
-**Status B11:** terimplementasi dan teruji lokal (`LmsNotificationService`, `DispatchLmsNotificationJob`, pengingat H-1 `lms:send-assignment-reminders`, inbox `/api/v1/user/notifications`, privasi layar kunci tanpa bocor skor/jawaban, serta verifikasi deep-link server `/api/v1/lms/notifications/resolve-deep-link` di `NotificationPage` Flutter). Lihat [LMS_B11_HASIL.md](LMS_B11_HASIL.md).
+**Status B11:** terimplementasi dan teruji lokal (`LmsNotificationService`, `DispatchLmsNotificationJob`, pengingat H-1 `lms:send-assignment-reminders`, inbox `/api/v1/user/notifications`, privasi layar kunci tanpa bocor skor/jawaban, serta verifikasi deep-link server `/api/v1/lms/notifications/resolve-deep-link` di `NotificationPage` Flutter). Lihat [LMS-B11-HASIL.md](LMS-B11-HASIL.md).
 
 - [x] Hubungkan grade published/revised, tugas dikembalikan dan pengingat yang disepakati ke queue/push/in-app; deep link memeriksa identitas dan akses.
 - **Selesai bila:** token/perangkat nyata menerima event uji; status sukses/gagal berasal dari dispatch, bukan angka acak; retry tidak membuat notifikasi ganda dan target akun benar.
@@ -288,7 +290,7 @@ Rincian pembagian dan dependensi tersedia di [LMS_BATCH_PLAN.md](LMS_BATCH_PLAN.
 
 ### LMS-29 | P2 | Operasional, dokumentasi dan graph
 
-**Status B11:** terimplementasi dan teruji lokal (`LmsRequestCorrelation` middleware + `ApiClient` header `X-Request-Id`, `LmsRedactionService`, perintah terjadwal `lms:send-assignment-reminders`, `lms:cleanup-offline-licenses`, dan `lms:ops-status`, pembaruan kontrak `LMS_02_KONTRAK_INTEGRASI.md`, serta runbook operasional di [LMS_B11_HASIL.md](LMS_B11_HASIL.md)).
+**Status B11:** terimplementasi dan teruji lokal (`LmsRequestCorrelation` middleware + `ApiClient` header `X-Request-Id`, `LmsRedactionService`, perintah terjadwal `lms:send-assignment-reminders`, `lms:cleanup-offline-licenses`, dan `lms:ops-status`, pembaruan kontrak `LMS-02-KONTRAK-INTEGRASI.md`, serta runbook operasional di [LMS-B11-HASIL.md](LMS-B11-HASIL.md)).
 
 - [x] Sediakan request ID, log teredaksi, audit yang dapat ditelusuri, monitoring queue/scan/attempt timeout/sync, scheduler, serta prosedur pemulihan/migrasi.
 - Perbarui kontrak API, panduan admin dan catatan implementasi. Perbarui baseline graph backend/mobile serta jalankan ulang kurasi setelah perubahan arsitektur; pertahankan jejak requirement → implementasi → tes.

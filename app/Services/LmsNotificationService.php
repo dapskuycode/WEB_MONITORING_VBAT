@@ -38,6 +38,8 @@ class LmsNotificationService
         ])->validate();
 
         $now = now();
+        abort_if(str_starts_with($data['push_token'], 'fcm_mock_'), 422, 'Token push contoh tidak diizinkan.');
+        DB::table('lms_device_push_tokens')->where('push_token', $data['push_token'])->where('user_id', '!=', $user->id)->update(['status' => 'revoked', 'updated_at' => $now]);
         $status = str_starts_with($data['push_token'], 'invalid:') ? 'invalid' : 'active';
 
         DB::table('lms_device_push_tokens')->updateOrInsert(
@@ -126,7 +128,7 @@ class LmsNotificationService
             'updated_at' => $now,
         ]);
 
-        DispatchLmsNotificationJob::dispatch($dispatchId);
+        DispatchLmsNotificationJob::dispatch($dispatchId)->afterCommit();
 
         $row = DB::table('lms_notification_dispatches')->where('id', $dispatchId)->first();
 
@@ -138,119 +140,98 @@ class LmsNotificationService
      *
      * @return array<string, mixed>
      */
-    public function processDispatch(int $dispatchId, ?callable $pushTransport = null): array
+    public function processDispatch(int $dispatchId): array
     {
-        return DB::transaction(function () use ($dispatchId, $pushTransport) {
-            $dispatch = DB::table('lms_notification_dispatches')->where('id', $dispatchId)->lockForUpdate()->first();
-            abort_unless($dispatch !== null, 404, 'Data dispatch notifikasi tidak ditemukan.');
-
-            if ($dispatch->status === 'sent' && $dispatch->notification_id !== null) {
-                return $this->formatDispatch($dispatch, true);
+        $lease = (string) Str::uuid();
+        $dispatch = DB::transaction(function () use ($dispatchId, $lease) {
+            $row = DB::table('lms_notification_dispatches')->where('id', $dispatchId)->lockForUpdate()->first();
+            abort_unless($row !== null, 404);
+            if ($row->status === 'sent') {
+                return $row;
             }
-
-            $attempts = (int) $dispatch->attempts + 1;
-            $meta = $dispatch->meta ? json_decode($dispatch->meta, true, 512, JSON_THROW_ON_ERROR) : [];
-            $now = now();
-
-            $notificationId = $dispatch->notification_id;
+            if ($row->processing_until && Carbon::parse($row->processing_until)->isFuture()) {
+                throw new \RuntimeException('push_dispatch_in_progress');
+            }
+            $notificationId = $row->notification_id;
             if (! $notificationId) {
-                $notif = $this->inbox->create(
-                    'user',
-                    (int) $dispatch->user_id,
-                    (string) $dispatch->event_type,
-                    (string) $dispatch->title,
-                    (string) $dispatch->body,
-                    (string) $dispatch->deep_link,
-                    [
-                        ...$meta,
-                        'event_key' => $dispatch->event_key,
-                        'deep_link' => $dispatch->deep_link,
-                    ],
-                );
-                $notificationId = $notif->id;
+                $meta = $row->meta ? json_decode($row->meta, true, 512, JSON_THROW_ON_ERROR) : [];
+                $notificationId = $this->inbox->create('user', (int) $row->user_id, $row->event_type, $row->title, $row->body, $row->deep_link,
+                    [...$meta, 'event_key' => $row->event_key, 'deep_link' => $row->deep_link])->id;
             }
+            DB::table('lms_notification_dispatches')->where('id', $dispatchId)->update([
+                'notification_id' => $notificationId, 'status' => 'processing', 'attempts' => $row->attempts + 1,
+                'processing_token' => $lease, 'processing_until' => now()->addMinutes(2), 'updated_at' => now(),
+            ]);
 
-            $tokens = DB::table('lms_device_push_tokens')
-                ->where('user_id', $dispatch->user_id)
-                ->where('status', 'active')
-                ->pluck('push_token')
-                ->all();
+            return DB::table('lms_notification_dispatches')->where('id', $dispatchId)->first();
+        });
+        if ($dispatch->status === 'sent') {
+            return $this->formatDispatch($dispatch, true);
+        }
 
-            $validTokens = [];
-            $invalidTokens = [];
-            foreach ($tokens as $tk) {
-                if (str_starts_with((string) $tk, 'invalid:') || str_starts_with((string) $tk, 'expired:')) {
-                    $invalidTokens[] = $tk;
-                } else {
-                    $validTokens[] = $tk;
+        $tokens = DB::table('lms_device_push_tokens')->where('user_id', $dispatch->user_id)->where('status', 'active')->pluck('push_token')->all();
+        $receipts = [];
+        $failed = false;
+        foreach ($tokens as $token) {
+            $hash = hash('sha256', $token);
+            $delivery = DB::table('lms_push_deliveries')->where('dispatch_id', $dispatchId)->where('token_hash', $hash)->first();
+            if ($delivery && in_array($delivery->status, ['sent', 'invalid'], true)) {
+                if ($delivery->provider_receipt) {
+                    $receipts[] = $delivery->provider_receipt;
                 }
-            }
 
-            if ($invalidTokens !== []) {
-                DB::table('lms_device_push_tokens')
-                    ->where('user_id', $dispatch->user_id)
-                    ->whereIn('push_token', $invalidTokens)
-                    ->update(['status' => 'invalid', 'updated_at' => $now]);
+                continue;
             }
-
+            $claimed = DB::table('lms_notification_dispatches')->where('id', $dispatchId)->where('processing_token', $lease)
+                ->update(['processing_until' => now()->addMinutes(2), 'updated_at' => now()]);
+            if (! $claimed) {
+                throw new \RuntimeException('push_dispatch_lease_lost');
+            }
+            // Do not hold a database transaction while waiting on OAuth or FCM.
+            $receipt = null;
+            $error = null;
+            $status = 'sent';
             try {
-                if ($pushTransport !== null) {
-                    $receipt = (string) $pushTransport($dispatch, $validTokens);
-                } elseif (str_starts_with((string) $dispatch->event_key, 'simulate_fail:')) {
-                    throw new \RuntimeException('Provider push mengalami gangguan sementara.');
-                } else {
-                    $suffix = strtoupper(substr(hash('sha256', $dispatch->event_key), 0, 10));
-                    $receipt = $validTokens !== []
-                        ? "PUSH-{$suffix}-D".count($validTokens)
-                        : "INAPP-{$suffix}";
-                }
-
-                DB::table('lms_notification_dispatches')->where('id', $dispatch->id)->update([
-                    'notification_id' => $notificationId,
-                    'device_tokens' => json_encode($validTokens, JSON_THROW_ON_ERROR),
-                    'status' => 'sent',
-                    'attempts' => $attempts,
-                    'provider_receipt' => $receipt,
-                    'last_error' => null,
-                    'dispatched_at' => $now,
-                    'updated_at' => $now,
-                ]);
-
-                AuditLog::create([
-                    'actor_type' => 'system',
-                    'actor_id' => null,
-                    'action' => 'lms.notification.dispatched',
-                    'auditable_type' => Notification::class,
-                    'auditable_id' => $notificationId,
-                    'new_values' => [
-                        'dispatch_id' => $dispatch->id,
-                        'event_key' => $dispatch->event_key,
-                        'event_type' => $dispatch->event_type,
-                        'status' => 'sent',
-                        'receipt' => $receipt,
-                    ],
-                ]);
+                $receipt = app(FcmPushTransport::class)->send($token, $dispatch->title, $dispatch->body,
+                    ['deep_link' => $dispatch->deep_link, 'event_key' => $dispatch->event_key]);
+                $receipts[] = $receipt;
+            } catch (\DomainException $e) {
+                $status = 'invalid';
+                $error = 'push_token_unregistered';
+                DB::table('lms_device_push_tokens')->where('user_id', $dispatch->user_id)->where('push_token', $token)->update(['status' => 'invalid', 'updated_at' => now()]);
             } catch (\Throwable $e) {
-                DB::table('lms_notification_dispatches')->where('id', $dispatch->id)->update([
-                    'notification_id' => $notificationId,
-                    'device_tokens' => json_encode($validTokens, JSON_THROW_ON_ERROR),
-                    'status' => 'failed',
-                    'attempts' => $attempts,
-                    'last_error' => Str::limit($e->getMessage(), 300, ''),
-                    'updated_at' => $now,
-                ]);
+                $status = 'failed';
+                $failed = true;
+                $error = preg_match('/^push_(not_configured|credentials_unavailable|authentication_failed|provider_http_[0-9]{3})$/', $e->getMessage()) ? $e->getMessage() : 'push_delivery_failed';
             }
+            DB::table('lms_push_deliveries')->updateOrInsert(['dispatch_id' => $dispatchId, 'token_hash' => $hash], [
+                'status' => $status, 'provider_receipt' => $receipt, 'error_code' => $error, 'created_at' => now(), 'updated_at' => now(),
+            ]);
+        }
 
-            $updated = DB::table('lms_notification_dispatches')->where('id', $dispatch->id)->first();
+        return DB::transaction(function () use ($dispatchId, $dispatch, $lease, $failed, $receipts) {
+            $row = DB::table('lms_notification_dispatches')->where('id', $dispatchId)->lockForUpdate()->first();
+            if ($row->processing_token !== $lease) {
+                throw new \RuntimeException('push_dispatch_lease_lost');
+            }
+            $status = $failed ? 'failed' : 'sent';
+            DB::table('lms_notification_dispatches')->where('id', $dispatchId)->update([
+                'status' => $status, 'channel' => $receipts === [] && ! $failed ? 'in_app' : 'in_app_push',
+                'provider_receipt' => $receipts[0] ?? null, 'last_error' => $failed ? 'push_delivery_failed' : null,
+                'processing_token' => null, 'processing_until' => null, 'dispatched_at' => $failed ? null : now(), 'updated_at' => now(),
+            ]);
+            AuditLog::create(['actor_type' => 'system', 'action' => 'lms.notification.dispatched', 'auditable_type' => Notification::class,
+                'auditable_id' => $dispatch->notification_id, 'new_values' => ['dispatch_id' => $dispatchId, 'status' => $status]]);
 
-            return $this->formatDispatch($updated, false);
+            return $this->formatDispatch(DB::table('lms_notification_dispatches')->where('id', $dispatchId)->first(), false);
         });
     }
 
+    /** @return array<string, mixed> */
     public function notifyQuizGradePublished(QuizAttempt $attempt, int $revision, bool $isRevision = false): array
     {
         $quiz = Quiz::find($attempt->quiz_id);
-        $quizTitle = (string) ($attempt->snapshot['title'] ?? $quiz?->title ?? 'Kuis LMS');
+        $quizTitle = (string) ($attempt->snapshot['title'] ?? $quiz->title ?? 'Kuis LMS');
         $courseId = app(LmsGradingService::class)->courseIdForQuiz($quiz);
         $eventType = $isRevision ? 'quiz_grade_revised' : 'quiz_grade_published';
         $eventKey = "quiz_grade:{$attempt->id}:rev:{$revision}";
@@ -278,10 +259,11 @@ class LmsNotificationService
         );
     }
 
+    /** @return array<string, mixed> */
     public function notifyAssignmentGradePublished(LmsAssignmentSubmission $submission, int $revision, bool $isRevision = false): array
     {
-        $assignmentTitle = (string) ($submission->assignment_snapshot['title'] ?? $submission->assignment?->title ?? 'Tugas Praktik');
-        $courseId = (int) ($submission->assignment?->course_id ?? 0);
+        $assignmentTitle = (string) ($submission->assignment_snapshot['title'] ?? $submission->assignment->title ?? 'Tugas Praktik');
+        $courseId = (int) ($submission->assignment->course_id ?? 0);
         $eventType = $isRevision ? 'assignment_grade_revised' : 'assignment_grade_published';
         $eventKey = "assignment_grade:{$submission->id}:rev:{$revision}";
         $title = $isRevision
@@ -306,10 +288,11 @@ class LmsNotificationService
         );
     }
 
+    /** @return array<string, mixed> */
     public function notifyAssignmentReturned(LmsAssignmentSubmission $submission, int $revision): array
     {
-        $assignmentTitle = (string) ($submission->assignment_snapshot['title'] ?? $submission->assignment?->title ?? 'Tugas Praktik');
-        $courseId = (int) ($submission->assignment?->course_id ?? 0);
+        $assignmentTitle = (string) ($submission->assignment_snapshot['title'] ?? $submission->assignment->title ?? 'Tugas Praktik');
+        $courseId = (int) ($submission->assignment->course_id ?? 0);
         $eventKey = "assignment_return:{$submission->id}:rev:{$revision}";
         $title = "Revisi Tugas Diperlukan: {$assignmentTitle}";
         $body = 'Instruktur mengembalikan tugas Anda untuk diperbaiki. Buka aplikasi VBAT untuk membaca catatan revisi dan mengirim ulang.';
